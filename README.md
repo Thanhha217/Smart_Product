@@ -22,5 +22,5 @@ docker-compose up
 
 URLs:
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
+- Backend API gateway: http://localhost:8000
 - Airflow UI: http://localhost:8080
