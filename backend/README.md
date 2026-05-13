@@ -14,6 +14,11 @@ Each new microservice should be added to the `services` folder, and its dependen
 cd backend
 ```
 
+For each microservice, you can follow the same steps to set up the environment and run the service. For example, to set up the API service, navigate to its directory:
+```bash
+cd services/api
+```
+
 2. Create a virtual environment:
 ```bash
 python -m venv venv 
