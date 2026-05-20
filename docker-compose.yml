@@ -342,6 +342,46 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
+  # ==========================================
+  # KAFKA (v4.2.1-rc5)
+  # ==========================================
+  kafka:
+    image: apache/kafka:4.2.1-rc5
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_CLUSTER_ID: '50ymgD_wbOao90HigsiJWKuser'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - kafka-data-volume:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: 'Local-Kafka-4.2.1-RC5'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
+    depends_on:
+      - kafka
+
+  # ==========================================
+  # FULL-STACK SMART PRODUCT FINDER
+  # ==========================================
     
   frontend:
     build:
@@ -364,6 +404,8 @@ services:
       - "8000:8000"
     image: backend-gateway
     restart: always
+
+  # ADD OTHER BACKEND SERVICES (e.g., product-service, user-service, etc.) HERE
   
   smart-product-finder-database:
     image: pgvector/pgvector:pg16
@@ -381,3 +423,4 @@ services:
 volumes:
   postgres-db-volume:
   pgvector-db-volume:
+  kafka-data-volume:
