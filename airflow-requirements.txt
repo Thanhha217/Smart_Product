@@ -1,0 +1,4 @@
+kafka-python==2.3.1
+scrapy==2.16.0
+selenium==4.44.0
+apache-airflow-providers-apache-kafka==1.13.3
