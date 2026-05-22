@@ -11,6 +11,13 @@ from datetime import datetime, timezone
 class FPTProductSpider(scrapy.Spider):
     name = "fpt_products" # the name of the spider, needs to be unique
 
+    # associates the pipeline to the spider
+    custom_settings = {
+        "ITEM_PIPELINES": {
+            "scrapers.pipelines.FptScraperPipeline": 300,
+        }
+    }
+
     # The list of starting url the spider will scrape from
     start_urls = [
         "https://fptshop.com.vn/dien-thoai?sort=noi-bat",
