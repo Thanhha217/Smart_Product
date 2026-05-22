@@ -5,8 +5,11 @@
 
 import scrapy
 
-
-class ScrapersItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+# This class contains all of the info we want to send to the topic to be processed and saved in the database later
+# It's the same for every product no matter the platform
+class Product(scrapy.Item):
+    name = scrapy.Field()
+    original_price = scrapy.Field()
+    final_price = scrapy.Field()
+    description = scrapy.Field()
+    scraped_at = scrapy.Field()

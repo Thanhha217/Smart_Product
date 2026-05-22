@@ -10,24 +10,27 @@ from kafka import KafkaProducer
 import json
 import scrapy
 
-# Change topic name depending on scrapped e-commerce platform
-TOPIC_NAME = "test_topic"
-# Change address based on chosen server
-SERVER_ADDRESS = "kafka:9092"
+
 
 
 class FptScraperPipeline:
     producer = None
-    
-    def open_spider(self):
-        self.producer = KafkaProducer(bootstrap_servers=SERVER_ADDRESS, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
-        
+    # Change topic name depending on scrapped e-commerce platform
+    TOPIC_NAME = "fpt_topic"
+    # Change address based on chosen server
+    SERVER_ADDRESS = "kafka:9092"
 
+    
+    # create producer when starting the pipeline
+    def open_spider(self):
+        self.producer = KafkaProducer(bootstrap_servers = self.SERVER_ADDRESS, value_serializer = lambda v: json.dumps(v).encode('utf-8'))
+        
+    # flush and close producer when it's done
     def close_spider(self):
         self.producer.flush()
         self.producer.close()
 
     def process_item(self, item, spider):
-        # return item
-        self.producer.send(TOPIC_NAME, item)
+        # we send the item to the topic (will be sent as json)
+        self.producer.send(self.TOPIC_NAME, dict(item))
         return item
