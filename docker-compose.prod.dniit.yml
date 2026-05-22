@@ -49,8 +49,8 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.2.1}
-  # build: .
+  #image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.2.1}
+  build: .
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
@@ -61,7 +61,7 @@ x-airflow-common:
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY}
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
@@ -73,12 +73,12 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    _PIP_ADDITIONAL_REQUIREMENTS: kafka-python scrapy
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    AIRFLOW_CONN_KAFKA_DEFAULT: 'kafka://kafka:9092'
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/scrapers:/opt/airflow/scrapers
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
@@ -302,7 +302,7 @@ services:
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
+      _PIP_ADDITIONAL_REQUIREMENTS: 'apache-airflow-providers-apache-kafka'
     user: "0:0"
 
   airflow-cli:
@@ -380,48 +380,6 @@ services:
     depends_on:
       - kafka
 
-  # ==========================================
-  # FULL-STACK SMART PRODUCT FINDER
-  # ==========================================
-    
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: smartproductfinder-frontend
-    ports:
-      - "3000:80"
-    image: frontend
-    restart: always
-    depends_on:
-      - backend-gateway
-  
-  backend-gateway:
-    build:
-      context: ./backend/services/gateway
-      dockerfile: Dockerfile
-    container_name: smartproductfinder-backend-gateway
-    ports:
-      - "8000:8000"
-    image: backend-gateway
-    restart: always
-
-  # ADD OTHER BACKEND SERVICES (e.g., product-service, user-service, etc.) HERE
-  
-  smart-product-finder-database:
-    image: pgvector/pgvector:pg16
-    container_name: smart-product-finder-database
-    environment:
-      - POSTGRES_USER=smart_product_finder
-      - POSTGRES_PASSWORD=smart_product_finder
-      - POSTGRES_DB=smart_product_finder
-    restart: always
-    volumes:
-      - pgvector-db-volume:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
 volumes:
   postgres-db-volume:
-  pgvector-db-volume:
   kafka-data-volume:

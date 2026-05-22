@@ -14,9 +14,9 @@ To inquire about the values of these variables, please contact the project maint
 ## Running the application
 As our application is fully dockerized, you can start every module with a single command. Make sure you have Docker installed and running on your machine.
 
-To start the application, run the following command in the root directory of the project:
+To start the application, run the following command in the root directory of the project (in development mode):
 ```bash
-docker-compose up
+docker-compose -f docker-compose.dev.yml up --build -d
 ```
 
 
@@ -24,3 +24,4 @@ URLs:
 - Frontend: http://localhost:3000
 - Backend API gateway: http://localhost:8000
 - Airflow UI: http://localhost:8080
+- Kafka UI: http://localhost:8081

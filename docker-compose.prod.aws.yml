@@ -1,0 +1,36 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-frontend
+    ports:
+      - "3000:80"
+    image: frontend
+    restart: always
+    depends_on:
+      - backend-gateway
+  
+  backend-gateway:
+    build:
+      context: ./backend/services/gateway
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-backend-gateway
+    ports:
+      - "8000:8000"
+    image: backend-gateway
+    env_file:
+      - ./backend/.env.prod
+    restart: always
+  
+  backend-etl-worker:
+    build:
+      context: ./backend/services/etl-worker
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-backend-etl-worker
+    ports:
+      - "8001:8001"
+    image: backend-etl-worker
+    env_file:
+      - ./backend/.env.prod
+    restart: always
