@@ -8,7 +8,7 @@ Each new microservice should be added to the `services` folder, and its dependen
 - Python 3.12 or higher
 - pip (Python package installer)
 
-## Setup
+## Setup (without Docker)
 1. Change directory to the backend folder:
 ```bash
 cd backend
@@ -19,9 +19,10 @@ For each microservice, you can follow the same steps to set up the environment a
 cd services/gateway
 ```
 
+
 2. Create a virtual environment:
 ```bash
-python -m venv venv 
+python -m venv venv
 ```
 
 3. Activate the virtual environment:
@@ -44,4 +45,22 @@ pip install -r requirements.txt
 To start the backend server, run the following command:
 ```bash
 uvicorn main:app --reload
+```
+
+## Setup (with Docker)
+1. Make sure you have Docker installed and running on your machine.
+
+2. Build and start the services using Docker Compose (with the development configuration):
+```bash
+cd ..
+
+docker-compose -f docker-compose.dev.yml up --build -d
+
+```
+
+This command will build the Docker images for each service and start the containers in detached mode. (The command maybe also be `docker compose` instead of `docker-compose` depending on your Docker version.)
+
+3. To stop the services, run:
+```bash
+docker-compose -f docker-compose.dev.yml down
 ```
