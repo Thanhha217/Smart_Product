@@ -15,6 +15,7 @@ class FPTProductSpider(scrapy.Spider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "scrapers.pipelines.FptScraperPipeline": 300,
+            "scrapy.pipelines.files.FilesPipeline": 1
         }
     }
 
@@ -22,6 +23,12 @@ class FPTProductSpider(scrapy.Spider):
     start_urls = [
         "https://fptshop.com.vn/dien-thoai?sort=noi-bat",
     ]
+
+    # TEST
+    # start_urls = [
+    #     "https://fptshop.com.vn/dien-thoai/xiaomi-redmi-note-15"
+    #     "https://fptshop.com.vn/camera/camera-giam-sat-ip-3mp-365-selection-c1"
+    # ]
 
     def parse(self, response):
         product_page_links = response.css(".grow a") # we find all of the links in the page
@@ -34,6 +41,11 @@ class FPTProductSpider(scrapy.Spider):
         # we get the name from css
         loader.add_css("name", "h1::text") 
 
+        # we take the first image from the products TODO : improve with selenium
+        image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:1]
+
+        loader.add_value("file_urls", image_urls)
+
         # we get the final price
         loader.add_css("final_price", "#price-product > div > span::text") 
 
@@ -45,9 +57,14 @@ class FPTProductSpider(scrapy.Spider):
             loader.add_value("original_price", temp_price)
 
         # we get the description array (the text of every child of #MoTaSanPham)
-        loader.add_css("description", "#MoTaSanPham ::text")
+        # loader.add_css("description", "#MoTaSanPham ::text")
+
+        loader.add_css("product_rating", "#CommentRating > div:first-child > div:first-child > div:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:nth-of-type(2)::text")
+        
+        loader.add_css("review_count", "#CommentRating > div:first-child > div:first-child > div:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:nth-of-type(3)::text")
 
         # we get the scraping time
-        loader.add_value("scraped_at", datetime.now(timezone.utc).isoformat()) 
+        # loader.add_value("scraped_at", datetime.now(timezone.utc).isoformat()) 
+        loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp()) 
 
         return loader.load_item()

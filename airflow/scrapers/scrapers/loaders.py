@@ -1,4 +1,4 @@
-from itemloaders.processors import TakeFirst, MapCompose, Join
+from itemloaders.processors import TakeFirst, MapCompose, Join, Identity
 from scrapy.loader import ItemLoader
 import re
 
@@ -22,6 +22,9 @@ class FPTProductLoader(ItemLoader):
     # for the name we just strip and then titlecase the name
     name_in = MapCompose(str.strip, str.title)
 
+    file_urls_in = MapCompose(str.strip)
+    file_urls_out = Identity()
+
     # for the prices we only keep the numbers, we remove things like the dong symbol or the dots
     original_price_in = MapCompose(str.strip, keep_only_numbers)
     final_price_in = MapCompose(str.strip, keep_only_numbers)
@@ -30,3 +33,7 @@ class FPTProductLoader(ItemLoader):
     description_in = MapCompose(str.strip)
     # we then join at output to merge into a single text
     description_out = Join(" ")
+
+    product_rating_in = MapCompose(str.strip)
+
+    review_count_in = MapCompose(str.strip, keep_only_numbers)

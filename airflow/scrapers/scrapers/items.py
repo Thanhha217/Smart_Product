@@ -9,7 +9,12 @@ import scrapy
 # It's the same for every product no matter the platform
 class Product(scrapy.Item):
     name = scrapy.Field()
+    file_urls = scrapy.Field()
+    files = scrapy.Field()
     original_price = scrapy.Field()
     final_price = scrapy.Field()
     description = scrapy.Field()
+    product_rating = scrapy.Field()
+    review_count = scrapy.Field()
     scraped_at = scrapy.Field()
+    

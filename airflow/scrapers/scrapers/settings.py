@@ -63,6 +63,12 @@ DEFAULT_REQUEST_HEADERS = {
 #    "scrapers.pipelines.FptScraperPipeline": 300,
 # }
 
+# ITEM_PIPELINES = {
+#     "scrapy.pipelines.images.ImagesPipeline": 1
+# }
+
+FILES_STORE = "/opt/product_images"
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
