@@ -57,7 +57,8 @@ class FPTProductSpider(scrapy.Spider):
         loader.add_css("category", "#ThongTinSanPham > section:first-child > nav:first-child > ol:first-child > li:nth-of-type(2) span::text") 
 
         # we take the first image from the products TODO : improve with selenium
-        image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:2]
+        # image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:2]
+        image_urls = response.css('#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide .\\!\\[width\\:50\\%\\] img::attr(src)').getall()[:2]
 
         loader.add_value("file_urls", image_urls)
 
