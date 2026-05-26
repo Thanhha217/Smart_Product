@@ -38,11 +38,26 @@ class FPTProductSpider(scrapy.Spider):
         # we create the loader that handles the initial data formatting
         loader = FPTProductLoader(response=response)
 
+        # we get the url of the product
+        loader.add_value("url", response.url) 
+
+        # we add the platform (we put it manually)
+        loader.add_value("platform", "FPT Shop") 
+
+        # we add the seller (for FPT Shop, it's always the same)
+        loader.add_value("seller", "FPT Shop") 
+
+        # we add the seller (for FPT Shop, it's always the same)
+        loader.add_value("seller_rating", "-1") 
+
         # we get the name from css
-        loader.add_css("name", "h1::text") 
+        loader.add_css("name", "h1::text")
+
+        # we get the category from css
+        loader.add_css("category", "#ThongTinSanPham > section:first-child > nav:first-child > ol:first-child > li:nth-of-type(2) span::text") 
 
         # we take the first image from the products TODO : improve with selenium
-        image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:1]
+        image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:2]
 
         loader.add_value("file_urls", image_urls)
 
@@ -56,8 +71,11 @@ class FPTProductSpider(scrapy.Spider):
         else:
             loader.add_value("original_price", temp_price)
 
-        # we get the description array (the text of every child of #MoTaSanPham)
-        # loader.add_css("description", "#MoTaSanPham ::text")
+        # we get the description array (the text of every child of #MoTaSanPham) 
+        loader.add_css("description", "#MoTaSanPham ::text")
+
+        # a shorter version of the description, gets the bold text
+        loader.add_css("short_description", "#MoTaSanPham strong::text")
 
         loader.add_css("product_rating", "#CommentRating > div:first-child > div:first-child > div:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:nth-of-type(2)::text")
         
