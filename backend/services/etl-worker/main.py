@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from data import create_db_and_tables
 from worker.etl_worker import start_worker
+from worker.fpt_worker import fpt_worker
 
 load_dotenv()
 
@@ -16,8 +17,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-worker_thread = threading.Thread(target=start_worker, daemon=True)
-worker_thread.start()
+fpt_worker_thread = threading.Thread(target=start_worker, args=[fpt_worker], daemon=True)
+fpt_worker_thread.start()
 
 
 @app.get("/")

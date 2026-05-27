@@ -5,24 +5,23 @@ from kafka import KafkaConsumer
 
 from data.process.data_processing import process_message
 
-SHOP_1_TOPIC_NAME = os.environ.get("SHOP_1_TOPIC_NAME")
-SERVER_ADDRESS = os.environ.get("KAFKA_SERVER_ADDRESS")
 
+def create_worker_for_shop(server_address: str, topic_name: str):
+    print(f"Connecting to Topic {topic_name}", flush=True)
 
-print(f"Connecting to Kafka at {SERVER_ADDRESS}...", flush=True)
-print(f"Connecting to Topic {SHOP_1_TOPIC_NAME}", flush=True)
-consumer = KafkaConsumer(
-    SHOP_1_TOPIC_NAME, 
-    bootstrap_servers=SERVER_ADDRESS,
-    auto_offset_reset='earliest',
-    enable_auto_commit=True,
-    group_id='etl-worker-group',
-    value_deserializer=lambda msg: json.loads(msg.decode('utf-8'))
-)
+    consumer = KafkaConsumer(
+        topic_name, 
+        bootstrap_servers=server_address,
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        group_id='etl-worker-group',
+        value_deserializer=lambda msg: json.loads(msg.decode('utf-8'))
+    )
+    print("Connected to Topic !", flush=True)
 
-print("Connected to Kafka!", flush=True)
+    return consumer
 
-def start_worker():
+def start_worker(consumer: KafkaConsumer):
     try:
         for message in consumer:
             process_message(message.value)
