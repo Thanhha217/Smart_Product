@@ -5,7 +5,6 @@ import re
 from scrapers.items import Product
 
 
-
 def keep_only_numbers(text):
     result = re.sub(r"\D", "", text)
     return int(result) if result else -2
@@ -16,10 +15,10 @@ def normalize_rating(rating, max_value):
         raise ValueError("The rating provided is incorrect")
     return value/max_value
 
-# The loaders handle the initial cleaning and formatting of the scrapped data, which is then saved to a 
+# The loaders handle the initial cleaning and formatting of the scrapped data, which is then saved to a
 # Product item and then sent to the corresponding Kafka topic with the Pipeline
 
-class FPTProductLoader(ItemLoader):
+class BaseProductLoader(ItemLoader):
     # we set the default class to product (don't change)
     default_item_class = Product
 

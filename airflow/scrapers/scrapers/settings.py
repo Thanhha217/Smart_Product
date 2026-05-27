@@ -9,8 +9,8 @@
 
 BOT_NAME = "scrapers"
 
-SPIDER_MODULES = ["scrapers.spiders"]
-NEWSPIDER_MODULE = "scrapers.spiders"
+SPIDER_MODULES = ["scrapers.sites"]
+NEWSPIDER_MODULE = "scrapers.sites"
 
 ADDONS = {}
 
