@@ -71,6 +71,23 @@ class FptShopSpider(BaseProductSpider):
         loader.add_css("product_rating", "#CommentRating > div:first-child > div:first-child > div:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:nth-of-type(2)::text")
         loader.add_css("review_count", "#CommentRating > div:first-child > div:first-child > div:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:nth-of-type(3)::text")
 
+        # Fixed, not really flexible but it's litteraly the same for every product on this website
+        loader.add_value("days_for_return", 30)
+
+        product_tags = response.css("#ThongTinSanPham > section:nth_of_type(2) > div:first-child > div:first-child > div:nth-of-type(3) > div:nth-of-type(2) span::text").getall()
+        
+        free_delivery = False
+        warranty_duration = "0"
+        for tag in product_tags:
+            if "miễn phí" in tag:
+                free_delivery = True
+
+            if "Bảo hành" in tag:
+                warranty_duration = tag
+
+        loader.add_value("free_delivery", free_delivery)
+        loader.add_value("warranty_duration", warranty_duration)
+
         # we get the scraping time
         # loader.add_value("scraped_at", datetime.now(timezone.utc).isoformat())
         loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp())
