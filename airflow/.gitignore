@@ -6,3 +6,7 @@ airflow.cfg
 unittests.cfg
 airflow.db
 logs/
+venv/
+.venv/
+scrapers/test*.json
+
