@@ -1,8 +1,15 @@
 from datetime import datetime, timezone
+import json
+
+from scrapy import Request
 
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.fpt_shop.loader import FptShopLoader
+from functools import partial
 
+
+MAX_PRODUCTS_PER_REQUEST = 50
+IMAGES_PER_PRODUCT = 2
 
 class FptShopSpider(BaseProductSpider):
     name = "fpt_shop"
@@ -10,18 +17,50 @@ class FptShopSpider(BaseProductSpider):
 
     # The list of starting url the spider will scrape from
     start_urls = [
-        "https://fptshop.com.vn/dien-thoai?sort=noi-bat",
+        "https://fptshop.com.vn/",
     ]
 
-    # TEST
-    # start_urls = [
-    #     "https://fptshop.com.vn/dien-thoai/xiaomi-redmi-note-15"
-    #     "https://fptshop.com.vn/camera/camera-giam-sat-ip-3mp-365-selection-c1"
-    # ]
+    # We can use the hidden api to fetch all the products from a category
+    def fetch_category_products(self, category, skipCount, response):
+        api_url = "https://papi.fptshop.com.vn/gw/v1/public/fulltext-search-service/category"
+
+        json_content = {
+            "skipCount": skipCount,
+            "maxResultCount": MAX_PRODUCTS_PER_REQUEST,
+            "sortMethod": "noi-bat",
+            "slug": category, #"dien-thoai", #category name
+            "categoryType": "category",
+            "location": {}
+        }
+
+        return Request(
+            url=api_url, 
+            method='POST',
+            body=json.dumps(json_content),
+            headers={'Content-Type': 'application/json'},
+            callback=partial(self.parse_category, category, skipCount) #self.parse_category
+        )
+
 
     def parse(self, response):
-        product_page_links = response.css(".grow a") # we find all of the links in the page
-        yield from response.follow_all(product_page_links, self.parse_product) # we go to each page and parse them
+        # product_page_links = response.css(".grow a") # we find all of the links in the page
+        return self.fetch_category_products("dien-thoai", 0, response)
+        # yield from response.follow_all(product_page_links, self.parse_product) # we go to each page and parse them
+
+
+    def parse_category(self, category, skipCount, response):
+        data = json.loads(response.text)
+        products = data.get('items', [])
+
+        for product in products:
+            slug = product.get("slug")
+            product_url = f"https://fptshop.com.vn/{slug}"
+            yield Request(url=product_url, callback=self.parse_product)
+        
+        if len(products) != 0:
+            yield self.fetch_category_products(category, skipCount+MAX_PRODUCTS_PER_REQUEST, response)
+        
+
 
     def parse_product(self, response):
         # we create the loader that handles the initial data formatting
@@ -45,11 +84,9 @@ class FptShopSpider(BaseProductSpider):
         # we get the category from css
         loader.add_css("category", "#ThongTinSanPham > section:first-child > nav:first-child > ol:first-child > li:nth-of-type(2) span::text")
 
-        # we take the first image from the products TODO : improve with selenium
-        # image_urls = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide img::attr(src)").getall()[:2]
         image_urls = response.css(
             '#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child > .swiper-slide .\\!\\[width\\:50\\%\\] img::attr(src)'
-        ).getall()[:2]
+        ).getall()[:IMAGES_PER_PRODUCT]
         loader.add_value("file_urls", image_urls)
 
         # we get the final price
@@ -89,7 +126,6 @@ class FptShopSpider(BaseProductSpider):
         loader.add_value("warranty_duration", warranty_duration)
 
         # we get the scraping time
-        # loader.add_value("scraped_at", datetime.now(timezone.utc).isoformat())
         loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp())
 
         return loader.load_item()
