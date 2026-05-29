@@ -116,10 +116,10 @@ class FptShopSpider(BaseProductSpider):
         free_delivery = False
         warranty_duration = "0"
         for tag in product_tags:
-            if "miễn phí" in tag:
+            if "miễn phí" in tag.lower():
                 free_delivery = True
 
-            if "Bảo hành" in tag:
+            if "bảo hành" in tag.lower():
                 warranty_duration = tag
 
         loader.add_value("free_delivery", free_delivery)
