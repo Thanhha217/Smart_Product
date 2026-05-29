@@ -11,7 +11,7 @@ class Product(scrapy.Item):
     url = scrapy.Field()
     platform = scrapy.Field()
     seller = scrapy.Field()
-    seller_rating = scrapy.Field()
+    seller_rating = scrapy.Field() # normalized from 0 to 1, -1 if missing
     name = scrapy.Field()
     category = scrapy.Field()
     file_urls = scrapy.Field()
@@ -20,6 +20,9 @@ class Product(scrapy.Item):
     final_price = scrapy.Field()
     description = scrapy.Field()
     short_description = scrapy.Field()
-    product_rating = scrapy.Field()
+    product_rating = scrapy.Field() # normalized from 0 to 1, -1 if missing
     review_count = scrapy.Field()
+    free_delivery = scrapy.Field() # bool
+    days_for_return = scrapy.Field()
+    warranty_duration = scrapy.Field() # in months
     scraped_at = scrapy.Field()
