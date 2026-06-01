@@ -383,6 +383,19 @@ services:
       - kafka
 
   # ==========================================
+  # FLARESOLVERR - vuot Cloudflare cho scraper Phong Vu
+  # ==========================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+
+  # ==========================================
   # FULL-STACK SMART PRODUCT FINDER
   # ==========================================
     
