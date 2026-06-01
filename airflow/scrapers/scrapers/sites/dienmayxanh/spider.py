@@ -45,8 +45,16 @@ class DienmayxanhSpider(BaseProductSpider):
         else:
             loader.add_value("original_price", listing_data.get("final_price"))
 
-        loader.add_css("description", ".description.tab-content .text-detail ::text")
-        loader.add_css("short_description", "#tab-1 ul.parameterfull li label::text")
+        description = response.css(".description.tab-content .text-detail ::text").getall()
+        short_desc = response.css("#tab-1 ul li ::text").getall()
+
+        if len(description) != 0:
+            loader.add_value("description", description)
+        else:
+            loader.add_value("description", short_desc)
+
+        loader.add_value("short_description", short_desc)
+        print(short_desc)
 
         loader.add_css("product_rating", ".vote-txt b::text")
         loader.add_css("review_count", ".point-alltimerate::text")
