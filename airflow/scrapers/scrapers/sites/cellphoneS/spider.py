@@ -1,176 +1,184 @@
 import json
 from datetime import datetime, timezone
 
-from scrapy.exceptions import DropItem
-from scrapy.spiders import SitemapSpider
+import scrapy
 
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.cellphoneS.loader import CellphoneSLoader
 
 
-# Maps a (position-2, position-3) breadcrumb pair to our normalized category enum.
-# We mirror PhongVu's 4 categories: laptop, smartphone, earphone, computer_monitor.
-# For new products, position 2 is the top-level CellphoneS category.
-# For used products everything goes under "Hàng cũ" so we have to look at position 3.
-_BREADCRUMB_CATEGORY_MAP = {
-    # New products
-    "Điện thoại": "smartphone",
-    "Laptop": "laptop",
-    "Màn hình": "computer_monitor",
-    "Màn hình máy tính": "computer_monitor",
-    # Used products (pos 3 lookups, prefixed with "Hàng cũ/" so we can distinguish)
-    "Hàng cũ/Laptop cũ": "laptop",
-    "Hàng cũ/Màn hình cũ": "computer_monitor",
-    "Hàng cũ/Điện thoại cũ": "smartphone",
-    "Hàng cũ/Tai nghe cũ": "earphone",
+BASE_URL = "https://cellphones.com.vn"
+SEARCH_API_URL = "https://api.cellphones.com.vn/graphql-search/v2/graphql/query"
+
+API_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Origin": "https://cellphones.com.vn",
+    "Referer": "https://cellphones.com.vn/",
+    "X-Client-Type": "web",
 }
 
-# Used products often have only "Hàng cũ > BrandName cũ" (no type sub-category),
-# so we fall back to URL slug heuristics to recover the type.
-_URL_SLUG_PREFIX_CATEGORY = {
-    "laptop-": "laptop",
-    "man-hinh-": "computer_monitor",
-    "tai-nghe-": "earphone",
+HTML_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "Accept": "text/html",
+    "Referer": "https://cellphones.com.vn/",
 }
 
-# Slug prefixes that look like a real category but are actually accessories — skip them.
-_URL_SLUG_ACCESSORY_PREFIXES = (
-    "thay-cap-", "gia-do-", "dan-", "op-lung-", "bao-da-", "sac-", "cap-",
-)
+CATEGORY_SEARCH_QUERIES = {
+    "smartphone": "dien thoai",
+    "laptop": "laptop",
+    "earphone": "tai nghe",
+    "computer_monitor": "man hinh may tinh",
+}
 
-# Phone-brand keywords. When breadcrumb is ambiguous, presence of any of these
-# in the URL slug means it's almost certainly a smartphone.
-_URL_PHONE_BRAND_KEYWORDS = (
-    "iphone-", "samsung-galaxy", "xiaomi-redmi", "xiaomi-mi-", "redmi-",
-    "oppo-", "vivo-", "realme-note", "realme-c", "realme-gt",
-    "asus-zenfone", "zenfone-", "xperia-", "vsmart-", "huawei-p", "nokia-",
-)
+CATEGORY_URI_MAP = {
+    "mobile": "smartphone",
+    "laptop": "laptop",
+    "tai-nghe": "earphone",
+    "tai-nghe-bluetooth": "earphone",
+    "tai-nghe-co-day": "earphone",
+    "man-hinh": "computer_monitor",
+}
+
+SEARCH_QUERY = """
+query advanced_search {
+  advanced_search(
+    user_query: { terms: "%s", province: 15 }
+    page: %d
+  ) {
+    products {
+      product_id name product_condition sku url_path price
+      special_price stock_available_id thumbnail
+      promotion_information
+      category_objects { path category_id level name uri }
+      display_price display_root_price
+    }
+    meta { total page }
+  }
+}
+"""
 
 
-class CellphoneSSpider(SitemapSpider, BaseProductSpider):
+class CellphoneSSpider(BaseProductSpider):
     name = "cellphone_s"
     kafka_topic = "cellphone_s_topic"
 
-    # We list product sitemaps in reverse (59 -> 1) so the spider visits the
-    # newest products first; CellphoneS's sitemap index appends new sitemaps at
-    # the end, so iterating in reverse puts fresh inventory at the top of the
-    # crawl instead of refurbished items from 2014-2018.
-    sitemap_urls = (
-        [f"https://cellphones.com.vn/sitemap/product-sitemap{i}.xml" for i in range(59, 1, -1)]
-        + ["https://cellphones.com.vn/sitemap/product-sitemap.xml"]
-    )
-    sitemap_rules = [
-        (r"https://cellphones\.com\.vn/[^/]+\.html$", "parse_product"),
-    ]
+    async def start(self):
+        for std_category, search_terms in CATEGORY_SEARCH_QUERIES.items():
+            yield scrapy.Request(
+                url=SEARCH_API_URL,
+                method="POST",
+                body=json.dumps({
+                    "query": SEARCH_QUERY % (search_terms, 1),
+                    "variables": {},
+                }),
+                headers=API_HEADERS,
+                callback=self.parse,
+                cb_kwargs={
+                    "page": 1,
+                    "std_category": std_category,
+                    "search_terms": search_terms,
+                },
+            )
 
-    def parse_product(self, response):
-        product_ld = self._extract_jsonld(response, "Product")
-        breadcrumb_ld = self._extract_jsonld(response, "BreadcrumbList")
+    def parse(self, response, page, std_category, search_terms):
+        payload = response.json()
+        search_data = payload["data"]["advanced_search"]
+        products = search_data.get("products") or []
+        meta = search_data.get("meta") or {}
+        total = meta.get("total", 0)
+        page_size = len(products) if products else 20
+        total_pages = (total + page_size - 1) // page_size
 
-        category = self._resolve_category(breadcrumb_ld, response.url)
-        if category is None:
-            raise DropItem(f"Unmapped category for {response.url}")
+        for product in products:
+            if self._get_category(product) != std_category:
+                continue
 
+            yield scrapy.Request(
+                url=f"{BASE_URL}/{product['url_path']}",
+                headers=HTML_HEADERS,
+                callback=self.parse_product,
+                cb_kwargs={
+                    "api_product": product,
+                    "std_category": std_category,
+                },
+            )
+
+        if page < total_pages:
+            yield scrapy.Request(
+                url=SEARCH_API_URL,
+                method="POST",
+                body=json.dumps({
+                    "query": SEARCH_QUERY % (search_terms, page + 1),
+                    "variables": {},
+                }),
+                headers=API_HEADERS,
+                callback=self.parse,
+                cb_kwargs={
+                    "page": page + 1,
+                    "std_category": std_category,
+                    "search_terms": search_terms,
+                },
+            )
+
+    def parse_product(self, response, api_product, std_category):
         loader = CellphoneSLoader(response=response)
 
-        loader.add_value("url", response.url)
-        loader.add_value("platform", "CellphoneS")
-        loader.add_value("seller", "CellphoneS")
+        loader.add_value("url", f"{BASE_URL}/{api_product['url_path']}")
+        loader.add_value("platform", "CellPhones")
+        loader.add_value("seller", "CellPhones")
         loader.add_value("seller_rating", "-1")
-        loader.add_value("category", category)
+        loader.add_value("name", api_product["name"])
+        loader.add_value("category", std_category)
 
-        if product_ld and product_ld.get("name"):
-            loader.add_value("name", product_ld["name"])
-        else:
-            loader.add_css("name", "h1::text")
+        loader.add_value("file_urls", [
+            f"https://www.cellphones.com.vn/imgs/products/large{api_product['thumbnail']}"
+        ])
 
-        if product_ld and product_ld.get("image"):
-            image = product_ld["image"]
-            images = image if isinstance(image, list) else [image]
-            loader.add_value("file_urls", images[:2])
+        loader.add_value("final_price", str(api_product.get("display_price") or 0))
+        loader.add_value("original_price", str(api_product.get("display_root_price") or 0))
 
-        if product_ld:
-            offers = product_ld.get("offers") or {}
-            price = offers.get("price")
-            if price is not None:
-                loader.add_value("final_price", str(price))
-        else:
-            loader.add_css("final_price", ".sale-price::text")
+        promo_html = api_product.get("promotion_information") or ""
+        promo_text = " ".join(
+            t.strip()
+            for t in scrapy.Selector(text=promo_html).xpath("//text()").getall()
+            if t.strip()
+        ).lower()
+        loader.add_value(
+            "free_delivery",
+            "miễn phí" in promo_text or "free ship" in promo_text,
+        )
 
-        if response.css(".base-price::text").get():
-            loader.add_css("original_price", ".base-price::text")
-        else:
-            loader.add_css("original_price", ".sale-price::text")
+        loader.add_value("days_for_return", "30")
+        loader.add_value("warranty_duration", "12")
 
         loader.add_css("description", ".cps-block-content ::text")
         loader.add_css("short_description", ".cps-block-content strong::text")
 
-        loader.add_css("product_rating", ".box-rating span:first-of-type::text")
+        rating_text = response.css(".box-rating span:first-of-type::text").get()
+        if rating_text and rating_text.strip():
+            loader.add_value("product_rating", rating_text.strip())
+
         loader.add_css("review_count", ".box-rating .total-rating::text")
 
         loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp())
 
-        return self._fill_defaults(loader.load_item())
+        item = loader.load_item()
 
-    @staticmethod
-    def _resolve_category(breadcrumb_ld, url):
-        pos2, pos3 = None, None
-        if breadcrumb_ld:
-            for item in breadcrumb_ld.get("itemListElement") or []:
-                name = (item.get("item") or {}).get("name")
-                if item.get("position") == 2:
-                    pos2 = name
-                elif item.get("position") == 3:
-                    pos3 = name
+        # Fill schema defaults for fields that may be missing when the product
+        # page has no rating, reviews, or description (e.g. brand-new products).
+        item.setdefault("description", "")
+        item.setdefault("short_description", "")
+        item.setdefault("product_rating", -1)
+        item.setdefault("review_count", 0)
 
-        if pos2 in _BREADCRUMB_CATEGORY_MAP:
-            return _BREADCRUMB_CATEGORY_MAP[pos2]
-        if pos2 == "Âm thanh" and pos3 == "Tai nghe":
-            return "earphone"
-        if pos2 == "Hàng cũ" and pos3:
-            mapped = _BREADCRUMB_CATEGORY_MAP.get(f"Hàng cũ/{pos3}")
-            if mapped:
-                return mapped
-
-        # Fallback: derive from URL slug
-        slug = url.rsplit("/", 1)[-1].lower()
-        if slug.startswith(_URL_SLUG_ACCESSORY_PREFIXES):
-            return None
-        for prefix, cat in _URL_SLUG_PREFIX_CATEGORY.items():
-            if slug.startswith(prefix):
-                return cat
-        if any(kw in slug for kw in _URL_PHONE_BRAND_KEYWORDS):
-            return "smartphone"
-        return None
-
-    @staticmethod
-    def _fill_defaults(item):
-        defaults = {
-            "name": "",
-            "category": "",
-            "description": "",
-            "short_description": "",
-            "product_rating": 0.0,
-            "review_count": 0,
-            "final_price": 0,
-            "original_price": 0,
-            "file_urls": [],
-        }
-        for key, default in defaults.items():
-            item.setdefault(key, default)
         return item
 
     @staticmethod
-    def _extract_jsonld(response, type_name):
-        for raw in response.css('script[type="application/ld+json"]::text').getall():
-            try:
-                data = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(data, dict) and data.get("@type") == type_name:
-                return data
-            if isinstance(data, list):
-                for entry in data:
-                    if isinstance(entry, dict) and entry.get("@type") == type_name:
-                        return entry
-        return None
+    def _get_category(product):
+        for cat in product.get("category_objects") or []:
+            uri = cat.get("uri", "")
+            if uri in CATEGORY_URI_MAP:
+                return CATEGORY_URI_MAP[uri]
+        return ""
