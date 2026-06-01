@@ -8,7 +8,9 @@ from data import create_db_and_tables
 from worker.etl_worker import start_worker
 from worker.fpt_worker import fpt_worker
 from worker.tiki_worker import tiki_worker
-from worker.shopee_worker import shopee_worker
+from worker.phongvu_worker import phongvu_worker
+from worker.dienmayxanh_worker import dienmayxanh_worker
+from worker.cellphones_worker import cellphone_s_worker
 
 load_dotenv()
 
@@ -25,5 +27,11 @@ fpt_worker_thread.start()
 tiki_worker_thread = threading.Thread(target=start_worker, args=[tiki_worker], daemon=True)
 tiki_worker_thread.start()
 
-shopee_worker_thread = threading.Thread(target=start_worker, args=[shopee_worker], daemon=True)
-shopee_worker_thread.start()
+phongvu_worker_thread = threading.Thread(target=start_worker, args=[phongvu_worker], daemon=True)
+phongvu_worker_thread.start()
+
+dienmayxanh_worker_thread = threading.Thread(target=start_worker, args=[dienmayxanh_worker], daemon=True)
+dienmayxanh_worker_thread.start()
+
+cellphone_s_worker_thread = threading.Thread(target=start_worker, args=[cellphone_s_worker], daemon=True)
+cellphone_s_worker_thread.start()
