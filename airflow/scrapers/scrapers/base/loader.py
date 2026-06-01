@@ -49,8 +49,8 @@ class BaseProductLoader(ItemLoader):
     file_urls_out = Identity()
 
     # for the prices we only keep the numbers, we remove things like the dong symbol or the dots
-    original_price_in = MapCompose(str.strip, keep_only_numbers)
-    final_price_in = MapCompose(str.strip, keep_only_numbers)
+    original_price_in = MapCompose(keep_only_numbers)
+    final_price_in = MapCompose(keep_only_numbers)
 
     # for each text in the description, we strip
     description_in = MapCompose(str.strip)
@@ -63,4 +63,10 @@ class BaseProductLoader(ItemLoader):
 
     product_rating_in = MapCompose(str.strip, lambda x: normalize_rating(x, max_value=5.0))
 
-    review_count_in = MapCompose(str.strip, keep_only_numbers)
+    review_count_in = MapCompose(keep_only_numbers)
+
+    free_delivery_in = MapCompose(bool)
+
+    days_for_return_in = MapCompose(keep_only_numbers)
+
+    warranty_duration_in = MapCompose(keep_only_numbers)
