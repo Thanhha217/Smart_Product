@@ -16,7 +16,8 @@ def parse_product_data(data: dict):
 
     return_policy = ReturnPolicy( 
         days_for_return=data.get("days_for_return", -1),
-        policy_content=data.get("policy_content", "")
+        free_delivery=data.get("free_delivery", False),
+        warranty_duration=data.get("warranty_duration", -1)
     )
 
     category = Category(name=data.get("category", ""))

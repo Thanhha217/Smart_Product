@@ -2,5 +2,5 @@ kafka-python==2.3.1
 scrapy==2.16.0
 pillow==12.2.0
 scrapy-fake-useragent==1.4.4
-scrapy-rotating-proxies==0.6.2
+# scrapy-rotating-proxies==0.6.2
 apache-airflow-providers-apache-kafka==1.13.3

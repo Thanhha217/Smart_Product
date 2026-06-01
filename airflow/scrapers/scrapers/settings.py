@@ -52,28 +52,28 @@ DEFAULT_REQUEST_HEADERS = {
 #    "fpt_scraper.middlewares.FptScraperDownloaderMiddleware": 543,
 #}
 
-ROTATING_PROXY_LIST_PATH = os.path.join(os.path.dirname(__file__), 'proxies.txt')
-PROXY_POOL_ENABLED = True
+# ROTATING_PROXY_LIST_PATH = os.path.join(os.path.dirname(__file__), 'proxies.txt')
+# PROXY_POOL_ENABLED = True
 
-# Ban detection - only mark as banned on specific HTTP status codes
-ROTATING_PROXY_BAN_POLICY = 'rotating_proxies.policy.BanDetectionPolicy'
-ROTATING_PROXY_BAN_DETECTION_ENABLED = True
-ROTATING_PROXY_BAN_DETECTION_NETWORK_ERRORS_ONLY = False
-# Only treat these status codes as definite bans (429=rate limited, 403=forbidden)
-ROTATING_PROXY_BAN_STATUS_CODES = [429, 403]
-# Increase backoff times for better proxy recovery
-ROTATING_PROXY_BACKOFF_BASE = 30
-ROTATING_PROXY_BACKOFF_CAP = 300
-# Increase timeout before marking dead
-ROTATING_PROXY_RESPONSE_TIMEOUT = 30
+# # Ban detection - only mark as banned on specific HTTP status codes
+# ROTATING_PROXY_BAN_POLICY = 'rotating_proxies.policy.BanDetectionPolicy'
+# ROTATING_PROXY_BAN_DETECTION_ENABLED = True
+# ROTATING_PROXY_BAN_DETECTION_NETWORK_ERRORS_ONLY = False
+# # Only treat these status codes as definite bans (429=rate limited, 403=forbidden)
+# ROTATING_PROXY_BAN_STATUS_CODES = [429, 403]
+# # Increase backoff times for better proxy recovery
+# ROTATING_PROXY_BACKOFF_BASE = 30
+# ROTATING_PROXY_BACKOFF_CAP = 300
+# # Increase timeout before marking dead
+# ROTATING_PROXY_RESPONSE_TIMEOUT = 30
 
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
     'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': 400,
     # 'scrapy_fake_useragent.middleware.RetryUserAgentMiddleware': 401,
-    'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
-    'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+    # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+    # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
 }
 
 FAKEUSERAGENT_PROVIDERS = [

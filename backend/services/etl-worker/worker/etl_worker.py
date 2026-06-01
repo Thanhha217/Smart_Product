@@ -7,7 +7,7 @@ from data.process.data_processing import process_message
 
 
 def create_worker_for_shop(server_address: str, topic_name: str):
-    print(f"Connecting to Topic {topic_name}", flush=True)
+    print(f"Connecting to Topic {topic_name} of server {server_address}", flush=True)
 
     consumer = KafkaConsumer(
         topic_name, 
