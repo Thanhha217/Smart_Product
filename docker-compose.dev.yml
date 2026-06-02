@@ -351,7 +351,7 @@ services:
   # ==========================================
   kafka:
     image: apache/kafka:4.2.1-rc5
-    container_name: kafka
+    container_name: smartproductfinder-kafka
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -381,6 +381,19 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
     depends_on:
       - kafka
+
+  # ==========================================
+  # FLARESOLVERR - vuot Cloudflare cho scraper Phong Vu
+  # ==========================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
 
   # ==========================================
   # FULL-STACK SMART PRODUCT FINDER
