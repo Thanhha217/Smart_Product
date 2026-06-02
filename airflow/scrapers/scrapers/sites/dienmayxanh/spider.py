@@ -12,6 +12,14 @@ class DienmayxanhSpider(BaseProductSpider):
     name = "dienmayxanh"
     kafka_topic = "dienmayxanh_topic"
 
+    # Current proxies don't work on this website, disable for now
+    custom_settings = {
+        'DOWNLOADER_MIDDLEWARES': {
+            'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
+        },
+        'PROXY_POOL_ENABLED': False
+    }
+
     async def start(self):
         self.logger.info("[spider] start() called")
         listing_items = await asyncio.get_event_loop().run_in_executor(None, get_listing_items)
@@ -58,6 +66,23 @@ class DienmayxanhSpider(BaseProductSpider):
 
         loader.add_css("product_rating", ".vote-txt b::text")
         loader.add_css("review_count", ".point-alltimerate::text")
+
+        # Actually free for most expensive products but no way to know without setting an adress
+        loader.add_value("free_delivery", False)
+
+        # Fixed by the platform
+        loader.add_value("days_for_return", 30)
+
+        product_tags = response.css("#policy .policy__list > li ::text").getall()
+        
+        print(product_tags)
+
+        warranty_duration = "0"
+        for i in range(len(product_tags)):
+            if "chính hãng" in product_tags[i].strip().lower():
+                warranty_duration = product_tags[i].strip().lower()
+
+        loader.add_value("warranty_duration", warranty_duration)
 
         loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp())
 
