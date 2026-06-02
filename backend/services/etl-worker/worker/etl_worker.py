@@ -1,30 +1,29 @@
 import json
 import os
-import time
 
 from kafka import KafkaConsumer
 
-
-TOPIC_NAME = "test"
-SERVER_ADDRESS = os.environ.get("KAFKA_SERVER_ADDRESS")
-
-data = {"message": "Hello, World!"}
+from data.process.data_processing import process_message
 
 
-print(f"Connecting to Kafka at {SERVER_ADDRESS}...", flush=True)
-consumer = KafkaConsumer(
-    TOPIC_NAME, 
-    bootstrap_servers=SERVER_ADDRESS,
-    auto_offset_reset='earliest',
-    enable_auto_commit=True,
-    group_id='etl-worker-group',
-)
-print("Connected to Kafka!", flush=True)
-def start_worker():
-    while True:
-        try:
-            for message in consumer:
-                print(f"Received message: {message.value}", flush=True)
-        except Exception as e:
-            print(f"Error in Kafka consumer worker: {e}", flush=True)
-            time.sleep(5)
+def create_worker_for_shop(server_address: str, topic_name: str):
+    print(f"Connecting to Topic {topic_name} of server {server_address}", flush=True)
+
+    consumer = KafkaConsumer(
+        topic_name, 
+        bootstrap_servers=server_address,
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        group_id='etl-worker-group',
+        value_deserializer=lambda msg: json.loads(msg.decode('utf-8'))
+    )
+    print("Connected to Topic !", flush=True)
+
+    return consumer
+
+def start_worker(consumer: KafkaConsumer):
+    try:
+        for message in consumer:
+            process_message(message.value)
+    except Exception as e:
+        print(f"Error in Kafka consumer worker: {e}", flush=True)
