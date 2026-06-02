@@ -304,7 +304,7 @@ services:
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: 'apache-airflow-providers-apache-kafka'
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
 
   airflow-cli:
@@ -351,7 +351,7 @@ services:
   # ==========================================
   kafka:
     image: apache/kafka:4.2.1-rc5
-    container_name: kafka
+    container_name: smartproductfinder-kafka
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -381,6 +381,19 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
     depends_on:
       - kafka
+
+  # ==========================================
+  # FLARESOLVERR - vuot Cloudflare cho scraper Phong Vu
+  # ==========================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
 
   # ==========================================
   # FULL-STACK SMART PRODUCT FINDER
@@ -425,20 +438,22 @@ services:
     restart: always
     depends_on:
       - kafka
-  # smart-product-finder-database:
-  #   image: pgvector/pgvector:pg16
-  #   container_name: smart-product-finder-database
-  #   environment:
-  #     - POSTGRES_USER=smart_product_finder
-  #     - POSTGRES_PASSWORD=smart_product_finder
-  #     - POSTGRES_DB=smart_product_finder
-  #   restart: always
-  #   volumes:
-  #     - pgvector-db-volume:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+      - smart-product-finder-database
+  
+  smart-product-finder-database:
+    image: pgvector/pgvector:pg16
+    container_name: smart-product-finder-database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=smart_product_finder
+    restart: always
+    volumes:
+      - pgvector-db-volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
 volumes:
   postgres-db-volume:
-  # pgvector-db-volume:
+  pgvector-db-volume:
   kafka-data-volume:

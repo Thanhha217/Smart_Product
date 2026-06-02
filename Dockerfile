@@ -15,4 +15,5 @@ RUN apt-get update && apt-get install -y \
 USER airflow
 
 COPY airflow-requirements.txt /tmp/
-RUN pip install --no-cache-dir -r /tmp/airflow-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/airflow-requirements.txt && \
+    pip uninstall -y typing
