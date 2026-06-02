@@ -12,14 +12,6 @@ class DienmayxanhSpider(BaseProductSpider):
     name = "dienmayxanh"
     kafka_topic = "dienmayxanh_topic"
 
-    # Current proxies don't work on this website, disable for now
-    custom_settings = {
-        'DOWNLOADER_MIDDLEWARES': {
-            'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
-        },
-        'PROXY_POOL_ENABLED': False
-    }
-
     async def start(self):
         self.logger.info("[spider] start() called")
         listing_items = await asyncio.get_event_loop().run_in_executor(None, get_listing_items)
