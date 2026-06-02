@@ -1,4 +1,4 @@
-from itemloaders.processors import TakeFirst, MapCompose, Join, Identity
+from itemloaders.processors import TakeFirst, MapCompose, Join, Identity, Compose
 from scrapy.loader import ItemLoader
 import re
 
@@ -8,6 +8,10 @@ from scrapers.items import Product
 def keep_only_numbers(text):
     result = re.sub(r"\D", "", text)
     return int(result) if result else -2
+
+def filter_empty_strings(values):
+    """Filter out empty strings from a list"""
+    return [v for v in values if v.strip()]
 
 def normalize_rating(rating, max_value):
     value = float(rating)
@@ -50,12 +54,12 @@ class BaseProductLoader(ItemLoader):
 
     # for each text in the description, we strip
     description_in = MapCompose(str.strip)
-    # we then join at output to merge into a single text
-    description_out = Join(" ")
+    # filter out empty strings, then join
+    description_out = Compose(filter_empty_strings, Join(" "))
 
     # same for the short description
     short_description_in = MapCompose(str.strip)
-    short_description_out = Join(" ")
+    short_description_out = Compose(filter_empty_strings, Join(" "))
 
     product_rating_in = MapCompose(str.strip, lambda x: normalize_rating(x, max_value=5.0))
 
