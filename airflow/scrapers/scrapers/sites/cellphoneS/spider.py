@@ -136,8 +136,11 @@ class CellphoneSSpider(BaseProductSpider):
             f"https://www.cellphones.com.vn/imgs/products/large{api_product['thumbnail']}"
         ])
 
-        loader.add_value("final_price", str(api_product.get("display_price") or 0))
-        loader.add_value("original_price", str(api_product.get("display_root_price") or 0))
+        # API returns prices as floats in scientific notation (e.g. 1.69e+06),
+        # so we cast to int BEFORE str() to avoid a trailing ".0" that the
+        # loader's keep_only_numbers would strip and turn into a 10x value.
+        loader.add_value("final_price", str(int(api_product.get("display_price") or 0)))
+        loader.add_value("original_price", str(int(api_product.get("display_root_price") or 0)))
 
         promo_html = api_product.get("promotion_information") or ""
         promo_text = " ".join(
