@@ -1,5 +1,7 @@
 from sqlmodel import Field, SQLModel
-
+from sqlalchemy import Column
+from pgvector.sqlalchemy import Vector
+from typing import List
 class ProductBase(SQLModel):
     name: str
     product_url: str
@@ -21,3 +23,5 @@ class Product(ProductBase, table=True):
     seller_id: int = Field(default=None, foreign_key="seller.id")
     return_policy_id: int = Field(default=None, foreign_key="return_policy.id")
     category_id: int = Field(default=None, foreign_key="category.id")
+
+    text_embedding: List[float] = Field(default=None, sa_column=Column(Vector(512)))

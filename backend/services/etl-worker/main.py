@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from data import create_db_and_tables
 from worker.etl_worker import start_worker
 from worker.fpt_worker import fpt_worker
-from worker.tiki_worker import tiki_worker
+from worker.tgdd_worker import tgdd_worker
 from worker.phongvu_worker import phongvu_worker
 from worker.dienmayxanh_worker import dienmayxanh_worker
 from worker.cellphones_worker import cellphone_s_worker
@@ -24,8 +24,8 @@ app = FastAPI(lifespan=lifespan)
 fpt_worker_thread = threading.Thread(target=start_worker, args=[fpt_worker], daemon=True)
 fpt_worker_thread.start()
 
-tiki_worker_thread = threading.Thread(target=start_worker, args=[tiki_worker], daemon=True)
-tiki_worker_thread.start()
+tgdd_worker_thread = threading.Thread(target=start_worker, args=[tgdd_worker], daemon=True)
+tgdd_worker_thread.start()
 
 phongvu_worker_thread = threading.Thread(target=start_worker, args=[phongvu_worker], daemon=True)
 phongvu_worker_thread.start()

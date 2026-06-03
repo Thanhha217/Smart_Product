@@ -1,6 +1,6 @@
 import os
 
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, text
 
 # Necessary in order to create the tables if they doesn't already exist DO NOT DELETE
 from data.schemes.category import Category
@@ -19,4 +19,7 @@ if not POSTGRES_URL:
 engine = create_engine(POSTGRES_URL)
 
 def create_db_and_tables():
+    with engine.connect() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+        connection.commit()
     SQLModel.metadata.create_all(engine)
