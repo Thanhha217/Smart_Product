@@ -1,97 +1,49 @@
-from datetime import datetime, timezone
+import asyncio
 import re
+from datetime import datetime, timezone
 
-from scrapy import Request
+import scrapy
 
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.tgdd.loader import TGDDLoader
-
-
-IMAGES_PER_PRODUCT = 2
+from scrapers.sites.tgdd.selenium_listing import get_listing_items
 
 
 class TGDDSpider(BaseProductSpider):
     name = "tgdd_products"
     kafka_topic = "tgdd_topic"
 
-    start_urls = [
-        "https://www.thegioididong.com/dtdd",
-    ]
+    async def start(self):
+        self.logger.info("[tgdd spider] start() called")
 
-    def parse(self, response):
-        product_links = response.css("a::attr(href)").getall()
-        seen_urls = set()
+        listing_items = await asyncio.get_event_loop().run_in_executor(
+            None,
+            get_listing_items,
+        )
 
-        for link in product_links:
-            if not link:
-                continue
+        self.logger.info(
+            f"[tgdd spider] get_listing_items returned {len(listing_items)} items"
+        )
 
-            if "/dtdd/" not in link:
-                continue
+        for item in listing_items:
+            yield scrapy.Request(
+                item["url"],
+                callback=self.parse_product,
+                cb_kwargs={"listing_data": item},
+            )
 
-            product_url = response.urljoin(link)
-
-            if product_url in seen_urls:
-                continue
-
-            seen_urls.add(product_url)
-
-            yield Request(url=product_url, callback=self.parse_product)
+    def parse(self, _response):
+        pass
 
     def clean_text(self, value):
         if not value:
             return ""
-
-        return " ".join(value.split()).strip()
-
-    def extract_price(self, response):
-        price_selectors = [
-            ".box-price-present::text",
-            ".price-one::text",
-            "p.price::text",
-            ".price::text",
-            ".detail-price span::text",
-            ".box-price span::text",
-            "[class*='price']::text",
-        ]
-
-        for selector in price_selectors:
-            values = response.css(selector).getall()
-
-            for value in values:
-                value = self.clean_text(value)
-
-                if not value:
-                    continue
-
-                if "₫" in value or "đ" in value.lower():
-                    numbers = re.sub(r"\D", "", value)
-
-                    if numbers and len(numbers) >= 5:
-                        return value
-
-        text = response.text
-
-        price_patterns = [
-            r'"price"\s*:\s*"?([0-9]{6,})"?',
-            r'"finalPrice"\s*:\s*"?([0-9]{6,})"?',
-            r'"priceSale"\s*:\s*"?([0-9]{6,})"?',
-            r'"priceOnline"\s*:\s*"?([0-9]{6,})"?',
-            r'([0-9]{1,3}(?:\.[0-9]{3}){2,})\s*₫',
-            r'([0-9]{1,3}(?:\.[0-9]{3}){2,})\s*đ',
-        ]
-
-        for pattern in price_patterns:
-            match = re.search(pattern, text, flags=re.IGNORECASE)
-
-            if match:
-                return match.group(1)
-
-        return "0"
+        return " ".join(str(value).split()).strip()
 
     def extract_original_price(self, response, final_price):
-        original_price_selectors = [
+        selectors = [
             ".box-price-old::text",
+            ".box-price__old::text",
             "p.price-old::text",
             ".price-old::text",
             ".box-price del::text",
@@ -99,7 +51,7 @@ class TGDDSpider(BaseProductSpider):
             "[class*='old']::text",
         ]
 
-        for selector in original_price_selectors:
+        for selector in selectors:
             values = response.css(selector).getall()
 
             for value in values:
@@ -112,90 +64,60 @@ class TGDDSpider(BaseProductSpider):
                     numbers = re.sub(r"\D", "", value)
 
                     if numbers and len(numbers) >= 5:
-                        return value
+                        return numbers
 
-        return final_price
+        return str(final_price or "0")
 
-    def extract_product_images(self, response):
-        image_urls = []
+    def extract_description(self, response):
+        selectors = [
+            ".description.tab-content .text-detail ::text",
+            ".article__content ::text",
+            ".boxArticle ::text",
+            ".content-t-wrap ::text",
+            ".content-article ::text",
+            ".text-detail ::text",
+        ]
 
-        image_candidates = []
-        image_candidates.extend(response.css("img::attr(src)").getall())
-        image_candidates.extend(response.css("img::attr(data-src)").getall())
-        image_candidates.extend(response.css("img::attr(data-original)").getall())
-        image_candidates.extend(response.css("source::attr(srcset)").getall())
+        for selector in selectors:
+            values = response.css(selector).getall()
+            cleaned_values = [self.clean_text(value) for value in values]
+            cleaned_values = [value for value in cleaned_values if value]
 
-        for candidate in image_candidates:
-            if not candidate:
-                continue
+            if cleaned_values:
+                return cleaned_values
 
-            candidate = candidate.strip()
+        return []
 
-            if not candidate:
-                continue
+    def extract_short_description(self, response):
+        selectors = [
+            "#tab-1 ul li ::text",
+            ".parameter__list ::text",
+            ".parameter ::text",
+            ".box-specifi ::text",
+            ".parameter-item ::text",
+        ]
 
-            if "," in candidate:
-                candidate = candidate.split(",")[0].strip()
+        for selector in selectors:
+            values = response.css(selector).getall()
+            cleaned_values = [self.clean_text(value) for value in values]
+            cleaned_values = [value for value in cleaned_values if value]
 
-            if " " in candidate:
-                candidate = candidate.split(" ")[0].strip()
+            if cleaned_values:
+                return cleaned_values
 
-            if candidate.startswith("//"):
-                candidate = "https:" + candidate
-
-            if candidate.startswith("/"):
-                candidate = response.urljoin(candidate)
-
-            if not candidate.startswith("http"):
-                continue
-
-            lower_candidate = candidate.lower()
-
-            ignored_keywords = [
-                "logo",
-                "icon",
-                "content/",
-                "phonne-24x24",
-                "laptop-24x24",
-                "cart",
-                "sprite",
-                "loading",
-                "placeholder",
-                "no-image",
-            ]
-
-            if any(keyword in lower_candidate for keyword in ignored_keywords):
-                continue
-
-            product_keywords = [
-                "/products/",
-                "/product/",
-                "/uploads/",
-                "/tgdd/",
-                "cdn.tgdd.vn",
-                "cdnv2.tgdd.vn",
-            ]
-
-            if not any(keyword in lower_candidate for keyword in product_keywords):
-                continue
-
-            if candidate not in image_urls:
-                image_urls.append(candidate)
-
-            if len(image_urls) >= IMAGES_PER_PRODUCT:
-                break
-
-        return image_urls
+        return []
 
     def extract_rating(self, response):
-        rating_selectors = [
+        selectors = [
+            ".vote-txt b::text",
             ".rating-top .point::text",
             ".boxReview-score .point::text",
             ".boxReview-score::text",
             ".point::text",
+            "[class*='rating'] [class*='point']::text",
         ]
 
-        for selector in rating_selectors:
+        for selector in selectors:
             values = response.css(selector).getall()
 
             for value in values:
@@ -215,22 +137,24 @@ class TGDDSpider(BaseProductSpider):
                     rating_float = float(rating)
 
                     if 0 <= rating_float <= 5:
-                        return rating
+                        return str(rating)
                 except ValueError:
                     continue
 
         return "0"
 
     def extract_review_count(self, response):
-        review_selectors = [
+        selectors = [
+            ".point-alltimerate::text",
             ".rating-total::text",
             ".totalcomment::text",
             ".boxReview-review-count::text",
             "[class*='review']::text",
             "[class*='comment']::text",
+            "[class*='rating']::text",
         ]
 
-        for selector in review_selectors:
+        for selector in selectors:
             values = response.css(selector).getall()
 
             for value in values:
@@ -239,50 +163,92 @@ class TGDDSpider(BaseProductSpider):
                 if not value:
                     continue
 
-                if "đánh giá" in value.lower() or "bình luận" in value.lower() or "review" in value.lower():
+                lower_value = value.lower()
+
+                if (
+                    "đánh giá" in lower_value
+                    or "bình luận" in lower_value
+                    or "review" in lower_value
+                    or "nhận xét" in lower_value
+                ):
                     numbers = re.sub(r"\D", "", value)
 
                     if numbers:
-                        return numbers
+                        return str(numbers)
 
         return "0"
 
-    def parse_product(self, response):
+    def extract_warranty_duration(self, response):
+        selectors = [
+            "#policy .policy__list > li ::text",
+            "#policy ::text",
+            "[class*='policy'] ::text",
+            "[class*='warranty'] ::text",
+            ".policy__list ::text",
+        ]
+
+        product_tags = []
+
+        for selector in selectors:
+            product_tags.extend(response.css(selector).getall())
+
+        cleaned_tags = [self.clean_text(tag).lower() for tag in product_tags]
+        cleaned_tags = [tag for tag in cleaned_tags if tag]
+
+        warranty_text = " ".join(
+            tag
+            for tag in cleaned_tags
+            if "bảo hành" in tag or "chính hãng" in tag
+        )
+
+        if not warranty_text:
+            return "0"
+
+        year_match = re.search(r"(\d+)\s*năm", warranty_text)
+        if year_match:
+            return str(int(year_match.group(1)) * 12)
+
+        month_match = re.search(r"(\d+)\s*tháng", warranty_text)
+        if month_match:
+            return str(month_match.group(1))
+
+        return "0"
+
+    def parse_product(self, response, listing_data: dict):
         loader = TGDDLoader(response=response)
 
-        loader.add_value("url", response.url)
-        loader.add_value("platform", "The Gioi Di Dong")
-        loader.add_value("seller", "The Gioi Di Dong")
-        loader.add_value("seller_rating", "-1")
-
-        loader.add_css("name", "h1::text")
-        loader.add_value("category", "Điện thoại")
-
-        image_urls = self.extract_product_images(response)
-        loader.add_value("file_urls", image_urls)
-
-        final_price = self.extract_price(response)
+        final_price = str(listing_data.get("final_price") or "0")
         original_price = self.extract_original_price(response, final_price)
 
+        short_description = self.extract_short_description(response)
+        description = self.extract_description(response)
+
+        loader.add_value("url", str(response.url))
+        loader.add_value("platform", "Thế Giới Di Động")
+        loader.add_value("seller", "Thế Giới Di Động")
+        loader.add_value("seller_rating", "-1")
+
+        loader.add_value("name", str(listing_data.get("name") or ""))
+        loader.add_value("category", str(listing_data.get("category") or "Điện thoại"))
         loader.add_value("final_price", final_price)
         loader.add_value("original_price", original_price)
 
-        loader.add_css("description", ".article__content ::text")
-        loader.add_css("description", ".parameter ::text")
-        loader.add_css("description", ".boxArticle ::text")
-        loader.add_css("description", ".content-t-wrap ::text")
+        loader.add_value("file_urls", listing_data.get("file_urls", []))
 
-        loader.add_css("short_description", ".parameter__list ::text")
-        loader.add_css("short_description", ".parameter ::text")
-        loader.add_css("short_description", ".box-specifi ::text")
+        if description:
+            loader.add_value("description", description)
+        else:
+            loader.add_value("description", short_description)
 
-        loader.add_value("product_rating", self.extract_rating(response))
-        loader.add_value("review_count", self.extract_review_count(response))
+        loader.add_value("short_description", short_description)
 
+        loader.add_value("product_rating", str(self.extract_rating(response)))
+        loader.add_value("review_count", str(self.extract_review_count(response)))
+
+        # Keep as string because loader processors may expect text.
+        loader.add_value("free_delivery", "False")
         loader.add_value("days_for_return", "30")
-        loader.add_value("free_delivery", False)
-        loader.add_value("warranty_duration", "0")
-        loader.add_value("scraped_at", datetime.now(timezone.utc).timestamp())
+        loader.add_value("warranty_duration", str(self.extract_warranty_duration(response)))
+        loader.add_value("scraped_at", str(datetime.now(timezone.utc).timestamp()))
 
         return loader.load_item()
-    
