@@ -246,7 +246,7 @@ class TGDDSpider(BaseProductSpider):
         loader.add_value("review_count", str(self.extract_review_count(response)))
 
         # Keep as string because loader processors may expect text.
-        loader.add_value("free_delivery", "False")
+        loader.add_value("free_delivery", False)
         loader.add_value("days_for_return", "30")
         loader.add_value("warranty_duration", str(self.extract_warranty_duration(response)))
         loader.add_value("scraped_at", str(datetime.now(timezone.utc).timestamp()))
