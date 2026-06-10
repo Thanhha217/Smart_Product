@@ -21,6 +21,7 @@ from sqlmodel import Session, select, create_engine
 
 def create_dataset():
     content = ""
+    metadata = ""
 
     with open('query_list.txt', 'r', encoding="utf-8") as f:
         qid = 1
@@ -28,10 +29,14 @@ def create_dataset():
             query = line.strip()
             product_list = get_product_list_for_query(query)
             content += compute_features(query, qid, product_list)
+            metadata += compute_metadata(query, product_list)
             qid += 1
     
     with open("ranking_dataset.txt", "w", encoding="utf-8") as f:
         f.write(content)
+
+    with open("ranking_dataset_metadata.txt", "w", encoding="utf-8") as f:
+        f.write(metadata)
 
 def get_product_list_for_query(query):
     with Session(engine) as session:
@@ -43,8 +48,6 @@ def get_product_list_for_query(query):
 
 
 def compute_features(query, qid, product_list):
-    query_content = ""
-
     def robust_score_min_max(values):
         median = statistics.median(values)
         q75, q25 = np.percentile(values, [75, 25])
@@ -69,13 +72,16 @@ def compute_features(query, qid, product_list):
     warranty_duration_list = [rp.warranty_duration for (p,s,rp,pl) in product_list]
     robust_warranty_duration = robust_score_min_max(warranty_duration_list)
 
-    print(robust_warranty_duration)
+    query_content = ""
 
     for (p,s,rp,pl) in product_list:
         features = []
 
         # Start of the features
         query_content += f"X qid:{qid} "
+
+        # ID
+        features.append(p.id)
 
         # Sementic score TODO
         features.append(-1)
@@ -101,12 +107,29 @@ def compute_features(query, qid, product_list):
         features.append(robust_warranty_duration[rp.warranty_duration])
 
         for i in range(len(features)):
-            query_content += f"{i+1}:{features[i]:.4f} "
+            query_content += f"{i}:{features[i]:.4f} "
 
-        #end data TODO
-        query_content += f"#id={p.id};name={p.name};platform={pl.name}\n"
+        query_content += "\n"
 
 
     return query_content
+
+
+def compute_metadata(query, product_list):
+    metadata_content = ""
+    for (p,s,rp,pl) in product_list:
+        metadata_content += f"id:{p.id:8}  "
+
+        metadata_content += f"name:{p.name:60}  "
+        
+        metadata_content += f"price:{int(p.final_price):9}  "
+
+        metadata_content += f"platform:{pl.name:15}  "
+
+        metadata_content += f"query:{query}"
+
+        metadata_content += "\n"
+
+    return metadata_content
 
 create_dataset()
