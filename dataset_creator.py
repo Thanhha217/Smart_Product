@@ -1,4 +1,6 @@
 import math
+import numpy as np
+import statistics
 import os
 import sys
 
@@ -14,12 +16,13 @@ from data import engine
 from data.schemes.product import Product
 from data.schemes.seller import Seller
 from data.schemes.return_policy import ReturnPolicy
+from data.schemes.platform import Platform
 from sqlmodel import Session, select, create_engine
 
 def create_dataset():
     content = ""
 
-    with open('query_list.txt', 'r') as f:
+    with open('query_list.txt', 'r', encoding="utf-8") as f:
         qid = 1
         for line in f:
             query = line.strip()
@@ -27,12 +30,12 @@ def create_dataset():
             content += compute_features(query, qid, product_list)
             qid += 1
     
-    with open("ranking_dataset.txt", "w") as f:
+    with open("ranking_dataset.txt", "w", encoding="utf-8") as f:
         f.write(content)
 
 def get_product_list_for_query(query):
     with Session(engine) as session:
-        statement = select(Product, Seller, ReturnPolicy).join(Seller).join(ReturnPolicy).limit(10)
+        statement = select(Product, Seller, ReturnPolicy, Platform).join(Seller).join(ReturnPolicy).join(Platform).limit(20)
 
         return session.exec(statement).all()
     
@@ -41,21 +44,34 @@ def get_product_list_for_query(query):
 
 def compute_features(query, qid, product_list):
     query_content = ""
-    
-    def log1p(val):
-        return math.log(val+1)
 
-    max_price = log1p(max(p.final_price for (p,s,rp) in product_list))
-    min_price = log1p(min(p.final_price for (p,s,rp) in product_list))
-    print(f"max: {max_price}, min: {min_price}")
+    def robust_score_min_max(values):
+        median = statistics.median(values)
+        q75, q25 = np.percentile(values, [75, 25])
+        iqr = q75 - q25
 
-    max_days_for_return = log1p(max(rp.days_for_return for (p,s,rp) in product_list))
-    min_days_for_return = log1p(min(rp.days_for_return for (p,s,rp) in product_list))
+        if iqr == 0:
+            return {values[i]:0.5 for i in range(len(values))}
 
-    max_warranty_duration = log1p(max(rp.warranty_duration for (p,s,rp) in product_list))
-    min_warranty_duration = log1p(min(rp.warranty_duration for (p,s,rp) in product_list))
+        robust_values = [(v - median)/iqr for v in values]
 
-    for (p,s,rp) in product_list:
+        max_value = max(robust_values)
+        min_value = min(robust_values)
+
+        return {values[i]:(robust_values[i] - min_value)/(max_value - min_value) for i in range(len(values))}
+
+    price_list = [p.final_price for (p,s,rp,pl) in product_list]
+    robust_prices = robust_score_min_max(price_list)
+
+    days_for_return_list = [rp.days_for_return for (p,s,rp,pl) in product_list]
+    robust_days_for_return = robust_score_min_max(days_for_return_list)
+
+    warranty_duration_list = [rp.warranty_duration for (p,s,rp,pl) in product_list]
+    robust_warranty_duration = robust_score_min_max(warranty_duration_list)
+
+    print(robust_warranty_duration)
+
+    for (p,s,rp,pl) in product_list:
         features = []
 
         # Start of the features
@@ -65,10 +81,7 @@ def compute_features(query, qid, product_list):
         features.append(-1)
 
         # Price score (reverse the value so the cheapest products have the highest score)
-        if max_price == min_price:
-            features.append(0.5)
-        else:
-            features.append(1 - (log1p(p.final_price) - min_price)/(max_price - min_price))
+        features.append(1 - robust_prices[p.final_price])
     
         # Review score
         AVERAGE_RATING = 0.8 
@@ -82,22 +95,16 @@ def compute_features(query, qid, product_list):
         features.append(rp.free_delivery)
 
         # Days for return
-        if max_days_for_return == min_days_for_return:
-            features.append(0.5)
-        else:
-            features.append((log1p(rp.days_for_return) - min_days_for_return)/(max_days_for_return - min_days_for_return))
+        features.append(robust_days_for_return[rp.days_for_return])
 
         # Warranty duration
-        if max_warranty_duration == min_warranty_duration:
-            features.append(0.5)
-        else:
-            features.append((log1p(rp.warranty_duration) - min_warranty_duration)/(max_warranty_duration - min_warranty_duration))
+        features.append(robust_warranty_duration[rp.warranty_duration])
 
         for i in range(len(features)):
             query_content += f"{i+1}:{features[i]:.4f} "
 
         #end data TODO
-        query_content += f"#id={p.id}\n"
+        query_content += f"#id={p.id};name={p.name};platform={pl.name}\n"
 
 
     return query_content
