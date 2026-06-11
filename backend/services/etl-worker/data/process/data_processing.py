@@ -10,8 +10,8 @@ def process_message(message: dict):
     # TODO Then, we need to normalize the data (e.g. translate the description in english
 
     # We need also to generate the embeddings
-    generate_embeddings(parsed_data)
+    embeddings = generate_embeddings(parsed_data)
 
     # Finally we can load the data into the database (it will automatically do the CDC)
 
-    load_data_into_database(parsed_data)
+    load_data_into_database(parsed_data, embeddings)

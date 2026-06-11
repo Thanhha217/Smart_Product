@@ -19,7 +19,4 @@ if not POSTGRES_URL:
 engine = create_engine(POSTGRES_URL)
 
 def create_db_and_tables():
-    with engine.connect() as connection:
-        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-        connection.commit()
     SQLModel.metadata.create_all(engine)

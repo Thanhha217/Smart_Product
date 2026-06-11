@@ -27,10 +27,11 @@ def generate_embeddings(parsed_data):
     text_input = _tokenizer([text_to_encode])
     text_vector = _model.encode_text(text_input)
 
+    image_embeddings = []
     for image in parsed_data["images"]:
         image_input = _preprocess(Image.open("/opt/product_images/" + image.image_path)).unsqueeze(0)
         image_vector = _model.encode_image(image_input)
 
-        image.embedding = image_vector.squeeze().tolist()
+        image_embeddings.append(image_vector.squeeze().tolist())
 
-    parsed_data["product"].text_embedding = text_vector.squeeze().tolist()
+    return text_vector.squeeze().tolist(), image_embeddings
