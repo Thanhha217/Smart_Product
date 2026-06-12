@@ -436,6 +436,8 @@ services:
     env_file:
       - ./backend/.env.dev
     restart: always
+    volumes:
+      - ./product_images:/opt/product_images
     depends_on:
       - kafka
       - smart-product-finder-database

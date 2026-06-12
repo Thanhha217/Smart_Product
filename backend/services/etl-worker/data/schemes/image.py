@@ -1,5 +1,6 @@
 from sqlmodel import Field, SQLModel
-
+from sqlalchemy import Column
+from typing import List
 class ImageBase(SQLModel):
     image_url: str
     image_path: str

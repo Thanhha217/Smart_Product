@@ -1,6 +1,6 @@
 import os
 
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine, text
 
 # Necessary in order to create the tables if they doesn't already exist DO NOT DELETE
 from data.schemes.category import Category
