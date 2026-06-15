@@ -3,6 +3,7 @@ import numpy as np
 import statistics
 import os
 import sys
+import faiss
 
 # Get absolute path to the directory containing hyphens
 subfolder_path = os.path.join(os.path.dirname(__file__), "backend/services/etl-worker")
@@ -18,6 +19,17 @@ from data.schemes.seller import Seller
 from data.schemes.return_policy import ReturnPolicy
 from data.schemes.platform import Platform
 from sqlmodel import Session, select, create_engine
+from data.process.data_transfomer import generate_text_embedding
+
+EMBED_DIM = 1024
+FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", "./faiss_index/products.faiss")
+index = None
+
+print(f"Loading FAISS Index from {FAISS_INDEX_PATH}...")
+index = faiss.read_index(FAISS_INDEX_PATH)
+print(f"Index loaded successfully. Total text vectors: {index.ntotal}")
+
+
 
 def create_dataset():
     content = ""
@@ -62,6 +74,8 @@ def compute_features(query, qid, product_list):
         min_value = min(robust_values)
 
         return {values[i]:(robust_values[i] - min_value)/(max_value - min_value) for i in range(len(values))}
+    
+    query_embedding = normalize_embedding(generate_text_embedding(query))
 
     price_list = [p.final_price for (p,s,rp,pl) in product_list]
     robust_prices = robust_score_min_max(price_list)
@@ -84,7 +98,10 @@ def compute_features(query, qid, product_list):
         features.append(p.id)
 
         # Sementic score TODO
-        features.append(-1)
+        product_embedding = index.reconstruct(p.id).reshape(1, -1)
+        similarities, indices = faiss.knn(query_embedding, product_embedding, k=1, metric=faiss.METRIC_INNER_PRODUCT)
+        # print(f"FAISS Cosine Similarity: {similarities[0][0]}")
+        features.append(similarities[0][0])
 
         # Price score (reverse the value so the cheapest products have the highest score)
         features.append(1 - robust_prices[p.final_price])
@@ -131,5 +148,20 @@ def compute_metadata(query, product_list):
         metadata_content += "\n"
 
     return metadata_content
+
+def normalize_embedding(embedding):
+    # Check if the embedding is a PyTorch tensor
+    if hasattr(embedding, "detach"):
+        np_embedding = embedding.detach().cpu().numpy()
+    else:
+        np_embedding = np.array(embedding)
+        
+    np_embedding = np_embedding.astype("float32")
+    np_embedding = np_embedding.reshape(1, -1)
+    
+    # Note: faiss.normalize_L2 mutates the array in-place, 
+    # but you still need to return it!
+    faiss.normalize_L2(np_embedding)
+    return np_embedding
 
 create_dataset()
