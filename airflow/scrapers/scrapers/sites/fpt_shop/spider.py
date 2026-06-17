@@ -15,6 +15,13 @@ class FptShopSpider(BaseProductSpider):
     name = "fpt_shop"
     kafka_topic = "fpt_topic"
 
+    custom_settings = {
+        "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
+        "DOWNLOAD_DELAY": 0,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+        "AUTOTHROTTLE_ENABLED": False,
+    }
+
     # The list of starting url the spider will scrape from
     start_urls = [
         "https://fptshop.com.vn/",
@@ -111,7 +118,7 @@ class FptShopSpider(BaseProductSpider):
         # Fixed, not really flexible but it's litteraly the same for every product on this website
         loader.add_value("days_for_return", 30)
 
-        product_tags = response.css("#ThongTinSanPham > section:nth_of_type(2) > div:first-child > div:first-child > div:nth-of-type(3) > div:nth-of-type(2) span::text").getall()
+        product_tags = response.css("#ThongTinSanPham > section:nth-of-type(2) > div:first-child > div:first-child > div:nth-of-type(3) > div:nth-of-type(2) span::text").getall()
         
         free_delivery = False
         warranty_duration = "0"

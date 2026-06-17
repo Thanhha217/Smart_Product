@@ -6,20 +6,24 @@ import scrapy
 
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.tgdd.loader import TGDDLoader
-from scrapers.sites.tgdd.selenium_listing import get_listing_items
+from scrapers.sites.tgdd.listing import get_listing_items
 
 
 class TGDDSpider(BaseProductSpider):
     name = "tgdd_products"
     kafka_topic = "tgdd_topic"
 
+    custom_settings = {
+        "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
+        "DOWNLOAD_DELAY": 0.25,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+        "AUTOTHROTTLE_ENABLED": False,
+    }
+
     async def start(self):
         self.logger.info("[tgdd spider] start() called")
 
-        listing_items = await asyncio.get_event_loop().run_in_executor(
-            None,
-            get_listing_items,
-        )
+        listing_items = await asyncio.to_thread(get_listing_items)
 
         self.logger.info(
             f"[tgdd spider] get_listing_items returned {len(listing_items)} items"

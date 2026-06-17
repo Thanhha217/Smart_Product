@@ -12,5 +12,5 @@ with DAG('cellphone_s_scraper_dag', default_args=default_args, schedule='@daily'
     # Ensure you navigate to your Scrapy project folder first
     run_spider = BashOperator(
         task_id='run_cellphone_s_spider',
-        bash_command='cd /opt/airflow/scrapers && scrapy crawl cellphone_s -s CLOSESPIDER_ITEMCOUNT=1000'
+        bash_command='cd /opt/airflow/scrapers && scrapy crawl cellphone_s'
     )
