@@ -15,7 +15,7 @@ class TGDDSpider(BaseProductSpider):
 
     custom_settings = {
         "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
-        "DOWNLOAD_DELAY": 0.25,
+        "DOWNLOAD_DELAY": 1,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
         "AUTOTHROTTLE_ENABLED": False,
     }
