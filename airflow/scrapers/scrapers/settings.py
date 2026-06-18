@@ -20,7 +20,7 @@ ADDONS = {}
 #USER_AGENT = "scrapers (+http://www.yourdomain.com)"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Concurrency and throttling settings
 # CONCURRENT_REQUESTS = 16
@@ -82,12 +82,6 @@ FAKEUSERAGENT_PROVIDERS = [
     'scrapy_fake_useragent.providers.FixedUserAgentProvider',
 ]
 
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-#}
-
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 # ITEM_PIPELINES = {
@@ -97,8 +91,6 @@ FAKEUSERAGENT_PROVIDERS = [
 # ITEM_PIPELINES = {
 #     "scrapy.pipelines.images.ImagesPipeline": 1
 # }
-
-FILES_STORE = "/opt/product_images"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -115,11 +107,11 @@ AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 21600  # 6 hours
+HTTPCACHE_DIR = "/opt/airflow/httpcache"
+HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504]
+HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"

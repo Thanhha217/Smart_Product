@@ -5,16 +5,23 @@ import scrapy
 
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.dienmayxanh.loader import DienmayxanhLoader
-from scrapers.sites.dienmayxanh.selenium_listing import get_listing_items
+from scrapers.sites.dienmayxanh.listing import get_listing_items
 
 
 class DienmayxanhSpider(BaseProductSpider):
     name = "dienmayxanh"
     kafka_topic = "dienmayxanh_topic"
 
+    custom_settings = {
+        "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
+        "DOWNLOAD_DELAY": 0.25,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+        "AUTOTHROTTLE_ENABLED": False,
+    }
+
     async def start(self):
         self.logger.info("[spider] start() called")
-        listing_items = await asyncio.get_event_loop().run_in_executor(None, get_listing_items)
+        listing_items = await asyncio.to_thread(get_listing_items)
         self.logger.info(f"[spider] get_listing_items returned {len(listing_items)} items")
         for item in listing_items:
             yield scrapy.Request(
