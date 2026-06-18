@@ -1,5 +1,6 @@
 import open_clip
 from PIL import Image
+import requests
 import threading
 
 _model = None
@@ -22,16 +23,17 @@ def _load_models():
 
 def generate_embeddings(parsed_data):
     _load_models()
-    
     text_to_encode = parsed_data["product"].name + " " + parsed_data["product"].description
     text_input = _tokenizer([text_to_encode])
     text_vector = _model.encode_text(text_input)
 
     image_embeddings = []
     for image in parsed_data["images"]:
-        image_input = _preprocess(Image.open("/opt/product_images/" + image.image_path)).unsqueeze(0)
-        image_vector = _model.encode_image(image_input)
-
-        image_embeddings.append(image_vector.squeeze().tolist())
+        try:
+            image_input = _preprocess(Image.open(requests.get(image.image_url, stream=True).raw)).unsqueeze(0)
+            image_vector = _model.encode_image(image_input)
+            image_embeddings.append(image_vector.squeeze().tolist())
+        except Exception as e:
+            print(f"Error processing image {image.image_url}: {e}", flush=True)
 
     return text_vector.squeeze().tolist(), image_embeddings

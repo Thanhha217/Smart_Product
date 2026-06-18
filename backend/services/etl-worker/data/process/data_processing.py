@@ -1,5 +1,5 @@
 from data.process.data_parser import parse_product_data
-from data.process.data_transfomer import generate_embeddings
+from data.process.data_transformer import generate_embeddings
 from data.process.data_loader import load_data_into_database
 
 def process_message(message: dict):
