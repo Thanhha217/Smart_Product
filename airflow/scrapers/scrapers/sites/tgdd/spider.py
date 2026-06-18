@@ -242,7 +242,9 @@ class TGDDSpider(BaseProductSpider):
 
         loader.add_value("short_description", short_description)
 
-        loader.add_value("product_rating", str(self.extract_rating(response)))
+        rating = str(self.extract_rating(response))
+        loader.add_value("product_rating", rating)
+        loader.add_value("seller_rating", rating)
         loader.add_value("review_count", str(self.extract_review_count(response)))
 
         # Keep as string because loader processors may expect text.
