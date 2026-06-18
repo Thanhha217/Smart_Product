@@ -21,7 +21,6 @@ class PhongVuSpider(BaseProductSpider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "scrapers.base.pipeline.KafkaPipeline": 300,
-            "scrapy.pipelines.files.FilesPipeline": 1,
         },
         # FlareSolverr tu lo viec tai trang -> tat rotating proxies cho spider nay
         "DOWNLOADER_MIDDLEWARES": {},

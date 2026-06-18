@@ -64,6 +64,13 @@ class CellphoneSSpider(BaseProductSpider):
     name = "cellphone_s"
     kafka_topic = "cellphone_s_topic"
 
+    custom_settings = {
+        "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
+        "DOWNLOAD_DELAY": 0,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+        "AUTOTHROTTLE_ENABLED": False,
+    }
+
     async def start(self):
         for std_category, search_terms in CATEGORY_SEARCH_QUERIES.items():
             yield scrapy.Request(
