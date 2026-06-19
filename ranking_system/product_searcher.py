@@ -21,9 +21,10 @@ def _load_faiss():
     print(f"Loading FAISS Index from {FAISS_INDEX_PATH}...")
     index = faiss.read_index(FAISS_INDEX_PATH)
     print(f"Index loaded successfully. Total text vectors: {index.ntotal}")
+    return index
 
 def get_similar_products_indices(query_embedding, n):
-    _load_faiss()
+    index = _load_faiss()
     distances, indices = index.search(query_embedding, n)
     return indices, (distances + 1) / 2
 
@@ -49,6 +50,6 @@ def get_products_from_ids(product_ids):
     return []
 
 def get_product_embedings_from_ids(product_ids):
-    _load_faiss()
+    index = _load_faiss()
     return index.reconstruct(product_ids).reshape(1, -1)
     

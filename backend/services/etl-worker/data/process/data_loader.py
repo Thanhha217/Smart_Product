@@ -14,8 +14,7 @@ from data.schemes.image import Image
 EMBED_DIM = 512
 FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", "/opt/faiss_index/products.faiss")
 
-base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32)
-base_index.metric_type = faiss.METRIC_INNER_PRODUCT
+base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 index = faiss.IndexIDMap2(base_index)
 
 def get_or_create(session: Session, instance, unique_column="name"):
@@ -110,7 +109,7 @@ def load_data_into_database(obj: dict, embeddings: tuple):
         image_ids = [image.id for image, _ in images]
         image_embeddings = [image_embedding for _, image_embedding in images]
 
-        load_image_embeddings(image_ids, image_embeddings)
+        # load_image_embeddings(image_ids, image_embeddings)
         load_embedding(product.id, embeddings[0])
 
         index_path = Path(FAISS_INDEX_PATH)

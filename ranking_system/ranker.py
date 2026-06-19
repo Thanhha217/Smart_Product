@@ -49,5 +49,3 @@ def query_ranking_system(query, limit):
         print(f"name: {p.product_name}, platform: {p.platform_name}, price: {p.final_price}, reviews: {p.product_rating}")
 
     return indices[0][ranked_indices].tolist()
-
-query_ranking_system("iphone 17", MAX_RELEVANT_PRODUCTS)
