@@ -20,8 +20,6 @@ def _load_models():
             print("Loading OpenCLIP model...", flush=True)
             _model, _, _preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
             _tokenizer = open_clip.get_tokenizer('ViT-B-32')
-            # _model, _, _preprocess = open_clip.create_model_and_transforms('xlm-roberta-base-vit-b-32', pretrained='laion5b_s13b_b82k')
-            # _tokenizer = open_clip.get_tokenizer('xlm-roberta-base-vit-b-32')
             print("OpenCLIP loaded!", flush=True)
 
 
