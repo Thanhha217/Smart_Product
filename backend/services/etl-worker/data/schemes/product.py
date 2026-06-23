@@ -1,7 +1,7 @@
 from sqlmodel import Field, SQLModel
 from sqlalchemy import Column
 
-from typing import List
+from typing import List, Optional
 class ProductBase(SQLModel):
     name: str
     product_url: str
@@ -23,3 +23,14 @@ class Product(ProductBase, table=True):
     seller_id: int = Field(default=None, foreign_key="seller.id")
     return_policy_id: int = Field(default=None, foreign_key="return_policy.id")
     category_id: int = Field(default=None, foreign_key="category.id")
+
+    # --- Product Carbon Footprint (CO2e) ---
+    # Estimated cradle-to-grave carbon footprint in kg CO2-equivalent.
+    # Left NULL until the carbon estimator fills it in (see data/process/carbon_estimator.py).
+    co2e_kg: Optional[float] = Field(default=None)
+    # How the value was obtained: "reference" | "llm_estimate" | "neighbor_fallback"
+    co2e_source: Optional[str] = Field(default=None)
+    # Confidence of the estimate, normalized 0..1 (NULL if unknown).
+    co2e_confidence: Optional[float] = Field(default=None)
+    # Short human-readable justification of the estimate (assumptions used).
+    co2e_explanation: Optional[str] = Field(default=None)

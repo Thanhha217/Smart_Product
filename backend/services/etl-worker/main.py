@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from data import create_db_and_tables
+from data.seed.carbon_seeder import seed_carbon_reference
 from worker.etl_worker import start_worker
 from worker.fpt_worker import fpt_worker
 from worker.tgdd_worker import tgdd_worker
@@ -17,6 +18,7 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     create_db_and_tables()
+    seed_carbon_reference()
     yield
 
 app = FastAPI(lifespan=lifespan)
