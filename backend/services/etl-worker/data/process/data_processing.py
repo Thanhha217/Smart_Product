@@ -1,4 +1,5 @@
 from data.process.data_parser import parse_product_data
+from data.process.data_transformer import generate_embeddings
 from data.process.data_loader import load_data_into_database
 
 def process_message(message: dict):
@@ -8,6 +9,9 @@ def process_message(message: dict):
 
     # TODO Then, we need to normalize the data (e.g. translate the description in english
 
+    # We need also to generate the embeddings
+    embeddings = generate_embeddings(parsed_data)
+
     # Finally we can load the data into the database (it will automatically do the CDC)
 
-    load_data_into_database(parsed_data)
+    load_data_into_database(parsed_data, embeddings)

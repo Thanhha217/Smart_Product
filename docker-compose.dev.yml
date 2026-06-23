@@ -436,12 +436,14 @@ services:
     env_file:
       - ./backend/.env.dev
     restart: always
+    volumes:
+      - ./product_images:/opt/product_images
     depends_on:
       - kafka
       - smart-product-finder-database
   
   smart-product-finder-database:
-    image: pgvector/pgvector:pg16
+    image: postgres:17
     container_name: smart-product-finder-database
     environment:
       - POSTGRES_USER=postgres
@@ -449,11 +451,11 @@ services:
       - POSTGRES_DB=smart_product_finder
     restart: always
     volumes:
-      - pgvector-db-volume:/var/lib/postgresql/data
+      - spf-postgres-db-volume:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
 volumes:
   postgres-db-volume:
-  pgvector-db-volume:
+  spf-postgres-db-volume:
   kafka-data-volume:

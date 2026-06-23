@@ -1,5 +1,7 @@
 from sqlmodel import Field, SQLModel
+from sqlalchemy import Column
 
+from typing import List
 class ProductBase(SQLModel):
     name: str
     product_url: str
