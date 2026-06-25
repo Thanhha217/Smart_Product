@@ -6,7 +6,7 @@ from scrapers.items import Product
 
 
 def keep_only_numbers(text):
-    result = re.sub(r"\D", "", text)
+    result = re.sub(r"\D", "", str(text))
     return int(result) if result else -2
 
 def filter_empty_strings(values):
@@ -17,6 +17,8 @@ def normalize_rating(rating, max_value):
     value = float(rating)
     if value > max_value:
         raise ValueError("The rating provided is incorrect")
+    if value < 0:
+        return value
     return value/max_value
 
 # The loaders handle the initial cleaning and formatting of the scrapped data, which is then saved to a
