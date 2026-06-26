@@ -55,7 +55,7 @@ PLAYWRIGHT_BROWSER_TYPE = "firefox"
 
 PLAYWRIGHT_LAUNCH_OPTIONS = {
     "executable_path": launch_path(),
-    "headless": True,
+    "headless": False,
     "args": [
         "--disable-blink-features=AutomationControlled",
         "--disable-features=IsolateOrigins,site-per-process",
@@ -94,7 +94,7 @@ def should_abort_request(request):
         
     return False
 
-PLAYWRIGHT_ABORT_REQUEST = should_abort_request
+# PLAYWRIGHT_ABORT_REQUEST = should_abort_request
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html

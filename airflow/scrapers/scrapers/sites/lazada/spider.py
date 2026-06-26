@@ -9,6 +9,14 @@ from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.lazada.loader import LazadaLoader
 from scrapy_playwright.page import PageMethod
 
+MAX_PAGE_PER_CATEGORY = 1
+
+categories = [
+    "Điện-thoại-di-động", #smartphone
+]
+
+
+
 class LazadaSpider(BaseProductSpider):
     name = "lazada"
     kafka_topic = "lazada_topic"
@@ -19,81 +27,145 @@ class LazadaSpider(BaseProductSpider):
             "scrapers.base.pipeline.KafkaPipeline": 300,
         },
         "DOWNLOADER_MIDDLEWARES": {
-            'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-            'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
-            'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': None,
+            # 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+            # 'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+            # 'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': None,
         },
         "COOKIES_ENABLED": True,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
-        "DOWNLOAD_DELAY": 1.0
+        "DOWNLOAD_DELAY": 4.0
     }
 
     intercepted_xhr = None
 
+    def api_interceptor(self, page, request, api, method):
+        future = asyncio.Future()
+
+        async def handle_response(response):
+            if (
+                response.request.method == method
+                and api in response.url
+            ):
+                print(f"Target API detected and captured!")
+                # print(request.headers)
+                if not future.done():
+                    future.set_result(await response.json())
+
+        page.on("response", handle_response)
+        request.meta["api_future"] = future
+        # asyncio_future = asyncio.Future()
+
+        # async def handle_response(response):
+        #     if response.request.method != "POST":
+        #         return
+            
+        #     if api in response.url:
+        #         try:
+        #             json_data = await response.json()
+        #             print(f"Target API detected and captured!", response.request.method)
+                    
+        #             if "getdetailinfo" in request.url:
+        #                 print(request.headers)
+                    
+        #             # Resolve the future with the data if it hasn't been resolved yet
+        #             future = asyncio_future
+        #             if not future.done():
+        #                 future.set_result(json_data)
+        #         except Exception as e:
+        #             print(f"Found the API endpoint, but failed to parse JSON: {e}")
+
+        # page.on("response", handle_response)
+        # page._detail_future = asyncio_future
+    
+    async def product_api_interceptor(self, page, request):
+        self.api_interceptor(page, request, "mtop.global.detail.web.getdetailinfo", "POST")
+
+    
+
     async def start(self):
-        start_urls = [
-            "https://www.lazada.vn/products/pdp-i1216257-s1509400.html?scm=1007.17760.398138.0&pvid=1b758099-eed4-4104-a6ef-53468c1869b1&search=flashsale&spm=a2o4n.homepage.FlashSale.d_1216257",
-            "https://www.lazada.vn/products/pdp-i1269083219-s4782493768.html?spm=a2o4n.10441748.0.0.3b8954a3L2hf52&search=store",
-        ]
+        # start_urls = [
+        #     "https://www.lazada.vn/products/pdp-i1216257-s1509400.html?scm=1007.17760.398138.0&pvid=1b758099-eed4-4104-a6ef-53468c1869b1&search=flashsale&spm=a2o4n.homepage.FlashSale.d_1216257",
+        #     "https://www.lazada.vn/products/pdp-i1269083219-s4782493768.html?spm=a2o4n.10441748.0.0.3b8954a3L2hf52&search=store",
+        # ]
+        print("YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
         meta = {
             "playwright": True,
+            "playwright_page_methods": [
+                # Force Playwright to wait for the network to sit idle
+                PageMethod("wait_for_load_state", "networkidle"),
+            ],
+            "playwright_context": "context_user",
+            "playwright_context_kwargs": {
+                "ignore_https_errors": True,
+                "locale": "vi-VN",
+            }
+            # "playwright_include_page": True,
+            # "playwright_page_init_callback": self.category_api_interceptor,
+        }
+
+        yield scrapy.Request(
+            url=f"https://www.lazada.vn/",
+            callback=self.crawl_categories,
+            meta=meta,
+            dont_filter=True
+        )
+    
+
+    # async def category_api_interceptor(self, page, request):
+    #     self.api_interceptor(page, request, "mtop.global.detail.web.getdetailinfo")
+
+    async def crawl_categories(self, response):
+        meta = {
+            "playwright": True,
+            # "playwright_include_page": True,
+            # "playwright_page_init_callback": self.category_api_interceptor,
+            "playwright_context": "context_user",
+            "playwright_context_kwargs": {
+                "ignore_https_errors": True,
+                "locale": "vi-VN",
+            }
+        }
+
+        for c in categories:
+            for i in range(MAX_PAGE_PER_CATEGORY):
+                yield scrapy.Request(
+                    url=f"https://www.lazada.vn/tag/{c}/?page={i+1}&&rating=4&service=official&sort=popularity",
+                    callback=self.parse_category_page,
+                    meta=meta,
+                    dont_filter=True
+                )
+
+    async def parse_category_page(self, response):
+        product_urls = response.css("#root > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > a::attr(href)").getall()
+        print(f"product urls = {product_urls}")
+        meta = {
+            "playwright": True,
             "playwright_include_page": True,
-            "playwright_page_init_callback": self.init_interceptor,
-            # "playwright_page_methods": [
-            #         PageMethod("wait_for_load_state", "networkidle"),
-            # ],
-            
+            "playwright_page_init_callback": self.product_api_interceptor,
+            "playwright_context": "context_user",
+            "playwright_context_kwargs": {
+                "ignore_https_errors": True,
+                "locale": "vi-VN",
+            }
         }
         
-        for url in start_urls:
+        for url in product_urls:
             yield scrapy.Request(
-                url=url,
-                callback=self.parse,
+                url=response.urljoin(url),
+                callback=self.parse_product,
                 meta=meta,
                 dont_filter=True
             )
-    
-    async def init_interceptor(self, page, request):
-        asyncio_future = asyncio.Future()
 
-        async def handle_response(response):
-            if response.request.method != "POST":
-                return
-            
-            if "mtop.global.detail.web.getdetailinfo" in response.url:
-                try:
-                    json_data = await response.json()
-                    print(f"📥 Target API detected and captured!", response.request.method)
-                    print("=" * 80)
-                    print("URL:", response.url)
-                    print("RET:", json_data.get("ret"))
-                    print("=" * 80)
-
-                    cookies = await page.context.cookies()
-
-                    for c in cookies:
-                        print(c["name"], c["value"][:30])
-                    
-                    if "getdetailinfo" in request.url:
-                        print(request.headers)
-
-                    print("wedrive:",await page.evaluate("navigator.webdriver"))
-
-                    
-                    # Resolve the future with the data if it hasn't been resolved yet
-                    future = asyncio_future
-                    if not future.done():
-                        future.set_result(json_data)
-                except Exception as e:
-                    print(f"❌ Found the API endpoint, but failed to parse JSON: {e}")
-
-        page.on("response", handle_response)
-        page._detail_future = asyncio_future
-
-
-    async def parse(self, response):
+    async def parse_product(self, response):
         page = response.meta["playwright_page"]
+        # cookies = await page.context.cookies()
+
+        # for c in cookies:
+        #     print(c["name"], c["value"][:30])
+
+        # api_data = await page.api_future
 
         # html_content = await page.content()
 
@@ -101,13 +173,13 @@ class LazadaSpider(BaseProductSpider):
         
 
         api_data = None
-        if page._detail_future:
+        if response.meta["api_future"]:
             try:
                 # 2. Explicitly wait up to 7 seconds for this specific background call to resolve
-                api_data = await asyncio.wait_for(page._detail_future, timeout=7.0)
-                print("🎯 Successfully recovered API data in parse()!")
+                api_data = await asyncio.wait_for(response.meta["api_future"], timeout=7.0)
+                print("Successfully recovered API data in parse()!")
             except asyncio.TimeoutError:
-                print("⚠️ Timed out waiting for getdetailinfo API.")
+                print("Timed out waiting for getdetailinfo API.")
 
         print("resquest :", api_data)
         

@@ -12,5 +12,5 @@ with DAG('lazada_scraper_dag', default_args=default_args, schedule='@daily') as 
     # Ensure you navigate to your Scrapy project folder first
     run_spider = BashOperator(
         task_id='run_lazada_spider',
-        bash_command='cd /opt/airflow/scrapers && PYTHONUNBUFFERED=1 scrapy crawl lazada 2>&1'
+        bash_command='cd /opt/airflow/scrapers && PYTHONUNBUFFERED=1 xvfb-run --auto-servernum scrapy crawl lazada'
     )
