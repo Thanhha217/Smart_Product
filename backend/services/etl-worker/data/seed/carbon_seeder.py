@@ -10,11 +10,7 @@ SEED_FILE = Path(__file__).parent / "carbon_reference_seed.json"
 
 
 def seed_carbon_reference() -> None:
-    """Load the starter carbon reference catalog into the database, once.
-
-    Idempotent: if the table already has any row, this does nothing, so it is
-    safe to call on every startup.
-    """
+    """Load the reference catalog once (no-op if the table already has rows)."""
     with Session(engine) as session:
         already_seeded = session.exec(select(CarbonReference).limit(1)).first()
         if already_seeded:

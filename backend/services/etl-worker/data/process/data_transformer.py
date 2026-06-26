@@ -37,3 +37,10 @@ def generate_embeddings(parsed_data):
             print(f"Error processing image {image.image_url}: {e}", flush=True)
 
     return text_vector.squeeze().tolist(), image_embeddings
+
+
+def encode_text(text):
+    # CLIP text embedding (same model as generate_embeddings).
+    _load_models()
+    text_vector = _model.encode_text(_tokenizer([text]))
+    return text_vector.squeeze().tolist()
