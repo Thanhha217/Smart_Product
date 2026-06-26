@@ -1,6 +1,4 @@
 import json
-import os
-import traceback
 
 from kafka import KafkaConsumer
 
