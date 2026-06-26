@@ -6,6 +6,18 @@ from data.schemes.category import Category
 from data.schemes.image import Image
 
 def parse_product_data(data: dict):
+    
+    original_price = data.get("original_price", 0.0)
+    final_price = data.get("final_price", 0.0)
+
+    if original_price == 0.0 and final_price == 0.0:
+        return None
+    
+    if original_price == 0.0 and final_price > 0.0:
+        original_price = final_price
+
+    if final_price == 0.0 and original_price > 0.0:
+        final_price = original_price
 
     platform = Platform(name=data.get("platform", ""))
     
@@ -25,8 +37,8 @@ def parse_product_data(data: dict):
     product = Product(
         name=data.get("name", ""),
         product_url=data.get("url", ""),
-        original_price=data.get("original_price", 0.0),
-        final_price=data.get("final_price", 0.0),
+        original_price=original_price,
+        final_price=final_price,
         description=data.get("short_description", ""),
         product_rating=data.get("product_rating", 0.0),
         review_count=data.get("review_count", 0),
@@ -34,12 +46,9 @@ def parse_product_data(data: dict):
     )
 
     images = []
-    for file_info in data.get("files", []):
-        if isinstance(file_info, dict):
-            images.append(Image(
-                image_url=file_info.get("url", ""),
-                image_path=file_info.get("path", "")
-            ))
+    for image_url in data.get("file_urls", []):
+        image = Image(image_url=image_url)
+        images.append(image)
 
     return {
         "platform": platform,

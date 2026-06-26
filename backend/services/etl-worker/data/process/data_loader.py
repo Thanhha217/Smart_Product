@@ -146,16 +146,29 @@ def load_embedding(id: int, embedding: list[float]):
         index.add_with_ids(np_embedding, ids)
 
 def load_embeddings(ids: list[int], embeddings: list[list[float]], index=index):
-
+    print(f"Loading embeddings for IDs: {ids}", flush=True)
     if not ids:
         return
-
-    np_embeddings = np.asarray(embeddings, dtype="float32")
-    ids_array = np.asarray(ids, dtype=np.int64)
+    try:
+        np_embeddings = np.asarray(embeddings, dtype="float32")
+        ids_array = np.asarray(ids, dtype=np.int64)
+    except Exception as e:
+        print(f"Error converting embeddings to numpy arrays: {e}", flush=True)
+        return
 
     faiss.normalize_L2(np_embeddings)
     with _faiss_lock:
         index.add_with_ids(np_embeddings, ids_array)
     
 def load_image_embeddings(image_ids: list[int], image_embeddings: list[list[float]]):
+    if not image_embeddings or is_list_of_lists_empty(image_embeddings):
+        return
     load_embeddings(image_ids, image_embeddings, index=image_index)
+
+def is_list_of_lists_empty(lst):
+    if not lst:
+        return True
+    for sublist in lst:
+        if sublist:
+            return False
+    return True
