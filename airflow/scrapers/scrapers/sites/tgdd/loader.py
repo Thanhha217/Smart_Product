@@ -1,29 +1,23 @@
-import re
-
 from itemloaders.processors import MapCompose, TakeFirst
 
 from scrapers.base.loader import BaseProductLoader
 
 
-def keep_original_rating(value):
+def normalize_rating(value):
     if value is None:
-        return 0.0
+        return -1
 
-    value = str(value).replace(",", ".")
-    match = re.search(r"\d+(\.\d+)?", value)
+    rating = float(value)
 
-    if not match:
-        return 0.0
+    if rating == -1:
+        return -1
 
-    rating = float(match.group(0))
-
-    if 0 <= rating <= 5:
-        return rating
-
-    return 0.0
+    return rating / 5
 
 
 class TGDDLoader(BaseProductLoader):
-    # Override BaseProductLoader so TGDD rating stays in the original 0–5 scale.
-    product_rating_in = MapCompose(keep_original_rating)
+    product_rating_in = MapCompose(normalize_rating)
     product_rating_out = TakeFirst()
+
+    seller_rating_in = MapCompose(normalize_rating)
+    seller_rating_out = TakeFirst()
