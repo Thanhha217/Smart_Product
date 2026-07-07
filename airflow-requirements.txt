@@ -8,6 +8,5 @@ apache-airflow-providers-apache-kafka==1.13.3
 # playwright-stealth==2.0.3
 # scrapy-playfox==0.0.1
 # camoufox[geoip]==0.4.11
-# setuptools==82.0.1
-# scrapy-patchwright==0.0.46
-scrapling==0.4.9
+patchright<=1.61.1
+scrapling[all]==0.4.9

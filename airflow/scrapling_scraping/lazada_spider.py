@@ -6,8 +6,8 @@ from scrapling.fetchers import StealthyFetcher, AsyncStealthySession
 from scrapling.spiders import Spider, Response
 
 from product_model import ProductModel
-from playwright.async_api import async_playwright, Page
-from camoufox.utils import launch_options as generate_launch_options
+from playwright.async_api import Page
+
 
 # --- CONFIGURATION ---
 MAX_PAGE_PER_CATEGORY = 1
@@ -37,6 +37,7 @@ def normalize_rating(rating, max_value=5.0):
         return -1.0
 
 async def scroll_page(page: Page):
+    print(await page.evaluate("navigator.userAgent"))
     await page.mouse.wheel(random.randint(100, 200), 0)
     # await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
 
@@ -49,9 +50,12 @@ class LazadaSpider(Spider):
     
     concurrent_requests = 1
     concurrent_requests_per_domain = 1
-    download_delay = 2.0 
+    download_delay = random.uniform(5,7)
+
+    
 
     def configure_sessions(self, manager):
+        
         manager.add("default", AsyncStealthySession(
                 network_idle=True,
                 headless=True,
