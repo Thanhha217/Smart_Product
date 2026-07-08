@@ -30,6 +30,11 @@ CATEGORY_SEARCH_QUERIES = {
     "laptop": "laptop",
     "earphone": "tai nghe",
     "computer_monitor": "man hinh may tinh",
+    "tablet": "may tinh bang",
+    "smartwatch": "dong ho thong minh",
+    "speaker": "loa",
+    "mouse": "chuot may tinh",
+    "power_bank": "sac du phong",
 }
 
 CATEGORY_URI_MAP = {
@@ -39,6 +44,17 @@ CATEGORY_URI_MAP = {
     "tai-nghe-bluetooth": "earphone",
     "tai-nghe-co-day": "earphone",
     "man-hinh": "computer_monitor",
+    "tablet": "tablet",
+    "ipad": "tablet",
+    "dong-ho-thong-minh": "smartwatch",
+    "dong-ho-thong-minh-nghe-goi": "smartwatch",
+    "dong-ho-thong-minh-chong-nuoc": "smartwatch",
+    "dong-ho-the-thao": "smartwatch",
+    "loa": "speaker",
+    "loa-bluetooth": "speaker",
+    "chuot": "mouse",
+    "chuot-khong-day": "mouse",
+    "pin-du-phong": "power_bank",
 }
 
 SEARCH_QUERY = """
@@ -63,6 +79,13 @@ query advanced_search {
 class CellphoneSSpider(BaseProductSpider):
     name = "cellphone_s"
     kafka_topic = "cellphone_s_topic"
+
+    custom_settings = {
+        "ITEM_PIPELINES": {"scrapers.base.pipeline.KafkaPipeline": 300},
+        "DOWNLOAD_DELAY": 0,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+        "AUTOTHROTTLE_ENABLED": False,
+    }
 
     async def start(self):
         for std_category, search_terms in CATEGORY_SEARCH_QUERIES.items():

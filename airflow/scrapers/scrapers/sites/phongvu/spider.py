@@ -21,7 +21,6 @@ class PhongVuSpider(BaseProductSpider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "scrapers.base.pipeline.KafkaPipeline": 300,
-            "scrapy.pipelines.files.FilesPipeline": 1,
         },
         # FlareSolverr tu lo viec tai trang -> tat rotating proxies cho spider nay
         "DOWNLOADER_MIDDLEWARES": {},
@@ -39,6 +38,13 @@ class PhongVuSpider(BaseProductSpider):
         "smartphone": "https://phongvu.vn/c/dien-thoai-may-tinh-bang-phu-kien",
         "earphone": "https://phongvu.vn/c/thiet-bi-am-thanh",
         "computer_monitor": "https://phongvu.vn/c/man-hinh-may-tinh",
+        "tablet": "https://phongvu.vn/c/may-tinh-bang",
+        "smartwatch": "https://phongvu.vn/c/dong-ho-thong-minh",
+        "speaker": "https://phongvu.vn/c/loa",
+        "keyboard": "https://phongvu.vn/c/ban-phim",
+        "mouse": "https://phongvu.vn/c/chuot-may-tinh",
+        "power_bank": "https://phongvu.vn/c/pin-sac-du-phong",
+        "desktop": "https://phongvu.vn/c/may-tinh-de-ban",
     }
 
     MAX_PAGES_PER_CATEGORY = 20
