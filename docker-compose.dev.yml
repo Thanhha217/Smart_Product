@@ -455,6 +455,25 @@ services:
     env_file:
       - ./backend/.env.dev
     restart: always
+
+  ranking-system:
+    build:
+      context: ./backend/services/ranking_system
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-ranking-system
+    ports:
+      - "8008:8008"
+    image: ranking-system
+    env_file:
+      - ./backend/.env.dev
+    restart: always
+    volumes:
+      - faiss-db-volume:/opt/faiss_index
+      - ./datasets:/app/datasets
+    depends_on:
+      - smart-product-finder-database
+      - backend-etl-worker
+      - backend-clip-provider
   
   smart-product-finder-database:
     image: postgres:17
@@ -469,27 +488,9 @@ services:
     ports:
       - "5432:5432"
 
-  ranking-system:
-    build:
-      context: ./ranking_system
-      dockerfile: Dockerfile
-    container_name: smartproductfinder-ranking-system
-    ports:
-      - "8008:8008"
-    image: ranking-system
-    env_file:
-      - ./ranking_system/.env.dev
-    restart: always
-    volumes:
-      - faiss-db-volume:/opt/faiss_index
-      - ./ranking_system:/app
-      - ./datasets:/app/datasets
-    depends_on:
-      - smart-product-finder-database
-      - backend-etl-worker
-
 volumes:
   postgres-db-volume:
   pgvector-db-volume:
+  spf-postgres-db-volume:
   kafka-data-volume:
   faiss-db-volume:

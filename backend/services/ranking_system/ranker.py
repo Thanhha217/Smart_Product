@@ -7,12 +7,11 @@ from product_featurer import compute_features
 from product_searcher import get_products_from_ids, get_similar_products_indices
 
 MAX_RELEVANT_PRODUCTS = 20
+new_ranker = catboost.CatBoostRanker() 
+new_ranker.load_model('models/catboost_ranker_model.txt')
+print("Model loaded from 'catboost_ranker_model.txt'")
 
 def query_ranking_system(query, limit):
-    # Load the model for reuse
-    new_ranker = catboost.CatBoostRanker() 
-    new_ranker.load_model('models/catboost_ranker_model.txt')
-    print("Model loaded from 'catboost_ranker_model.txt'")
 
     query_embedding = create_text_embedding(query)
     indices, distances = get_similar_products_indices(query_embedding, limit)

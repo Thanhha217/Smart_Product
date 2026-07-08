@@ -1,33 +1,19 @@
-import open_clip
-from PIL import Image
-import threading
+import os
+import requests
 import faiss
 import numpy as np
 
-_model = None
-_preprocess = None
-_tokenizer = None
-_load_lock = threading.Lock()
+OPEN_CLIP_PROVIDER = os.environ.get("OPEN_CLIP_PROVIDER_URL", "http://smartproductfinder-backend-clip-provider:8067")
 
-def _load_models():
-    global _model, _preprocess, _tokenizer
-    
-    if _model is not None:
-        return
-    
-    with _load_lock:
-        if _model is None:
-            print("Loading OpenCLIP model...", flush=True)
-            _model, _, _preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
-            _tokenizer = open_clip.get_tokenizer('ViT-B-32')
-            print("OpenCLIP loaded!", flush=True)
+_session = requests.Session()
 
 
 def create_text_embedding(text_to_encode):
-    _load_models()
 
-    text_input = _tokenizer([text_to_encode])
-    return normalize_embedding(_model.encode_text(text_input))
+    query = {"text": text_to_encode}
+    uri = f"{OPEN_CLIP_PROVIDER}/encode-text"
+    encoded_text = _session.post(uri, json=query).json()
+    return normalize_embedding(encoded_text)
     
 
 def normalize_embedding(embedding):
