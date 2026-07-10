@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export default function Home() {
   const [activeItemIndex, setActiveItemIndex] = useState(0);
-  const pages = useCategoryPages(activeItemIndex);
+  const pages = useCategoryPages();
 
   return (
     <div className="flex flex-col items-center gap-6 min-h-full">
