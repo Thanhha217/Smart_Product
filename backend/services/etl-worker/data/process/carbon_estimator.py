@@ -56,7 +56,7 @@ def _build_reference_index():
 
 def _find_similar_references(product_embedding, category=None, k=TOP_K):
     _build_reference_index()
-    if not _ref_by_id:
+    if _ref_index is None or not _ref_by_id:
         return []
     query = np.asarray([product_embedding], dtype="float32")
     faiss.normalize_L2(query)

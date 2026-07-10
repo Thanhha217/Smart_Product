@@ -1,19 +1,22 @@
+import io
 import open_clip
 from PIL import Image
 import requests
 import threading
+from typing import Any
 
-_model = None
-_preprocess = None
-_tokenizer = None
+# open_clip ships inaccurate type stubs, so these stay untyped.
+_model: Any = None
+_preprocess: Any = None
+_tokenizer: Any = None
 _load_lock = threading.Lock()
 
 def _load_models():
     global _model, _preprocess, _tokenizer
-    
+
     if _model is not None:
         return
-    
+
     with _load_lock:
         if _model is None:
             print("Loading OpenCLIP model...", flush=True)
@@ -30,7 +33,8 @@ def generate_embeddings(parsed_data):
     image_embeddings = []
     for image in parsed_data["images"]:
         try:
-            image_input = _preprocess(Image.open(requests.get(image.image_url, stream=True).raw)).unsqueeze(0)
+            response = requests.get(image.image_url)
+            image_input = _preprocess(Image.open(io.BytesIO(response.content))).unsqueeze(0)
             image_vector = _model.encode_image(image_input)
             image_embeddings.append(image_vector.squeeze().tolist())
         except Exception as e:
