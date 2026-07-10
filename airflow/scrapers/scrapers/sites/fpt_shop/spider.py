@@ -11,6 +11,19 @@ from functools import partial
 MAX_PRODUCTS_PER_REQUEST = 50
 IMAGES_PER_PRODUCT = 2
 
+# Category slugs exposed by the FPT papi category API (verified). The product
+# page itself supplies the human-readable category via breadcrumb, so we only
+# need the slugs here to drive the listing pagination.
+CATEGORY_SLUGS = [
+    "dien-thoai",        # Điện thoại
+    "may-tinh-xach-tay", # Laptop
+    "may-tinh-bang",     # Máy tính bảng
+    "man-hinh",          # Màn hình máy tính
+    "smartwatch",        # Đồng hồ thông minh
+    "may-tinh-de-ban",   # Máy tính để bàn (PC)
+    "may-in",            # Máy in
+]
+
 class FptShopSpider(BaseProductSpider):
     name = "fpt_shop"
     kafka_topic = "fpt_topic"
@@ -50,9 +63,9 @@ class FptShopSpider(BaseProductSpider):
 
 
     def parse(self, response):
-        # product_page_links = response.css(".grow a") # we find all of the links in the page
-        return self.fetch_category_products("dien-thoai", 0, response)
-        # yield from response.follow_all(product_page_links, self.parse_product) # we go to each page and parse them
+        # Kick off pagination for every category we want to crawl.
+        for slug in CATEGORY_SLUGS:
+            yield self.fetch_category_products(slug, 0, response)
 
 
     def parse_category(self, category, skipCount, response):

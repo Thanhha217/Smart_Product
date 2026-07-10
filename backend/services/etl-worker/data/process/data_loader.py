@@ -18,8 +18,7 @@ EMBED_DIM = 512
 FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", "/opt/faiss_index/products.faiss")
 FAISS_IMAGE_INDEX_PATH = os.environ.get("FAISS_IMAGE_INDEX_PATH", "/opt/faiss_index/images.faiss")
 
-base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32)
-base_index.metric_type = faiss.METRIC_INNER_PRODUCT
+base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 index = faiss.IndexIDMap2(base_index)
 
 image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32)
@@ -124,7 +123,7 @@ def load_data_into_database(obj: dict, embeddings: tuple):
         image_ids = [image.id for image, _ in images]
         image_embeddings = [image_embedding for _, image_embedding in images]
 
-        load_image_embeddings(image_ids, image_embeddings)
+        # load_image_embeddings(image_ids, image_embeddings)
         load_embedding(product.id, embeddings[0])
 
     with _faiss_lock:
@@ -146,16 +145,29 @@ def load_embedding(id: int, embedding: list[float]):
         index.add_with_ids(np_embedding, ids)
 
 def load_embeddings(ids: list[int], embeddings: list[list[float]], index=index):
-
+    print(f"Loading embeddings for IDs: {ids}", flush=True)
     if not ids:
         return
-
-    np_embeddings = np.asarray(embeddings, dtype="float32")
-    ids_array = np.asarray(ids, dtype=np.int64)
+    try:
+        np_embeddings = np.asarray(embeddings, dtype="float32")
+        ids_array = np.asarray(ids, dtype=np.int64)
+    except Exception as e:
+        print(f"Error converting embeddings to numpy arrays: {e}", flush=True)
+        return
 
     faiss.normalize_L2(np_embeddings)
     with _faiss_lock:
         index.add_with_ids(np_embeddings, ids_array)
     
 def load_image_embeddings(image_ids: list[int], image_embeddings: list[list[float]]):
+    if not image_embeddings or is_list_of_lists_empty(image_embeddings):
+        return
     load_embeddings(image_ids, image_embeddings, index=image_index)
+
+def is_list_of_lists_empty(lst):
+    if not lst:
+        return True
+    for sublist in lst:
+        if sublist:
+            return False
+    return True

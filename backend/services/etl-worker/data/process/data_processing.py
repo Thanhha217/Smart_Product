@@ -7,6 +7,9 @@ def process_message(message: dict):
     
     # First we need to parse the data in order to map the json to instances of our sql tables
     parsed_data = parse_product_data(message)
+    
+    if parsed_data is None:
+        return
 
     # TODO Then, we need to normalize the data (e.g. translate the description in english
 

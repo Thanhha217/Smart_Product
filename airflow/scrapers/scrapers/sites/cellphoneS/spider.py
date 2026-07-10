@@ -30,6 +30,11 @@ CATEGORY_SEARCH_QUERIES = {
     "laptop": "laptop",
     "earphone": "tai nghe",
     "computer_monitor": "man hinh may tinh",
+    "tablet": "may tinh bang",
+    "smartwatch": "dong ho thong minh",
+    "speaker": "loa",
+    "mouse": "chuot may tinh",
+    "power_bank": "sac du phong",
 }
 
 CATEGORY_URI_MAP = {
@@ -39,6 +44,17 @@ CATEGORY_URI_MAP = {
     "tai-nghe-bluetooth": "earphone",
     "tai-nghe-co-day": "earphone",
     "man-hinh": "computer_monitor",
+    "tablet": "tablet",
+    "ipad": "tablet",
+    "dong-ho-thong-minh": "smartwatch",
+    "dong-ho-thong-minh-nghe-goi": "smartwatch",
+    "dong-ho-thong-minh-chong-nuoc": "smartwatch",
+    "dong-ho-the-thao": "smartwatch",
+    "loa": "speaker",
+    "loa-bluetooth": "speaker",
+    "chuot": "mouse",
+    "chuot-khong-day": "mouse",
+    "pin-du-phong": "power_bank",
 }
 
 SEARCH_QUERY = """
