@@ -9,9 +9,9 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center gap-6 min-h-full">
-      <div className="bg-primary-500 min-w-full min-h-5/12 flex flex-col items-center py-12 gap-2">
+      <div className="bg-primary-100 min-w-full min-h-5/12 flex flex-col items-center py-12 gap-2">
         <div className='flex flex-col items-center p-12 gap-6'>
-          <h1 className="text-primary-900 font-bold text-8xl text-center">Smart Product Finder</h1>
+          <h1 className="text-primary-500 font-bold text-8xl text-center">Smart Product Finder</h1>
           <p className="text-primary-800 text-2xl">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
         </div>
         
