@@ -1,22 +1,22 @@
 import ProductFilter from "./components/products/ProductFilters";
 import ProductGrid from "./components/products/ProductGrid";
 import { useEffect, useState } from "react";
-import { generateMockProducts } from "./components/products/productMock"; 
+import { generateMockProducts } from "./components/products/productMock";
 import { Link, useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import Pagination from "./components/general/Pagination";
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const query = searchParams.get('query'); 
-  let page = parseInt(searchParams.get('page') ?? 1);
-  
+  const query = searchParams.get('query');
+  const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
+  // const page = parseInt(searchParams.get('page') ?? 1)
+
   const [products] = useState(() => generateMockProducts(500));
   const maxPerPage = 20;
-  const numberOfPages = Math.ceil(products.length/maxPerPage)
-
-  const pageBtnStyle = "min-w-10 min-h-10 px-1 bg-primary-500 text-primary-100 hover:bg-primary-800"
+  const numberOfPages = Math.ceil(products.length / maxPerPage)
 
   useEffect(() => {
     if (page > numberOfPages) {
@@ -26,58 +26,60 @@ export default function SearchResults() {
     else if (page < 1) {
       goToPage(1);
     }
+
+    else {
+      goToPage(page)
+    }
   }, [page, numberOfPages])
 
-  function goToPage(page) {
-    navigate(`/q?query=${query}&page=${page}`)
-  }
 
-  let pageNav = []
-  let offset = 2
+  function goToPage(targetPage) {
+    // gets search params and modifies only the page
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', targetPage);
 
-  if (page - offset - 1 > 1) {
-    pageNav.push(<p>...</p>)
-  }
+    navigate(`?${newParams.toString()}`);
 
-  const minBoundary = Math.max(Math.min(page-offset, numberOfPages - (offset*2+1)), 2);
-  const maxBoundary = Math.min(Math.max(offset*3, page+offset+1), numberOfPages);
-  console.log(minBoundary, maxBoundary)
-
-  for (let i = minBoundary; i < maxBoundary; i++) {
-    pageNav.push(<button key={i} className={pageBtnStyle} onClick={() => goToPage(i)}>{i}</button>)
-  }
-
-  if (page + offset + 1 < numberOfPages) {
-    pageNav.push(<p>...</p>)
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
   }
 
 
   return (
     <div className="min-h-full p-10 flex gap-4 m-auto">
-        <ProductFilter className="w-3/12 h-full"/>
-        <div className="flex-1 px-6">
-          <div className="flex justify-between items-center">
-            <p>Search results for "{query}"</p>
-            
-            <div className="flex gap-4 items-center">
-              <label>Sort by</label>
-              <select name="sorting" id="sorting" className="bg-primary-100 p-1">
-                <option value="">Relevence</option>
-                <option value="price-low">Price low to high</option>
-                <option value="price-high">Price high to low</option>
-                <option value="eco-friendly">Most eco-friendly</option>
-              </select>
-            </div>
-          </div>
+      <ProductFilter className="w-3/12 h-full" />
+      <div className="flex-1 px-6 flex flex-col gap-6">
+        <div className="flex justify-between items-center">
+          <p>Search results for "{query}"</p>
 
-          <ProductGrid products={products.slice(maxPerPage * (page - 1), maxPerPage * page)}/>
-
-          <div className="flex gap-4 justify-end">
-            <button className={pageBtnStyle} onClick={() => goToPage(1)}>1</button>
-            {pageNav}
-            <button className={pageBtnStyle} onClick={() => goToPage(numberOfPages)}>{numberOfPages}</button>
+          <div className="flex gap-4 items-center">
+            <label>Sort by</label>
+            <select name="sorting" id="sorting" className="bg-primary-100 p-1">
+              <option value="">Relevence</option>
+              <option value="price-low">Price low to high</option>
+              <option value="price-high">Price high to low</option>
+              <option value="eco-friendly">Most eco-friendly</option>
+            </select>
           </div>
         </div>
+
+        <Pagination
+          page={page}
+          setPage={setPage}
+          numberOfPages={numberOfPages}
+        />
+
+        <ProductGrid products={products.slice(maxPerPage * (page - 1), maxPerPage * page)} />
+
+        <Pagination
+          page={page}
+          setPage={setPage}
+          numberOfPages={numberOfPages}
+        />
+      </div>
     </div>
   );
 }
