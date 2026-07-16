@@ -62,8 +62,6 @@ export default function useCategoryPages() {
 
 
   let items_per_page = visibleXCount * visibleYCount
-  console.log("items :",items_per_page)
-  console.log(visibleXCount)
 
   let pages = []
 

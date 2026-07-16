@@ -1,12 +1,12 @@
-export default function RangeSlider({ minValue, setMinValue, maxValue, setMaxValue }) {
+export default function RangeSlider({ maxLimit, minValue, setMinValue, maxValue, setMaxValue }) {
     if (minValue > maxValue) {
         let temp = minValue
         setMinValue(maxValue)
         setMaxValue(temp)
     }
     
-    const minPercent = (minValue / 100000) * 100;
-    const maxPercent = (maxValue / 100000) * 100;
+    const minPercent = (minValue / maxLimit) * 100;
+    const maxPercent = (maxValue / maxLimit) * 100;
 
     // base slider style
     // const baseSliderCss = " " +
@@ -39,7 +39,7 @@ export default function RangeSlider({ minValue, setMinValue, maxValue, setMaxVal
                 className={inputsCss} 
                 type="range" 
                 min="0" 
-                max="100000" 
+                max={maxLimit}
                 value={minValue} 
                 onChange={(e) => setMinValue(Number(e.target.value))} 
                 step="10"
@@ -48,7 +48,7 @@ export default function RangeSlider({ minValue, setMinValue, maxValue, setMaxVal
                 className={inputsCss} 
                 type="range" 
                 min="0" 
-                max="100000" 
+                max={maxLimit} 
                 value={maxValue} 
                 onChange={(e) => setMaxValue(Number(e.target.value))} 
                 step="10"

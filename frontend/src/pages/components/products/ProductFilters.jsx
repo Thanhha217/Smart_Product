@@ -1,17 +1,24 @@
 import RangeSlider from "../general/RangeSlider";
-import { useState } from "react";
 import StarSlider from "../general/StarSlider";
 
-export default function ProductFilter({className}) {
-    const MAX_PRICE = 100000
-
+export default function ProductFilter({
+    className,
+    priceLimit,
+    minPriceValue,
+    setMinPriceValue,
+    maxPriceValue,
+    setMaxPriceValue,
+    starValue,
+    setStarValue,
+    gwpLimit,
+    maxGwpValue,
+    setMaxGwpValue,
+    onSaleOnly,
+    setOnSaleOnly,
+    ignoreGwp,
+    setIgnoreGwp,
+}) {
     const titleCss = "text-primary-500 font-bold text-xl whitespace-nowrap"
-    const [minPriceValue, setMinPriceValue] = useState(0);
-    const [maxPriceValue, setMaxPriceValue] = useState(MAX_PRICE);
-
-    const [starValue, setStarValue] = useState(1);
-
-    const [maxGwpValue, setMaxGwpValue] = useState(1000);
 
     const handleMinChange = (e) => {
         const val = Number(e.target.value);
@@ -20,7 +27,7 @@ export default function ProductFilter({className}) {
 
     const handleMaxChange = (e) => {
         const val = Number(e.target.value);
-        setMaxPriceValue(Math.max(Math.min(val, MAX_PRICE), minPriceValue));
+        setMaxPriceValue(Math.max(Math.min(val, priceLimit), minPriceValue));
     };
 
     const handleStarChange = (e) => {
@@ -41,14 +48,15 @@ export default function ProductFilter({className}) {
 
             <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap w-full justify-center">
-                    <input type="number" className="bg-primary-200 text-right" min="0" max={MAX_PRICE} value={minPriceValue} onChange={handleMinChange}/>
+                    <input type="number" className="bg-primary-200 text-right" min="0" max={priceLimit} value={minPriceValue} onChange={handleMinChange}/>
                     <label>.000₫</label>
                     <p className="px-2 text-center">~</p>
-                    <input type="number" className="bg-primary-200 text-right" min="0" max={MAX_PRICE} value={maxPriceValue} onChange={handleMaxChange}/>
+                    <input type="number" className="bg-primary-200 text-right" min="0" max={priceLimit} value={maxPriceValue} onChange={handleMaxChange}/>
                     <label>.000₫</label>
                 </div>
                 
                 <RangeSlider 
+                    maxLimit={priceLimit}
                     minValue={minPriceValue}
                     setMinValue={setMinPriceValue}
                     maxValue={maxPriceValue}
@@ -78,9 +86,9 @@ export default function ProductFilter({className}) {
 
 
             <div className="flex gap-4 justify-center flex-wrap">
-                <input type="range" className="flex-1 min-w-20" min="0" max="1000" value={maxGwpValue} onChange={handleGwpChange}/>
+                <input type="range" className="flex-1 min-w-20" min="0" max={gwpLimit} value={maxGwpValue} onChange={handleGwpChange}/>
                 <div className="flex">
-                    <input type="number" className="" min="0" max="1000" value={maxGwpValue} onChange={handleGwpChange}/>
+                    <input type="number" className="" min="0" max={gwpLimit} value={maxGwpValue} onChange={handleGwpChange}/>
                     <label className="text-nowrap">kg CO₂e</label>
                 </div>
                 
@@ -91,11 +99,11 @@ export default function ProductFilter({className}) {
 
             <div className="flex flex-col gap-2">
                 <div className="flex gap-1">
-                    <input type="checkbox" name="on-sale-check" id="on-sale-check" aria-labelledby="on-sale-label"/>
+                    <input type="checkbox" name="on-sale-check" id="on-sale-check" aria-labelledby="on-sale-label" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)}/>
                     <label id="on-sale-label" htmlFor="on-sale-check">On sale</label>
                 </div>
                 <div className="flex gap-1">
-                    <input type="checkbox" name="ignore-gwp-check" id="ignore-gwp-check" aria-labelledby="ignore-gwp-label"/>
+                    <input type="checkbox" name="ignore-gwp-check" id="ignore-gwp-check" aria-labelledby="ignore-gwp-label" checked={ignoreGwp} onChange={(e) => setIgnoreGwp(e.target.checked)}/>
                     <label id="ignore-gwp-label" htmlFor="ignore-gwp-check">Ignore GWP</label>
                 </div>
             </div>

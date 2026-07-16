@@ -31,7 +31,6 @@ export default function Pagination({ page, setPage, numberOfPages }) {
 
     const minBoundary = Math.max(Math.min(page - offset, numberOfPages - (offset * 2 + 1)), 2);
     const maxBoundary = Math.min(Math.max(offset * 3, page + offset + 1), numberOfPages);
-    console.log(minBoundary, maxBoundary)
 
     for (let i = minBoundary; i < maxBoundary; i++) {
         if (i === page) {
@@ -45,13 +44,13 @@ export default function Pagination({ page, setPage, numberOfPages }) {
         pageNav.push(<p key="00" className={pageDotsStyle}>⋯</p>)
     }
 
-    if (page === numberOfPages) {
-        pageNav.push(<button key={numberOfPages} className={pageSelectedBtnStyle}>{numberOfPages}</button>)
-    } else {
-        pageNav.push(<button key={numberOfPages} className={pageBtnStyle} onClick={() => setPage(numberOfPages)}>{numberOfPages}</button>)
+    if (numberOfPages != 1) {
+        if (page === numberOfPages) {
+            pageNav.push(<button key={numberOfPages} className={pageSelectedBtnStyle}>{numberOfPages}</button>)
+        } else {
+            pageNav.push(<button key={numberOfPages} className={pageBtnStyle} onClick={() => setPage(numberOfPages)}>{numberOfPages}</button>)
+        }
     }
-
-
 
 
     return (

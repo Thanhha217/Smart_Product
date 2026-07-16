@@ -1,6 +1,4 @@
 export default function StarSlider({className, starValue, setStarValue }) {
-    
-    console.log(starValue)
     const starDisplay = [
         "★",
         starValue >= 2 ? "★" : "☆",

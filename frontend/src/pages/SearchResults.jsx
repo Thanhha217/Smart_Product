@@ -11,12 +11,61 @@ export default function SearchResults() {
   const navigate = useNavigate();
 
   const query = searchParams.get('query');
-  const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
-  // const page = parseInt(searchParams.get('page') ?? 1)
+  // const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
+  const page = parseInt(searchParams.get('page') ?? 1)
 
-  const [products] = useState(() => generateMockProducts(500));
+  const [productsInfo] = useState(() => generateMockProducts(50));
+  const priceLimit = (Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.final_price))) / 10000) + 1) * 10 ;
+  const [minPriceValue, setMinPriceValue] = useState(0);
+  const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
+  const [starValue, setStarValue] = useState(1);
+  const [maxGwpValue, setMaxGwpValue] = useState(1000);
+  const [onSaleOnly, setOnSaleOnly] = useState(false);
+  const [ignoreGwp, setIgnoreGwp] = useState(false);
+  const [sortValue, setSortValue] = useState('');
+
+  const handleSortChange = (event) => {
+    setSortValue(event.target.value);
+  };
+  
+
+  let filteredProducts = productsInfo
+  // Price filter
+  filteredProducts = filteredProducts.filter(item => item.product.final_price <= maxPriceValue*1000);
+  filteredProducts = filteredProducts.filter(item => item.product.final_price >= minPriceValue*1000);
+
+  // Rating filter
+  filteredProducts = filteredProducts.filter(item => item.product.product_rating >= starValue);
+
+  // Gwp filter
+  filteredProducts = filteredProducts.filter(item => item.product.gwp <= maxGwpValue);
+
+  // Options filter
+  if (onSaleOnly) {
+    filteredProducts = filteredProducts.filter(item => item.product.final_price != item.product.final_price);
+  }
+
+  if (ignoreGwp) {
+    // TODO when gwp is actually implemented in the ranking
+  }
+  
+  
+
+  // Sorting
+  switch (sortValue) {
+    case "price-low":
+      filteredProducts = filteredProducts.sort((a, b) => a.product.final_price > b.product.final_price);
+      break;
+    case "price-high":
+      filteredProducts = filteredProducts.sort((a, b) => a.product.final_price < b.product.final_price);
+      break;
+    case "eco-friendly":
+      filteredProducts = filteredProducts.sort((a, b) => a.product.gwp > b.product.gwp);
+      break;
+  }
+
   const maxPerPage = 20;
-  const numberOfPages = Math.ceil(products.length / maxPerPage)
+  const numberOfPages = Math.max(Math.ceil(filteredProducts.length / maxPerPage), 1)
 
   useEffect(() => {
     if (page > numberOfPages) {
@@ -25,10 +74,6 @@ export default function SearchResults() {
 
     else if (page < 1) {
       goToPage(1);
-    }
-
-    else {
-      goToPage(page)
     }
   }, [page, numberOfPages])
 
@@ -47,17 +92,35 @@ export default function SearchResults() {
     });
   }
 
+  
+
 
   return (
     <div className="min-h-full p-10 flex gap-4 m-auto">
-      <ProductFilter className="w-3/12 h-full" />
+      <ProductFilter
+        className="w-3/12 h-full"
+        priceLimit={priceLimit}
+        minPriceValue={minPriceValue}
+        setMinPriceValue={setMinPriceValue}
+        maxPriceValue={maxPriceValue}
+        setMaxPriceValue={setMaxPriceValue}
+        starValue={starValue}
+        setStarValue={setStarValue}
+        gwpLimit={1000}
+        maxGwpValue={maxGwpValue}
+        setMaxGwpValue={setMaxGwpValue}
+        onSaleOnly={onSaleOnly}
+        setOnSaleOnly={setOnSaleOnly}
+        ignoreGwp={ignoreGwp}
+        setIgnoreGwp={setIgnoreGwp}
+      />
       <div className="flex-1 px-6 flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <p>Search results for "{query}"</p>
 
           <div className="flex gap-4 items-center">
             <label>Sort by</label>
-            <select name="sorting" id="sorting" className="bg-primary-100 p-1">
+            <select name="sorting" id="sorting" className="bg-primary-100 p-1" onChange={handleSortChange}>
               <option value="">Relevence</option>
               <option value="price-low">Price low to high</option>
               <option value="price-high">Price high to low</option>
@@ -68,15 +131,15 @@ export default function SearchResults() {
 
         <Pagination
           page={page}
-          setPage={setPage}
+          setPage={goToPage}
           numberOfPages={numberOfPages}
         />
 
-        <ProductGrid products={products.slice(maxPerPage * (page - 1), maxPerPage * page)} />
+        <ProductGrid products={filteredProducts.slice(maxPerPage * (page - 1), maxPerPage * page)} />
 
         <Pagination
           page={page}
-          setPage={setPage}
+          setPage={goToPage}
           numberOfPages={numberOfPages}
         />
       </div>
