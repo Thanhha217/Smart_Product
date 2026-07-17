@@ -422,6 +422,12 @@ services:
     env_file:
       - ./backend/.env.dev
     restart: always
+    depends_on:
+      - backend-etl-worker
+      - backend-clip-provider
+      - ranking-system
+      - db-search
+      - smart-product-finder-database
 
   # ADD OTHER BACKEND SERVICES (e.g., product-service, user-service, etc.) HERE
   
@@ -474,6 +480,20 @@ services:
       - smart-product-finder-database
       - backend-etl-worker
       - backend-clip-provider
+
+  db-search:
+    build:
+      context: ./backend/services/db-search
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-db-search
+    ports:
+      - "8061:8061"
+    image: db-search
+    env_file:
+      - ./backend/.env.dev
+    restart: always
+    depends_on:
+      - smart-product-finder-database
   
   smart-product-finder-database:
     image: postgres:17
