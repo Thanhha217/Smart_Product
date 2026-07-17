@@ -10,9 +10,9 @@ RUN npm install
 
 COPY . .
 
-RUN node_modules/.bin/react-scripts build
+RUN npm run build
 
 FROM nginx:1.30-alpine
 
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/build /var/www/html
+COPY --from=build /app/dist /var/www/html
