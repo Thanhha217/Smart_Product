@@ -1,5 +1,7 @@
+import { ArrowLeft, ArrowRight } from "../general/icons";
+
 export default function Carousel({activeItemIndex, setActiveItemIndex, pages}) {
-  const sharedButtonClasses = "bg-secondary-500 text-primary-100 text-2xl w-6 aspect-square rounded-2xl text-center p-2 hover:bg-secondary-700";
+  const sharedButtonClasses = "bg-secondary-500 text-primary-100 flex items-center justify-center w-10 h-10 aspect-square rounded-full text-center m-auto cursor-pointer transition duration-200 ease-in-out hover:bg-secondary-700";
 //   const listItems = categories.map(category => <li><CategorySlot text={category.name} src={category.src}/></li>);
   
   if (activeItemIndex > pages.length - 1) {
@@ -15,7 +17,7 @@ export default function Carousel({activeItemIndex, setActiveItemIndex, pages}) {
             setActiveItemIndex((prevIndex) => prevIndex - 1);
           }}
           className={sharedButtonClasses}>
-            &lt;
+            <ArrowLeft />
         </button>
 
         <div className="w-8/10">
@@ -28,7 +30,7 @@ export default function Carousel({activeItemIndex, setActiveItemIndex, pages}) {
             setActiveItemIndex((prevIndex) => prevIndex + 1);
           }}
           className={sharedButtonClasses}>
-            &gt;
+            <ArrowRight />
         </button>
     </div>
   );

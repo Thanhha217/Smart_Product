@@ -62,11 +62,13 @@ input[type="range"] {
 
 
 input[type="range"]::-webkit-slider-runnable-track {
+  cursor: pointer;
   height: var(--track-height);
   background-color: var(--track-color);
   border-radius: 9999px;
 }
 input[type="range"]::-moz-range-track {
+  cursor: pointer;
   height: var(--track-height);
   background-color: var(--track-color);
   border-radius: 9999px;
@@ -74,6 +76,7 @@ input[type="range"]::-moz-range-track {
 
 
 input[type="range"]::-webkit-slider-thumb {
+  cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
   pointer-events: auto;
@@ -82,8 +85,10 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 9999px;
   background-color: var(--thumb-color);
   margin-top: calc((var(--track-height) / 2) - (var(--thumb-size) / 2));
+  transition: transform 0.2s ease-in-out; 
 }
 input[type="range"]::-moz-range-thumb {
+  cursor: pointer;
   pointer-events: auto;
   width: var(--thumb-size);
   height: var(--thumb-size);
@@ -91,6 +96,14 @@ input[type="range"]::-moz-range-thumb {
   background-color: var(--thumb-color);
   /* margin: 1rem; */
   border: none;
+  transition: transform 0.2s ease-in-out; 
+}
+
+input[type="range"]::-webkit-slider-thumb:hover, input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2); 
+}
+input[type="range"]::-moz-range-thumb:hover, input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.2); 
 }
 
 

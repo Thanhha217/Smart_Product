@@ -18,16 +18,17 @@ export default function Home() {
         <SearchBar className="w-6/10"/>
       </div>
       
-
+    {/* Hide categories for now */}
+      {/* 
       <div className="w-8/10 h-5/12">
         <p>Categories</p>
-        {/* <CategoriesContainer /> */}
         <Carousel
           activeItemIndex={activeItemIndex} 
           setActiveItemIndex={setActiveItemIndex}
           pages={pages} 
         />
-      </div>
+      </div> 
+      */}
       
     </div>
   );

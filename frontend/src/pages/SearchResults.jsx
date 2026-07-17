@@ -19,7 +19,8 @@ export default function SearchResults() {
   const [minPriceValue, setMinPriceValue] = useState(0);
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
   const [starValue, setStarValue] = useState(1);
-  const [maxGwpValue, setMaxGwpValue] = useState(1000);
+  const gwpLimit = Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
+  const [maxGwpValue, setMaxGwpValue] = useState(gwpLimit);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [ignoreGwp, setIgnoreGwp] = useState(false);
   const [sortValue, setSortValue] = useState('');
@@ -42,7 +43,7 @@ export default function SearchResults() {
 
   // Options filter
   if (onSaleOnly) {
-    filteredProducts = filteredProducts.filter(item => item.product.final_price != item.product.final_price);
+    filteredProducts = filteredProducts.filter(item => item.product.final_price != item.product.original_price);
   }
 
   if (ignoreGwp) {
@@ -106,7 +107,7 @@ export default function SearchResults() {
         setMaxPriceValue={setMaxPriceValue}
         starValue={starValue}
         setStarValue={setStarValue}
-        gwpLimit={1000}
+        gwpLimit={gwpLimit}
         maxGwpValue={maxGwpValue}
         setMaxGwpValue={setMaxGwpValue}
         onSaleOnly={onSaleOnly}
