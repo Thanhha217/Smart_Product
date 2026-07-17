@@ -1,11 +1,11 @@
-import useCategoryPages from './components/categories/CategoryPages.jsx';
+import generateCategoryPages from './components/categories/generateCategoryPages.jsx';
 import Carousel from './components/carousel/Carousel.jsx';
 import SearchBar from "./components/search/SearchBar.jsx"
 import { useState } from "react";
 
 export default function Home() {
   const [activeItemIndex, setActiveItemIndex] = useState(0);
-  const pages = useCategoryPages();
+  const pages = generateCategoryPages();
 
   return (
     <div className="flex flex-col items-center gap-6 min-h-full">

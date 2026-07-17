@@ -1,11 +1,8 @@
 import { useState } from "react";
-import ProductSlot from "./ProductSlot"; // Adjust path accordingly
+import ProductSlot from "./ProductSlot";
 
 
 export default function ProductGrid({products}) {
-  // Generate 8 mock items on initialization
-  
-
   return (
     <div className="w-full p-2">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

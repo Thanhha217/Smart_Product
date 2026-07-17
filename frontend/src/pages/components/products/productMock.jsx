@@ -29,7 +29,7 @@ export function generateMockProducts(count = 8) {
       platform_name,
       image_url: "/logo192.png", // Kept strictly static as requested
       product: {
-        id: `prod-${index}`,
+        id: `${index}`,
         name,
         original_price,
         final_price,

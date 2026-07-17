@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import Header from './pages/components/header/Header';
+import Product from './pages/Product';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/q" element={<SearchResults />} />
+          <Route path="/p/:productId" element={<Product />} />
           {/* <Route path="/products" element={<Products />} /> */}
         </Routes>
       </div>

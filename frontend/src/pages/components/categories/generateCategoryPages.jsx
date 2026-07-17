@@ -3,7 +3,7 @@ import categories from './category_list.json';
 import { useRef, useState, useLayoutEffect } from "react";
 // import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 
-export default function useCategoryPages() {
+export default function generateCategoryPages() {
   let items = categories.map((category, index) => <li key={index}><CategorySlot text={category.name} src={category.src} /></li>);
   const maxItems = items.length;
 
