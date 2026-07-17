@@ -1,3 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-100: #F9FAFB;
+  /* Very light background accent */
+  --color-primary-200: #E7ECEF;
+  /* Light borders/soft backgrounds */
+  --color-primary-500: #329AD2;
+  /* Your original core 'primary' brand color */
+  --color-primary-800: #1B5B7E;
+  /* Deep text or dark mode surfaces */
+  --color-primary-900: #123D54;
+  /* Darkest contrast shade */
+
+  --color-secondary-500: #9BD232;
+  --color-secondary-700: #7AA725;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,9 +23,94 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-primary-200);
+  color: var(--color-primary-900);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+input {
+  accent-color: var(--color-secondary-500);
+}
+
+
+
+input[type="number"]:focus, input[type="text"]:focus {
+  outline-color: var(--color-secondary-500);
+  outline-style: var(--tw-outline-style);
+  outline-width: 2px;
+}
+
+input[type="number"] {
+  background-color: var(--color-primary-200);
+  text-align: right;
+}
+
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  
+  --thumb-size: 1rem;
+  --thumb-color: var(--color-secondary-500);
+  --track-color: var(--color-primary-200);
+  --track-height: 0.5rem;
+}
+
+
+input[type="range"]::-webkit-slider-runnable-track {
+  cursor: pointer;
+  height: var(--track-height);
+  background-color: var(--track-color);
+  border-radius: 9999px;
+}
+input[type="range"]::-moz-range-track {
+  cursor: pointer;
+  height: var(--track-height);
+  background-color: var(--track-color);
+  border-radius: 9999px;
+}
+
+
+input[type="range"]::-webkit-slider-thumb {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 9999px;
+  background-color: var(--thumb-color);
+  margin-top: calc((var(--track-height) / 2) - (var(--thumb-size) / 2));
+  transition: transform 0.2s ease-in-out; 
+}
+input[type="range"]::-moz-range-thumb {
+  cursor: pointer;
+  pointer-events: auto;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 9999px;
+  background-color: var(--thumb-color);
+  /* margin: 1rem; */
+  border: none;
+  transition: transform 0.2s ease-in-out; 
+}
+
+input[type="range"]::-webkit-slider-thumb:hover, input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2); 
+}
+input[type="range"]::-moz-range-thumb:hover, input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.2); 
+}
+
+
+input[type="range"].hide-track {
+  --track-color: transparent;
+}
+
+input[type="range"].hide-thumb {
+  --thumb-color: transparent;
 }
