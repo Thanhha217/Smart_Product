@@ -405,7 +405,7 @@ services:
       dockerfile: Dockerfile
     container_name: smartproductfinder-frontend
     ports:
-      - "3000:80"
+      - "5173:80"
     image: frontend
     restart: always
     depends_on:
