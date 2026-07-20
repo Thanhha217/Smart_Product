@@ -1,10 +1,20 @@
 import ProductFilter from "./components/products/ProductFilters";
 import ProductGrid from "./components/products/ProductGrid";
 import { useEffect, useState } from "react";
-import { generateMockProducts } from "./components/products/productMock";
-import { Link, useSearchParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Pagination from "./components/general/Pagination";
+import { GATEWAY_URL } from "./utils/consts";
+
+const fetchProducts = async (query) => {
+  const res = await fetch(`${GATEWAY_URL}/query?q=${encodeURIComponent(query)}`);
+
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : (Array.isArray(data?.products) ? data.products : []);
+} 
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -14,16 +24,67 @@ export default function SearchResults() {
   // const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
   const page = parseInt(searchParams.get('page') ?? 1)
 
-  const [productsInfo] = useState(() => generateMockProducts(50));
-  const priceLimit = (Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.final_price))) / 10000) + 1) * 10 ;
+  const [productsInfo, setProductsInfo] = useState([]);
+  const priceLimit = productsInfo.length
+    ? (Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.final_price))) / 10000) + 1) * 10
+    : 0;
   const [minPriceValue, setMinPriceValue] = useState(0);
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
   const [starValue, setStarValue] = useState(1);
-  const gwpLimit = Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
+  const gwpLimit = productsInfo.length
+    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
+    : 0;
   const [maxGwpValue, setMaxGwpValue] = useState(gwpLimit);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
   const [ignoreGwp, setIgnoreGwp] = useState(false);
   const [sortValue, setSortValue] = useState('');
+
+  useEffect(() => {
+    if (!productsInfo.length) {
+      setMinPriceValue(0);
+      setMaxPriceValue(0);
+      setMaxGwpValue(0);
+      return;
+    }
+
+    setMinPriceValue(0);
+    setMaxPriceValue(priceLimit);
+    setMaxGwpValue(gwpLimit);
+  }, [productsInfo, priceLimit, gwpLimit]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadProducts = async () => {
+      if (!query) {
+        if (isActive) {
+          setProductsInfo([]);
+        }
+
+        return;
+      }
+
+      try {
+        const data = await fetchProducts(query);
+
+        if (isActive) {
+          setProductsInfo(data);
+        }
+      } catch (error) {
+        if (isActive) {
+          setProductsInfo([]);
+        }
+
+        console.error("Failed to fetch products:", error);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [query]);
 
   const handleSortChange = (event) => {
     setSortValue(event.target.value);
@@ -55,13 +116,13 @@ export default function SearchResults() {
   // Sorting
   switch (sortValue) {
     case "price-low":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.final_price > b.product.final_price);
+      filteredProducts = filteredProducts.sort((a, b) => a.product.final_price - b.product.final_price);
       break;
     case "price-high":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.final_price < b.product.final_price);
+      filteredProducts = filteredProducts.sort((a, b) => b.product.final_price - a.product.final_price);
       break;
     case "eco-friendly":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.gwp > b.product.gwp);
+      filteredProducts = filteredProducts.sort((a, b) => a.product.gwp - b.product.gwp);
       break;
   }
 
