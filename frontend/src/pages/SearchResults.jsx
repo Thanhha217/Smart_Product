@@ -5,6 +5,7 @@ import { generateMockProducts } from "./components/products/productMock";
 import { Link, useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import Pagination from "./components/general/Pagination";
+import ProductMobileFilter from "./components/products/ProductMobileFilters";
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -14,7 +15,7 @@ export default function SearchResults() {
   // const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
   const page = parseInt(searchParams.get('page') ?? 1)
 
-  const [productsInfo] = useState(() => generateMockProducts(50));
+  const [productsInfo] = useState(() => generateMockProducts(250));
   const priceLimit = (Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.final_price))) / 10000) + 1) * 10 ;
   const [minPriceValue, setMinPriceValue] = useState(0);
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
@@ -97,9 +98,9 @@ export default function SearchResults() {
 
 
   return (
-    <div className="min-h-full p-10 flex gap-4 m-auto">
+    <div className="min-h-full md:py-6 md:p-10 pb-12 flex gap-4 m-auto">
       <ProductFilter
-        className="w-3/12 h-full"
+        className="hidden w-full md:flex md:w-3/12 h-full"
         priceLimit={priceLimit}
         minPriceValue={minPriceValue}
         setMinPriceValue={setMinPriceValue}
@@ -115,11 +116,32 @@ export default function SearchResults() {
         ignoreGwp={ignoreGwp}
         setIgnoreGwp={setIgnoreGwp}
       />
-      <div className="flex-1 px-6 flex flex-col gap-6">
+
+
+      <div className="flex-1 md:px-6 flex flex-col gap-6">
+        <ProductMobileFilter
+          priceLimit={priceLimit}
+          minPriceValue={minPriceValue}
+          setMinPriceValue={setMinPriceValue}
+          maxPriceValue={maxPriceValue}
+          setMaxPriceValue={setMaxPriceValue}
+          starValue={starValue}
+          setStarValue={setStarValue}
+          gwpLimit={gwpLimit}
+          maxGwpValue={maxGwpValue}
+          setMaxGwpValue={setMaxGwpValue}
+          onSaleOnly={onSaleOnly}
+          setOnSaleOnly={setOnSaleOnly}
+          ignoreGwp={ignoreGwp}
+          setIgnoreGwp={setIgnoreGwp}
+          sortValue={sortValue}
+          setSortValue={setSortValue}
+        />
+
         <div className="flex justify-between items-center">
           <p>Search results for "{query}"</p>
 
-          <div className="flex gap-4 items-center">
+          <div className="hidden md:flex gap-4 items-center">
             <label>Sort by</label>
             <select name="sorting" id="sorting" className="bg-primary-100 p-1" onChange={handleSortChange}>
               <option value="">Relevence</option>

@@ -17,7 +17,7 @@ export default function Pagination({ page, setPage, numberOfPages }) {
                                "disabled:text-primary-500 disabled:border-0 disabled:cursor-default"
 
     let pageNav = []
-    let offset = 2
+    let offset = 1
 
     if (page === 1) {
         pageNav.push(<button key={1} className={pageSelectedBtnStyle}>1</button>)
@@ -54,14 +54,16 @@ export default function Pagination({ page, setPage, numberOfPages }) {
 
 
     return (
-        <div className="flex gap-4 justify-end items-center">
-            <button className={pageSwitchBtnStyle} onClick={() => setPage(page-1)} disabled={page === 1}>
-                <ArrowLeft/>
-            </button>
-            {pageNav}
-            <button className={pageSwitchBtnStyle} onClick={() => setPage(page+1)} disabled={page === numberOfPages}>
-                <ArrowRight/>
-            </button>
+        <div className="flex justify-end items-center">
+            <div className="flex gap-2 justify-between items-center">
+                <button className={pageSwitchBtnStyle} onClick={() => setPage(page-1)} disabled={page === 1}>
+                    <ArrowLeft/>
+                </button>
+                {pageNav}
+                <button className={pageSwitchBtnStyle} onClick={() => setPage(page+1)} disabled={page === numberOfPages}>
+                    <ArrowRight/>
+                </button>
+            </div>
         </div>
     );
 }
