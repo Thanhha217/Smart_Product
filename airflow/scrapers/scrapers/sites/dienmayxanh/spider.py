@@ -61,7 +61,6 @@ class DienmayxanhSpider(BaseProductSpider):
             loader.add_value("description", short_desc)
 
         loader.add_value("short_description", short_desc)
-        print(short_desc)
 
         loader.add_css("product_rating", ".vote-txt b::text")
         loader.add_css("review_count", ".point-alltimerate::text")
@@ -74,7 +73,6 @@ class DienmayxanhSpider(BaseProductSpider):
 
         product_tags = response.css("#policy .policy__list > li ::text").getall()
         
-        print(product_tags)
 
         warranty_duration = "0"
         for i in range(len(product_tags)):

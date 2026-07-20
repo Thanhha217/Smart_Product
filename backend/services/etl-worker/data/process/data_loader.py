@@ -145,7 +145,6 @@ def load_embedding(id: int, embedding: list[float]):
         index.add_with_ids(np_embedding, ids)
 
 def load_embeddings(ids: list[int], embeddings: list[list[float]], index=index):
-    print(f"Loading embeddings for IDs: {ids}", flush=True)
     if not ids:
         return
     try:
