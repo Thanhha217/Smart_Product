@@ -27,13 +27,11 @@ export default function ProductMobileFilter({
     const [open, setOpen] = useState(false)
     const closeFilters = () => setOpen(false)
 
-    const elementHeight = 16
-
     return (
         <div className="md:hidden sticky top-0 flex flex-col shadow-md">
 
 
-            <div className={`relative z-10 h-${elementHeight} bg-primary-100 flex gap-4 justify-between p-2 pt-6 items-center`}>
+            <div className={`relative z-10 h-16 bg-primary-100 flex gap-4 justify-between p-2 pt-6 items-center`}>
                 <button className="bg-primary-500 text-primary-100 py-1 px-2 rounded-2xl" onClick={() => setOpen(!open)}>{open ? "Close filters" : "Open filters"}</button>
 
                 <div className="flex gap-4 items-center">
@@ -47,7 +45,7 @@ export default function ProductMobileFilter({
                 </div>
             </div>
 
-            <div className={`absolute top-12 ${open?"":"hidden"}`}>
+            <div className={`absolute top-16 ${open?"":"hidden"}`}>
                 <div
                     className={`absolute z-0 h-screen w-screen top-0 bg-black/40 transition-opacity duration-500 ease-out ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
                     onClick={closeFilters}

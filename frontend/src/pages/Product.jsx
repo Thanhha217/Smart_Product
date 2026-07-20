@@ -44,14 +44,14 @@ export default function Product() {
 
 
     return (
-        <div className="flex flex-col items-center gap-2 p-10 min-h-full">
-            <div className="flex justify-start w-full">
+        <div className="flex flex-col items-center gap-2 py-6 md:p-10 min-h-full">
+            <div className="flex justify-start w-full px-2">
                 <p className="text-primary-800 hover:underline cursor-pointer">{productInfo.category_name}</p>
             </div>
             
-            <div className="bg-primary-100 min-w-full min-h-5/12 flex p-6 gap-2">
-                <img className="w-120 h-120 bg-white border-2 border-primary-200" src={productInfo.image_url} />
-                <div className="flex flex-col justify-between px-12">
+            <div className="bg-primary-100 rounded-2xl max-w-full md:min-w-full md:min-h-5/12 flex md:items-normal flex-col md:flex-row p-6 gap-2">
+                <img className="w-full md:w-120 md:h-120 bg-white border-2 border-primary-200" src={productInfo.image_url} />
+                <div className="flex flex-col justify-between md:px-12 max-w-full items-center md:items-baseline gap-10">
                     <div className='flex flex-col gap-4'>
                         <p className="font-bold text-2xl">{productInfo.platform_name}</p>
                         
@@ -63,11 +63,12 @@ export default function Product() {
                         </div>
 
                         <p className="text-orange-400 text-4xl font-bold">{display_price(productInfo.product.final_price)}₫</p>
-                        <div className="flex gap-4 ">
-                            <p className="text-primary-800 line-through">{display_price(productInfo.product.final_price)}₫</p>
-                            <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{productInfo.product.original_price != productInfo.product.final_price ? "-" + (100 - Math.floor((productInfo.product.final_price / productInfo.product.original_price) * 100)) + "%" : ""}</p>
+                        <div className={"flex gap-4 " + (productInfo.product.original_price != productInfo.product.final_price ? "" : "hidden")}>
+                            <p className="text-primary-800 line-through">{display_price(productInfo.product.original_price)}₫</p>
+                            <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{"-" + (100 - Math.floor((productInfo.product.final_price / productInfo.product.original_price) * 100)) + "%"}</p>
                         </div>
-                        <div className="flex gap-6">
+                        
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 md:gap-6">
                             <p className={(productInfo.return_policy.free_delivery ? "" : "hidden ") + tagStyle}>Free delivery</p>
                             <p className={(productInfo.return_policy.days_for_return ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.days_for_return} days for return</p>
                             <p className={(productInfo.return_policy.warranty_duration ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.warranty_duration} months warranty</p>
@@ -80,7 +81,7 @@ export default function Product() {
                             href={productInfo.product.product_url}
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="bg-primary-500 rounded-2xl text-2xl font-bold text-primary-100 px-4 py-2 cursor-pointer hover:bg-primary-800 transition duration-100 ease-in-out">
+                            className="text-center w-full bg-primary-500 rounded-2xl text-2xl font-bold text-primary-100 px-4 py-2  p-100 cursor-pointer hover:bg-primary-800 transition duration-100 ease-in-out">
                             Check On Website
                         </a>
                     </div>
