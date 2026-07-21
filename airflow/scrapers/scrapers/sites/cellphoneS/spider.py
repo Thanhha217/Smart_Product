@@ -155,9 +155,22 @@ class CellphoneSSpider(BaseProductSpider):
         loader.add_value("name", api_product["name"])
         loader.add_value("category", std_category)
 
-        loader.add_value("file_urls", [
-            f"https://www.cellphones.com.vn/imgs/products/large{api_product['thumbnail']}"
-        ])
+        image_url = response.xpath("//meta[@property='og:image']/@content").get()
+
+        if not image_url or not image_url.strip():
+            image_url = response.css(".box-product-infomation-img img::attr(src)").get()
+
+        if not image_url:
+            thumbnail = api_product.get("thumbnail")
+            if thumbnail:
+                if thumbnail.startswith("http"):
+                    image_url = thumbnail
+                else:
+                    clean_path = thumbnail.lstrip("/")
+                    image_url = f"https://cdn.cellphones.com.vn/media/catalog/product/{clean_path}"
+
+        if image_url:
+            loader.add_value("file_urls", [image_url])
 
         # API returns prices as floats in scientific notation (e.g. 1.69e+06),
         # so we cast to int BEFORE str() to avoid a trailing ".0" that the
