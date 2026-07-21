@@ -75,6 +75,14 @@ def query_ranking_system(query, limit):
             ranked_ids.pop(i-offset)
             offset += 1
 
+    query_distance = np.asarray(query_distance).reshape(-1)
+
+    if len(product_list) != len(query_distance):
+        aligned_length = min(len(product_list), len(query_distance))
+        product_list = product_list[:aligned_length]
+        ranked_ids = ranked_ids[:aligned_length]
+        query_distance = query_distance[:aligned_length]
+
     features = compute_features(product_list, query_distance)
 
 
