@@ -97,8 +97,8 @@ export default function Product() {
                         <h1 className="text-4xl">{productInfo.product.name}</h1>
 
                         <div className="flex gap-4">
-                            <p className="text-nowrap">★ {productInfo.product.product_rating} ({productInfo.product.review_count})</p>
-                            <p>Seller: {productInfo.seller.name} ({productInfo.seller.seller_rating}% good ratings)</p>
+                            <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : "None"}</p>
+                            <p>Seller: {`${productInfo.seller.name} (${productInfo.seller.seller_rating <= 0 ? "No ratings available" : (productInfo.seller.seller_rating+"% good ratings")})`}</p>
                         </div>
 
                         <p className="text-orange-400 text-4xl font-bold">{display_price(productInfo.product.final_price)}₫</p>

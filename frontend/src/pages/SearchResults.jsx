@@ -31,7 +31,7 @@ export default function SearchResults() {
     : 0;
   const [minPriceValue, setMinPriceValue] = useState(0);
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
-  const [starValue, setStarValue] = useState(1);
+  const [starValue, setStarValue] = useState(0);
   const gwpLimit = productsInfo.length
     ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
     : 0;
@@ -108,7 +108,9 @@ export default function SearchResults() {
   filteredProducts = filteredProducts.filter(item => item.product.final_price >= minPriceValue*1000);
 
   // Rating filter
-  filteredProducts = filteredProducts.filter(item => item.product.product_rating >= starValue);
+  if (starValue > 0) {
+    filteredProducts = filteredProducts.filter(item => item.product.product_rating * 5.0 >= starValue);
+  }
 
   // Gwp filter
   filteredProducts = filteredProducts.filter(item => item.product.gwp <= maxGwpValue);

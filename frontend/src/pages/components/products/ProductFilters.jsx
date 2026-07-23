@@ -75,7 +75,7 @@ export default function ProductFilter({
                     setStarValue={setStarValue}
                 />
                 <div>
-                    <input type="number" className="bg-primary-200 text-right" min="1" max="5" value={starValue} onChange={handleStarChange}/>
+                    <input type="number" className="bg-primary-200 text-right" min="0" max="5" value={starValue} onChange={handleStarChange}/>
                     <label>stars</label>
                 </div>
                 
