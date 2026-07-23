@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Pagination from "./components/general/Pagination";
 import { GATEWAY_URL } from "./utils/consts";
+import Throbber from "./components/general/Throbber";
 
 const fetchProducts = async (query) => {
   const res = await fetch(`${GATEWAY_URL}/query?q=${encodeURIComponent(query)}`);
@@ -52,6 +53,8 @@ export default function SearchResults() {
     setMaxGwpValue(gwpLimit);
   }, [productsInfo, priceLimit, gwpLimit]);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     let isActive = true;
 
@@ -59,20 +62,28 @@ export default function SearchResults() {
       if (!query) {
         if (isActive) {
           setProductsInfo([]);
+          setLoading(false);
         }
 
         return;
       }
+
+      if (isActive) {
+        setLoading(true);
+      }
+      
 
       try {
         const data = await fetchProducts(query);
 
         if (isActive) {
           setProductsInfo(data);
+          setLoading(false);
         }
       } catch (error) {
         if (isActive) {
           setProductsInfo([]);
+          setLoading(false);
         }
 
         console.error("Failed to fetch products:", error);
@@ -196,6 +207,16 @@ export default function SearchResults() {
           setPage={goToPage}
           numberOfPages={numberOfPages}
         />
+
+        {/* <div className={`text-6xl ${loading?"":"hidden"}`}>I'm loading...</div> */}
+        <div className={`m-auto ${loading?"":"hidden"}`}>
+          <Throbber/>
+        </div>
+
+        <p className={`m-auto text-2xl text-primary-800 ${!loading && !filteredProducts.length ?"":"hidden"}`}>
+          No products found...
+        </p>
+
         <ProductGrid products={filteredProducts.slice(maxPerPage * (page - 1), maxPerPage * page)} />
 
         <Pagination
