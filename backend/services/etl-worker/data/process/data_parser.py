@@ -47,7 +47,12 @@ def parse_product_data(data: dict):
 
     images = []
     for image_url in data.get("file_urls", []):
-        image = Image(image_url=image_url)
+        if not image_url:
+            continue
+        cleaned_url = str(image_url).strip()
+        if not cleaned_url:
+            continue
+        image = Image(image_url=cleaned_url)
         images.append(image)
 
     return {

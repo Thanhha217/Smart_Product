@@ -57,3 +57,16 @@ def query_endpoint(q: str, limit: int = 32):
     
     products_data = response.json()
     return {"products": products_data}
+
+@app.get("/product/{product_id}")
+def product_endpoint(product_id: str):
+
+    try:
+        request = f"{DB_SEARCH_URL}/product/{product_id}"
+        response = requests.get(request)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error communicating with the db-search service")
+    
+    product_data = response.json()
+    return {"product": product_data}

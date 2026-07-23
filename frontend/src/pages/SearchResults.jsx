@@ -196,7 +196,6 @@ export default function SearchResults() {
           setPage={goToPage}
           numberOfPages={numberOfPages}
         />
-
         <ProductGrid products={filteredProducts.slice(maxPerPage * (page - 1), maxPerPage * page)} />
 
         <Pagination

@@ -89,3 +89,9 @@ def get_products_data_from_ids(product_ids):
             products.append(product_data)
 
     return products
+
+def get_product_data_from_id(product_id):
+    product_data = get_product_data_from_ids(product_id)
+    if not product_data:
+        return None
+    return product_data
