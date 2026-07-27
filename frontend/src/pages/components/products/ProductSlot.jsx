@@ -21,7 +21,7 @@ export default function ProductSlot({ product, image_url, platform_name }) {
             <div className="flex flex-col">
                 <p className="font-bold">{platform_name}</p>
 
-                <img className="border-primary-200 border-2 bg-white min-w-40 md:w-full" src={image_url} alt={product.name} />
+                <img className="border-primary-200 border-2 bg-white min-w-45 max-w-45 h-50 object-contain object-center md:max-w-full md:w-full md:h-60" src={image_url} alt={product.name} />
             </div>
 
             <div className="flex flex-col">
