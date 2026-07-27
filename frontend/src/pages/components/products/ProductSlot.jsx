@@ -28,9 +28,9 @@ export default function ProductSlot({product, image_url, platform_name}) {
                 <p className="text-orange-400 text-2xl">{display_price(product.final_price)}₫</p>
                 <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{product.original_price != product.final_price ? "-" + (100 - Math.floor((product.final_price/product.original_price)*100)) + "%" : ""}</p>
             </div>
-
+            
             <div className="flex justify-between gap-4 pt-2">
-                <p className="text-nowrap">★ {product.product_rating} ({product.review_count})</p>
+                <p className="text-nowrap">★ {product.review_count ? `${product.product_rating * 5.0} (${product.review_count})` : "None"}</p>
                 <p className="text-nowrap bg-green-500 text-white rounded-2xl px-2 font-bold">{product.gwp} kg CO₂e</p>
             </div>
             

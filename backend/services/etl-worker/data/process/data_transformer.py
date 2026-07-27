@@ -22,7 +22,7 @@ def generate_embeddings(parsed_data):
     if image_urls:
         try:
             batch_vectors = _post_to_clip_provider("/encode-images-from-urls", {"image_urls": image_urls})
-            image_embeddings = [vector for vector in batch_vectors if vector is not None]
+            image_embeddings = batch_vectors
         except Exception as e:
             print(f"Error processing product images: {e}", flush=True)
 

@@ -1,46 +1,85 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { generateMockProducts } from "./components/products/productMock";
 import ProductCarousel from "./components/products/ProductCarousel";
+import { GATEWAY_URL } from "./utils/consts";
 
 export default function Product() {
-    const productId = useParams()
+    const params = useParams()
 
-    const productInfo = {
-        platform_name: "Shopee",
-        category_name: "Smartphone",
-        image_url: "/logo192.png",
-        seller: {
-            name: "Super seller",
-            seller_rating: 80
-        },
-        product: {
-            id: productId,
-            product_url: "https://youtu.be/dQw4w9WgXcQ",
-            name: "Test product",
-            original_price: 15636212,
-            final_price: 12010000,
-            product_rating: 4.6,
-            review_count: 123,
-            gwp: 12.3
-        },
-        return_policy: {
-            days_for_return: 30,
-            free_delivery: true,
-            warranty_duration: 12
+    // const productInfo = {
+    //     platform_name: "Shopee",
+    //     category_name: "Smartphone",
+    //     image_url: "/logo192.png",
+    //     seller: {
+    //         name: "Super seller",
+    //         seller_rating: 80
+    //     },
+    //     product: {
+    //         id: productId,
+    //         product_url: "https://youtu.be/dQw4w9WgXcQ",
+    //         name: "Test product",
+    //         original_price: 15636212,
+    //         final_price: 12010000,
+    //         product_rating: 4.6,
+    //         review_count: 123,
+    //         gwp: 12.3
+    //     },
+    //     return_policy: {
+    //         days_for_return: 30,
+    //         free_delivery: true,
+    //         warranty_duration: 12
+    //     }
+
+    // }
+
+
+    const [productInfo, setProductInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProductInfo = async (productId) => {
+            try {
+                const res = await fetch(`${GATEWAY_URL}/product/${productId}`);
+                const data = await res.json();
+                setProductInfo(data.product);
+                console.log(data);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (params.productId) {
+            fetchProductInfo(params.productId);
         }
-
-    }
+    }, [params.productId]);
 
     function display_price(price) {
-        let stringPrice = price.toString();
-        for (let i = 3; i < stringPrice.length; i += 4) {
-            stringPrice = stringPrice.slice(0, stringPrice.length - i) + "." + stringPrice.slice(stringPrice.length - i, stringPrice.length)
-        }
-        return stringPrice;
+    if (price == null) return "";
+    let stringPrice = String(price);
+    let parts = [];
+    
+    // Slice the string from right to left in chunks of 3
+    while (stringPrice.length > 3) {
+        parts.unshift(stringPrice.slice(-3));
+        stringPrice = stringPrice.slice(0, -3);
+    }
+    parts.unshift(stringPrice);
+    
+    return parts.join(".");
+}
+
+    const tagStyle = "bg-primary-200 rounded-2xl text-nowrap py-1 px-2";
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-10 min-h-full">Loading product...</div>;
     }
 
-    const tagStyle = "bg-primary-200 rounded-2xl text-nowrap py-1 px-2"
+    if (!productInfo) {
+        return <div className="flex justify-center items-center p-10 min-h-full">Product not found.</div>;
+    }
 
 
     return (
@@ -58,8 +97,8 @@ export default function Product() {
                         <h1 className="text-4xl">{productInfo.product.name}</h1>
 
                         <div className="flex gap-4">
-                            <p className="text-nowrap">★ {productInfo.product.product_rating} ({productInfo.product.review_count})</p>
-                            <p>Seller: {productInfo.seller.name} ({productInfo.seller.seller_rating}% good ratings)</p>
+                            <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : "None"}</p>
+                            <p>Seller: {`${productInfo.seller.name} (${productInfo.seller.seller_rating <= 0 ? "No ratings available" : (productInfo.seller.seller_rating+"% good ratings")})`}</p>
                         </div>
 
                         <p className="text-orange-400 text-4xl font-bold">{display_price(productInfo.product.final_price)}₫</p>

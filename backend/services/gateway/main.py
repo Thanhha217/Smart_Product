@@ -2,8 +2,21 @@ import os
 import requests
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
@@ -44,3 +57,16 @@ def query_endpoint(q: str, limit: int = 32):
     
     products_data = response.json()
     return {"products": products_data}
+
+@app.get("/product/{product_id}")
+def product_endpoint(product_id: str):
+
+    try:
+        request = f"{DB_SEARCH_URL}/product/{product_id}"
+        response = requests.get(request)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error communicating with the db-search service")
+    
+    product_data = response.json()
+    return {"product": product_data}

@@ -1,0 +1,18 @@
+/* Source : https://css-loaders.com/dots/ */
+
+.loader {
+    --size: 40px;
+    --gap: 10px;
+    width: var(--size);
+    height: var(--size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    animation: l5 1s infinite linear alternate;
+}
+
+@keyframes l5 {
+    0%  {box-shadow: calc(var(--size) + var(--gap)) 0 var(--color-primary-800), calc(-1 * (var(--size) + var(--gap))) 0 color-mix(in srgb, var(--color-primary-800) 15%, transparent); background: var(--color-primary-800) }
+    33% {box-shadow: calc(var(--size) + var(--gap)) 0 var(--color-primary-800), calc(-1 * (var(--size) + var(--gap))) 0 color-mix(in srgb, var(--color-primary-800) 15%, transparent); background: color-mix(in srgb, var(--color-primary-800) 15%, transparent)}
+    66% {box-shadow: calc(var(--size) + var(--gap)) 0 color-mix(in srgb, var(--color-primary-800) 15%, transparent),calc(-1 * (var(--size) + var(--gap))) 0 var(--color-primary-800); background: color-mix(in srgb, var(--color-primary-800) 15%, transparent)}
+    100%{box-shadow: calc(var(--size) + var(--gap)) 0 color-mix(in srgb, var(--color-primary-800) 15%, transparent),calc(-1 * (var(--size) + var(--gap))) 0 var(--color-primary-800); background: var(--color-primary-800) }
+}
