@@ -1,39 +1,29 @@
-import open_clip
-from PIL import Image
+import os
 import requests
-import threading
 
-_model = None
-_preprocess = None
-_tokenizer = None
-_load_lock = threading.Lock()
+OPEN_CLIP_PROVIDER = os.environ.get("OPEN_CLIP_PROVIDER_URL", "http://smartproductfinder-backend-clip-provider:8067")
 
-def _load_models():
-    global _model, _preprocess, _tokenizer
-    
-    if _model is not None:
-        return
-    
-    with _load_lock:
-        if _model is None:
-            print("Loading OpenCLIP model...", flush=True)
-            _model, _, _preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
-            _tokenizer = open_clip.get_tokenizer('ViT-B-32')
-            print("OpenCLIP loaded!", flush=True)
+_session = requests.Session()
+
+
+def _post_to_clip_provider(path, payload):
+    response = _session.post(f"{OPEN_CLIP_PROVIDER}{path}", json=payload)
+    response.raise_for_status()
+    return response.json()
 
 def generate_embeddings(parsed_data):
-    _load_models()
+
     text_to_encode = parsed_data["product"].name + " " + parsed_data["product"].description
-    text_input = _tokenizer([text_to_encode])
-    text_vector = _model.encode_text(text_input)
+    text_vector = _post_to_clip_provider("/encode-text", {"text": text_to_encode})
 
+    image_urls = [image.image_url for image in parsed_data["images"]]
     image_embeddings = []
-    for image in parsed_data["images"]:
-        try:
-            image_input = _preprocess(Image.open(requests.get(image.image_url, stream=True).raw)).unsqueeze(0)
-            image_vector = _model.encode_image(image_input)
-            image_embeddings.append(image_vector.squeeze().tolist())
-        except Exception as e:
-            print(f"Error processing image {image.image_url}: {e}", flush=True)
 
-    return text_vector.squeeze().tolist(), image_embeddings
+    if image_urls:
+        try:
+            batch_vectors = _post_to_clip_provider("/encode-images-from-urls", {"image_urls": image_urls})
+            image_embeddings = batch_vectors
+        except Exception as e:
+            print(f"Error processing product images: {e}", flush=True)
+
+    return text_vector, image_embeddings

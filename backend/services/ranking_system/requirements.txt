@@ -1,0 +1,8 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+sqlmodel==0.0.38
+psycopg2-binary==2.9.12
+faiss-cpu==1.14.2
+numpy==2.4.6
+catboost==1.2.10
+requests==2.34.2

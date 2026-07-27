@@ -422,6 +422,11 @@ services:
     env_file:
       - ./backend/.env.dev
     restart: always
+    depends_on:
+      - backend-etl-worker
+      - backend-clip-provider
+      - ranking-system
+      - db-search
 
   # ADD OTHER BACKEND SERVICES (e.g., product-service, user-service, etc.) HERE
   
@@ -438,8 +443,55 @@ services:
     restart: always
     volumes:
       - ./product_images:/opt/product_images
+      - faiss-db-volume:/opt/faiss_index
     depends_on:
       - kafka
+      - smart-product-finder-database
+      - backend-clip-provider
+
+  backend-clip-provider:
+    build:
+      context: ./backend/services/clip-provider
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-backend-clip-provider
+    ports:
+      - "8067:8067"
+    image: backend-clip-provider
+    env_file:
+      - ./backend/.env.dev
+    restart: always
+
+  ranking-system:
+    build:
+      context: ./backend/services/ranking_system
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-ranking-system
+    ports:
+      - "8008:8008"
+    image: ranking-system
+    env_file:
+      - ./backend/.env.dev
+    restart: always
+    volumes:
+      - faiss-db-volume:/opt/faiss_index
+      - ./datasets:/app/datasets
+    depends_on:
+      - smart-product-finder-database
+      - backend-etl-worker
+      - backend-clip-provider
+
+  db-search:
+    build:
+      context: ./backend/services/db-search
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-db-search
+    ports:
+      - "8061:8061"
+    image: db-search
+    env_file:
+      - ./backend/.env.dev
+    restart: always
+    depends_on:
       - smart-product-finder-database
   
   smart-product-finder-database:
@@ -457,5 +509,7 @@ services:
 
 volumes:
   postgres-db-volume:
+  pgvector-db-volume:
   spf-postgres-db-volume:
   kafka-data-volume:
+  faiss-db-volume:
