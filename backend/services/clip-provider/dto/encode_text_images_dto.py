@@ -8,3 +8,6 @@ class EncodeImageFromUrlDTO(BaseModel):
 
 class EncodeImagesFromUrlsDTO(BaseModel):
     image_urls: list[str]
+
+class EncodeImageFromBase64DTO(BaseModel):
+    image_base64: str

@@ -6,17 +6,27 @@ import ImpagePopup from "../images/ImpagePopup";
 export default function SearchBar({ className }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isImagePopupOpen, setIsImagePopupOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null); // On stocke l'objet File directement
   const [selectedImageName, setSelectedImageName] = useState("");
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
-    e.preventDefault(); // Prevents the browser from reloading the page
-    if (searchQuery.trim() === "") return;
-    navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
+    e.preventDefault();
+    if (searchQuery.trim() === "" && !selectedImageFile) return;
+
+    navigate(`/search?query=${encodeURIComponent(searchQuery)}`, {
+      state: { imageFile: selectedImageFile }
+    });
   };
 
   const handleImageSelect = (file) => {
-    setSelectedImageName(file.name);
+    if (file) {
+      setSelectedImageFile(file);
+      setSelectedImageName(file.name);
+    } else {
+      setSelectedImageFile(null);
+      setSelectedImageName("");
+    }
     setIsImagePopupOpen(false);
   };
 
@@ -65,12 +75,6 @@ export default function SearchBar({ className }) {
         onClose={() => setIsImagePopupOpen(false)}
         onSelect={handleImageSelect}
       />
-
-      {/* {selectedImageName ? (
-        <p className="mt-2 text-xs text-primary-800 truncate">
-          Selected image: {selectedImageName}
-        </p>
-      ) : null} */}
     </div>
   );
 }
