@@ -10,13 +10,13 @@ default_args = {
 }
 
 
-with DAG(
-    "tgdd_scraper_dag",
-    default_args=default_args,
-    schedule="@daily",
-    catchup=False,
-) as dag:
-    run_spider = BashOperator(
-        task_id="run_tgdd_spider",
-        bash_command="cd /opt/airflow/scrapers && scrapy crawl tgdd_products",
-    )
+# with DAG(
+#     "tgdd_scraper_dag",
+#     default_args=default_args,
+#     schedule="@daily",
+#     catchup=False,
+# ) as dag:
+#     run_spider = BashOperator(
+#         task_id="run_tgdd_spider",
+#         bash_command="cd /opt/airflow/scrapers && scrapy crawl tgdd_products",
+#     )

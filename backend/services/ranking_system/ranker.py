@@ -10,6 +10,7 @@ from product_searcher import get_products_from_ids, get_similar_products_indices
 
 MAX_RELEVANT_PRODUCTS = 20
 RRF_K = 60  # standard RRF damping constant
+CARBON_RRF_WEIGHT = 0.5
 
 new_ranker = catboost.CatBoostRanker()
 new_ranker.load_model('models/catboost_ranker_model.txt')
@@ -77,15 +78,16 @@ def _ranks_from_scores(scores, higher_is_better=True):
 def _rrf_fuse(relevance_scores, co2e_values):
     """Fuse a relevance ranking with a carbon ranking via Reciprocal Rank Fusion.
 
-    Equal weights. Lower co2e ranks better; products with no estimate (NaN)
-    sort last. Returns candidate indices ordered best-to-worst.
+    Relevance stays dominant, while the carbon signal is applied as a softer
+    penalty. Lower co2e ranks better; products with no estimate (NaN) sort last.
+    Returns candidate indices ordered best-to-worst.
     """
     relevance_ranks = _ranks_from_scores(relevance_scores, higher_is_better=True)
    
     carbon = np.where(np.isnan(co2e_values), np.inf, co2e_values)
     carbon_ranks = _ranks_from_scores(carbon, higher_is_better=False)
 
-    rrf_scores = 1.0 / (RRF_K + relevance_ranks) + 1.0 / (RRF_K + carbon_ranks)
+    rrf_scores = 1.0 / (RRF_K + relevance_ranks) + CARBON_RRF_WEIGHT / (RRF_K + carbon_ranks)
     return np.argsort(-rrf_scores, kind="stable")
 
 def query_ranking_system(query, limit):
@@ -143,10 +145,5 @@ def query_ranking_system(query, limit):
 
     product_ids = [product_list[i].product_id for i in fused_order]
 
-    print("\nFinal product ID ranking (RRF: relevance + carbon)")
-    for i in fused_order:
-        p = product_list[i]
-        print(f"name: {p.product_name}, platform: {p.platform_name}, "
-              f"price: {p.final_price}, reviews: {p.product_rating}, co2e: {p.co2e_kg}")
-
+    # return indices[0][ranked_indices].tolist()
     return product_ids
