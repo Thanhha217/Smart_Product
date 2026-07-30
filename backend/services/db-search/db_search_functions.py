@@ -20,6 +20,7 @@ def get_product_data_from_ids(product_id):
                 product.description AS product_description,
                 product.product_rating AS product_rating,
                 product.review_count AS review_count,
+                product.co2e_kg AS co2e_kg,
 
                 category.name AS category_name,
 
@@ -71,7 +72,7 @@ def get_product_data_from_ids(product_id):
                 "final_price": product_data_dict["final_price"],
                 "product_rating": product_data_dict["product_rating"],
                 "review_count": product_data_dict["review_count"],
-                "gwp": 0.0,
+                "co2e_kg": product_data_dict["co2e_kg"],
             },
             "return_policy": {
                 "days_for_return": product_data_dict["days_for_return"],

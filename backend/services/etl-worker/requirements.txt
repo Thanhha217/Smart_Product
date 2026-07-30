@@ -7,3 +7,4 @@ python-dotenv==1.2.2
 faiss-cpu==1.14.2
 numpy==2.4.6
 requests==2.34.2
+anthropic==0.69.0

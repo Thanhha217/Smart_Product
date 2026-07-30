@@ -83,7 +83,15 @@ def get_or_create_product(session: Session, product, platform_id):
         existing_product.seller_id = product.seller_id
         existing_product.return_policy_id = product.return_policy_id
         existing_product.scraped_at = datetime.now().timestamp()
-        
+
+        # Carry over a fresh CO2e estimate. The estimator leaves these as None when
+        # the row already had a value, so copying unconditionally would wipe it.
+        if product.co2e_kg is not None:
+            existing_product.co2e_kg = product.co2e_kg
+            existing_product.co2e_source = product.co2e_source
+            existing_product.co2e_confidence = product.co2e_confidence
+            existing_product.co2e_explanation = product.co2e_explanation
+
         session.add(existing_product)
         session.commit()
         session.refresh(existing_product)

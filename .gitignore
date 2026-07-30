@@ -3,3 +3,6 @@
 
 product_images/
 datasets/
+
+# Local type-checker config: pins an OS-specific interpreter path
+pyrefly.toml

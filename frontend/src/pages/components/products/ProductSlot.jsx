@@ -34,7 +34,7 @@ export default function ProductSlot({ product, image_url, platform_name }) {
             
                 <div className="flex flex-col md:flex-row justify-between gap-x-4 gap-y-2 pt-2">
                     <p className="text-nowrap">★ {product.review_count ? `${product.product_rating * 5.0} (${product.review_count})` : "None"}</p>
-                    <p className="text-nowrap bg-green-500 text-white rounded-2xl px-2 font-bold w-min">{product.gwp} kg CO₂e</p>
+                    <p className="text-nowrap bg-green-500 text-white rounded-2xl px-2 font-bold w-min">{product.co2e_kg} kg CO₂e</p>
                 </div>
 
             </div>
