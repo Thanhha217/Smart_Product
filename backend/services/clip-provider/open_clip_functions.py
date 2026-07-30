@@ -28,3 +28,13 @@ def encode_image_from_url(image_url: str):
         return None
     image_input = _preprocess(Image.open(image_source.raw)).unsqueeze(0)
     return _model.encode_image(image_input)
+
+def encode_images_from_urls(image_urls: list[str]):
+    encoded_images = []
+
+    for image_url in image_urls:
+        encoded_image = encode_image_from_url(image_url)
+        if encoded_image is not None:
+            encoded_images.append(encoded_image.squeeze().tolist())
+    
+    return encoded_images

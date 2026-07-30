@@ -18,7 +18,7 @@ npm install
 ## Running the frontend
 To start the frontend development server, run the following command:
 ```bash
-npm start
+npm run dev
 ```
 
-This will start the development server and open the application in your default web browser. The frontend will be available at `http://localhost:3000`.
+This will start the development server and open the application in your default web browser. The frontend will be available at `http://localhost:5173`.

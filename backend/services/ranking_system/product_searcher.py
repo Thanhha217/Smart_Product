@@ -29,6 +29,8 @@ def get_similar_products_indices(query_embedding, n):
     return indices, (distances + 1) / 2
 
 def get_products_from_ids(product_ids):
+    product_ids = [int(product_id) for product_id in product_ids if int(product_id) >= 0]
+
     with Session(engine) as session:
         query = """
             SELECT
@@ -41,7 +43,8 @@ def get_products_from_ids(product_ids):
             INNER JOIN seller ON product.seller_id = seller.id
             INNER JOIN return_policy ON product.return_policy_id = return_policy.id
             INNER JOIN platform ON product.platform_id = platform.id
-            WHERE product.id = ANY(:product_ids)
+            WHERE product.id = ANY(CAST(:product_ids AS integer[]))
+            ORDER BY array_position(CAST(:product_ids AS integer[]), product.id)
         """
         
         # 2. Execute the string wrapped in text()

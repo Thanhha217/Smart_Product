@@ -35,7 +35,6 @@ def create_dataset():
                     offset += 1
 
             features = compute_features(product_list, query_distance)
-            print(features)
 
             content += generate_dataset(qid, features, base_label="X")
             content += generate_garbage_mock_features(NB_GARBAGE_PRODUCTS, qid)
