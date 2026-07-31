@@ -10,7 +10,10 @@ from product_featurer import compute_features
 from product_searcher import get_products_from_ids, get_similar_products_indices
 
 MAX_RELEVANT_PRODUCTS = 20
-new_ranker = catboost.CatBoostRanker() 
+RRF_K = 60  # standard RRF damping constant
+CARBON_RRF_WEIGHT = 0.2
+
+new_ranker = catboost.CatBoostRanker()
 new_ranker.load_model('models/catboost_ranker_model.txt')
 print("Model loaded from 'catboost_ranker_model.txt'")
 
@@ -48,6 +51,45 @@ def _build_name_boosts(query, product_list):
             boosts.append(0.25 * (matched_tokens / len(query_tokens)))
 
     return np.array(boosts, dtype=float)
+
+
+def _ranks_from_scores(scores, higher_is_better=True):
+    """1-based rank for each item; tied values share the same rank.
+
+    Ties must not be broken by array position: when no product has a CO2e
+    estimate they all tie, and handing rank 1 to whichever came first would let
+    candidate order leak into the final ranking.
+    """
+    values = -scores if higher_is_better else scores
+    ordered = np.argsort(values, kind="stable")
+    sorted_values = values[ordered]
+
+    # Competition ranking: every member of a tie group takes the group's first position.
+    starts_group = np.ones(len(values), dtype=bool)
+    starts_group[1:] = sorted_values[1:] != sorted_values[:-1]
+    group_ranks = np.maximum.accumulate(
+        np.where(starts_group, np.arange(1, len(values) + 1), 0)
+    )
+
+    ranks = np.empty(len(values), dtype=int)
+    ranks[ordered] = group_ranks
+    return ranks
+
+
+def _rrf_fuse(relevance_scores, co2e_values):
+    """Fuse a relevance ranking with a carbon ranking via Reciprocal Rank Fusion.
+
+    Relevance stays dominant, while the carbon signal is applied as a softer
+    penalty. Lower co2e ranks better; products with no estimate (NaN) sort last.
+    Returns candidate indices ordered best-to-worst.
+    """
+    relevance_ranks = _ranks_from_scores(relevance_scores, higher_is_better=True)
+   
+    carbon = np.where(np.isnan(co2e_values), np.inf, co2e_values)
+    carbon_ranks = _ranks_from_scores(carbon, higher_is_better=False)
+
+    rrf_scores = 1.0 / (RRF_K + relevance_ranks) + CARBON_RRF_WEIGHT / (RRF_K + carbon_ranks)
+    return np.argsort(-rrf_scores, kind="stable")
 
 def query_ranking_system(query, limit, image_base64=None):
 
@@ -123,8 +165,19 @@ def query_ranking_system(query, limit, image_base64=None):
     )
     new_predictions = new_ranker.predict(features) + name_boosts
 
-    ranked_indices = np.argsort(
-        -new_predictions
+    # Sort items by ranking score (highest first)
+    # ranked_indices = np.argsort(-new_predictions)  # Negative for descending order
+
+    # Carbon footprint per candidate (NaN when not yet estimated -> ranked last).
+    co2e_values = np.array(
+        [p.co2e_kg if p.co2e_kg is not None else np.nan for p in product_list],
+        dtype=float,
     )
 
-    return np.array(ranked_ids)[ranked_indices].tolist()
+    # Fuse relevance + carbon rankings with RRF (equal weights).
+    fused_order = _rrf_fuse(new_predictions, co2e_values)
+
+    product_ids = [product_list[i].product_id for i in fused_order]
+
+    # return indices[0][ranked_indices].tolist()
+    return product_ids

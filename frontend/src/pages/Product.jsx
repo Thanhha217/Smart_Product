@@ -111,7 +111,7 @@ export default function Product() {
                             <p className={(productInfo.return_policy.days_for_return ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.days_for_return} days for return</p>
                             <p className={(productInfo.return_policy.warranty_duration ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.warranty_duration} months warranty</p>
                         </div>
-                        <p className="text-nowrap bg-green-500 rounded-2xl text-white p-3 w-min">Estimated GWP: <span className="font-bold">{productInfo.product.gwp}</span> kg CO₂e</p>
+                        <p className="text-nowrap bg-green-500 rounded-2xl text-white p-3 w-min">Estimated GWP: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</p>
 
                     </div>
                     <div className="py-2">

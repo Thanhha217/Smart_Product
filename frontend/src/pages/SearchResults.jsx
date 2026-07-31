@@ -66,7 +66,7 @@ export default function SearchResults() {
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
   const [starValue, setStarValue] = useState(0);
   const gwpLimit = productsInfo.length
-    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
+    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.co2e_kg))))
     : 0;
   const [maxGwpValue, setMaxGwpValue] = useState(gwpLimit);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
@@ -148,7 +148,7 @@ export default function SearchResults() {
 
   // Gwp filter
   if (maxGwpValue > 0) {
-    filteredProducts = filteredProducts.filter(item => item.product.gwp <= maxGwpValue);
+    filteredProducts = filteredProducts.filter(item => item.product.co2e_kg <= maxGwpValue);
   }
 
   // Options filter
@@ -171,7 +171,7 @@ export default function SearchResults() {
       filteredProducts = filteredProducts.sort((a, b) => b.product.final_price - a.product.final_price);
       break;
     case "eco-friendly":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.gwp - b.product.gwp);
+      filteredProducts = filteredProducts.sort((a, b) => a.product.co2e_kg - b.product.co2e_kg);
       break;
   }
 
