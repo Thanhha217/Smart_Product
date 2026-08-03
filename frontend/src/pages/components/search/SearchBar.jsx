@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import ImageButton from "../images/ImageButton";
 import ImpagePopup from "../images/ImpagePopup";
+import { useI18n } from "../../../i18n/LanguageContext";
 
 export default function SearchBar({ className }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isImagePopupOpen, setIsImagePopupOpen] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleSearch = (e) => {
     e.preventDefault(); // Prevents the browser from reloading the page
@@ -26,7 +28,7 @@ export default function SearchBar({ className }) {
         <input
           className="bg-primary-200 absolute rounded-2xl py-1 px-3 pr-28 w-full outline-secondary-500 focus:outline-2"
           type="text"
-          placeholder="Search..."
+          placeholder={t("search.placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -39,7 +41,7 @@ export default function SearchBar({ className }) {
           <button
             type="submit"
             className="py-1 px-2 min-h-8 text-primary-100 bg-secondary-500 hover:bg-secondary-700 rounded-full transition duration-100 ease-in-out cursor-pointer"
-            aria-label="Search"
+            aria-label={t("search.button")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

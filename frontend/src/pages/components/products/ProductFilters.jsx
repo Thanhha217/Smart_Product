@@ -1,5 +1,6 @@
 import RangeSlider from "../general/RangeSlider";
 import StarSlider from "../general/StarSlider";
+import { useI18n } from "../../../i18n/LanguageContext";
 
 export default function ProductFilter({
     className,
@@ -18,6 +19,8 @@ export default function ProductFilter({
     ignoreGwp,
     setIgnoreGwp,
 }) {
+    const { t } = useI18n();
+
     const titleCss = "text-primary-500 font-bold text-xl whitespace-nowrap"
 
     const handleMinChange = (e) => {
@@ -43,7 +46,7 @@ export default function ProductFilter({
     return (
         <aside className={"bg-primary-100 rounded-2xl h-16 flex flex-col gap-x-4 gap-y-6 p-6 "+ className}>
             {/* <p className="text-primary-900 font-bold text-xl whitespace-nowrap">Filters</p> */}
-            <p className={titleCss}>Price range</p>
+            <p className={titleCss}>{t("filter.priceRange")}</p>
 
 
             <div className="flex flex-col gap-4">
@@ -65,7 +68,7 @@ export default function ProductFilter({
             </div>
 
 
-            <p className={titleCss}>Minimum rating</p>
+            <p className={titleCss}>{t("filter.minRating")}</p>
 
 
             <div className="flex gap-4 justify-center flex-wrap">
@@ -76,13 +79,13 @@ export default function ProductFilter({
                 />
                 <div>
                     <input type="number" className="bg-primary-200 text-right" min="0" max="5" value={starValue} onChange={handleStarChange}/>
-                    <label>stars</label>
+                    <label>{t("filter.stars")}</label>
                 </div>
                 
             </div>
 
 
-            <p className={titleCss}>Maximum GWP</p>
+            <p className={titleCss}>{t("filter.maxGwp")}</p>
 
 
             <div className="flex gap-4 justify-center flex-wrap">
@@ -95,16 +98,16 @@ export default function ProductFilter({
             </div>
 
 
-            <p className={titleCss}>Product filters</p>
+            <p className={titleCss}>{t("filter.productFilters")}</p>
 
             <div className="flex flex-col gap-2">
                 <div className="flex gap-1">
                     <input type="checkbox" name="on-sale-check" id="on-sale-check" aria-labelledby="on-sale-label" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)}/>
-                    <label id="on-sale-label" htmlFor="on-sale-check">On sale</label>
+                    <label id="on-sale-label" htmlFor="on-sale-check">{t("filter.onSale")}</label>
                 </div>
                 <div className="flex gap-1">
                     <input type="checkbox" name="ignore-gwp-check" id="ignore-gwp-check" aria-labelledby="ignore-gwp-label" checked={ignoreGwp} onChange={(e) => setIgnoreGwp(e.target.checked)}/>
-                    <label id="ignore-gwp-label" htmlFor="ignore-gwp-check">Ignore GWP</label>
+                    <label id="ignore-gwp-label" htmlFor="ignore-gwp-check">{t("filter.ignoreGwp")}</label>
                 </div>
             </div>
         </aside>

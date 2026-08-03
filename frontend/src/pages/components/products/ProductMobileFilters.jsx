@@ -1,5 +1,6 @@
 import ProductFilter from "./ProductFilters";
 import { useState } from "react";
+import { useI18n } from "../../../i18n/LanguageContext";
 
 export default function ProductMobileFilter({
     priceLimit,
@@ -20,6 +21,8 @@ export default function ProductMobileFilter({
     setSortValue
 }) {
 
+    const { t } = useI18n();
+
     const handleSortChange = (event) => {
         setSortValue(event.target.value);
     };
@@ -32,15 +35,15 @@ export default function ProductMobileFilter({
 
 
             <div className={`relative z-10 h-16 bg-primary-100 flex gap-4 justify-between p-2 pt-6 items-center`}>
-                <button className="bg-primary-500 text-primary-100 py-1 px-2 rounded-2xl" onClick={() => setOpen(!open)}>{open ? "Close filters" : "Open filters"}</button>
+                <button className="bg-primary-500 text-primary-100 py-1 px-2 rounded-2xl" onClick={() => setOpen(!open)}>{open ? t("filter.close") : t("filter.open")}</button>
 
                 <div className="flex gap-4 items-center">
-                    <label>Sort by</label>
-                    <select name="sorting" id="sorting" className="bg-primary-200 p-1" onChange={handleSortChange}>
-                        <option value="">Relevence</option>
-                        <option value="price-low">Price low to high</option>
-                        <option value="price-high">Price high to low</option>
-                        <option value="eco-friendly">Most eco-friendly</option>
+                    <label htmlFor="sorting-mobile">{t("results.sortBy")}</label>
+                    <select name="sorting" id="sorting-mobile" className="bg-primary-200 p-1" value={sortValue} onChange={handleSortChange}>
+                        <option value="">{t("sort.relevance")}</option>
+                        <option value="price-low">{t("sort.priceLow")}</option>
+                        <option value="price-high">{t("sort.priceHigh")}</option>
+                        <option value="eco-friendly">{t("sort.eco")}</option>
                     </select>
                 </div>
             </div>
