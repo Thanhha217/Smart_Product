@@ -11,6 +11,9 @@ class ProductBase(SQLModel):
     product_rating: float
     review_count: int
     scraped_at: float # timestamp with ms after the coma
+    # The category label exactly as the source sent it, kept so a bad mapping
+    # can be found and audited without replaying Kafka.
+    raw_category: str = ""
 
 class ProductImages(ProductBase):
     files_urls: list[str]

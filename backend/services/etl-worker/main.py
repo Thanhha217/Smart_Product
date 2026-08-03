@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from data import create_db_and_tables
+from taxonomy.matcher import warm_matcher
 from data.seed.carbon_seeder import seed_carbon_reference
 from worker.etl_worker import start_worker
 from worker.fpt_worker import fpt_worker
@@ -14,6 +15,13 @@ from worker.dienmayxanh_worker import dienmayxanh_worker
 from worker.cellphones_worker import cellphone_s_worker
 
 load_dotenv()
+
+# Load the embedding model before any consumer thread starts. The threads below
+# begin consuming at import time, so this cannot wait for the lifespan hook --
+# they would each race to load the model on their first message. Failing here
+# crash-loops the container, which is the intent: a worker that cannot
+# categorise should be loud rather than silently writing everything unresolved.
+warm_matcher()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
