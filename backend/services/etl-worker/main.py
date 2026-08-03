@@ -16,11 +16,12 @@ from worker.cellphones_worker import cellphone_s_worker
 
 load_dotenv()
 
-# Load the embedding model before any consumer thread starts. The threads below
-# begin consuming at import time, so this cannot wait for the lifespan hook --
-# they would each race to load the model on their first message. Failing here
-# crash-loops the container, which is the intent: a worker that cannot
-# categorise should be loud rather than silently writing everything unresolved.
+# Prepare the category matcher before any consumer thread starts. The threads
+# below begin consuming at import time, so this cannot wait for the lifespan
+# hook -- they would otherwise race to load the embedding model on their first
+# message. A no-op unless the optional embedding backend is installed; it raises
+# only when CATEGORY_EMBEDDINGS=on, so a deployment that explicitly requires the
+# model fails loudly at boot rather than silently degrading.
 warm_matcher()
 
 @asynccontextmanager
