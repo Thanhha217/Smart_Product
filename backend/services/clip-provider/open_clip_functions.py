@@ -1,6 +1,8 @@
 import open_clip
 import requests
 from PIL import Image
+import io
+import base64
 
 _model = None
 _preprocess = None
@@ -38,3 +40,10 @@ def encode_images_from_urls(image_urls: list[str]):
             encoded_images.append(encoded_image.squeeze().tolist())
     
     return encoded_images
+
+def encode_image_from_base64(image_base64: str):
+    _load_model()
+    if "," in image_base64:
+        image_base64 = image_base64.split(",")[1]
+    image_input = _preprocess(Image.open(io.BytesIO(base64.b64decode(image_base64)))).unsqueeze(0)
+    return _model.encode_image(image_input).squeeze().tolist()

@@ -45,7 +45,6 @@ export default function Product() {
                 const res = await fetch(`${GATEWAY_URL}/product/${productId}`);
                 const data = await res.json();
                 setProductInfo(data.product);
-                console.log(data);
             } catch (error) {
                 console.log(error);
             } finally {

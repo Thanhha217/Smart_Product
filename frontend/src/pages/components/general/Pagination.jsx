@@ -45,7 +45,6 @@ export default function Pagination({ page, setPage, numberOfPages }) {
 
     
 
-    console.log(minBoundary, maxBoundary)
 
     for (let i = minBoundary; i < maxBoundary; i++) {
         createPageSlot(i)
