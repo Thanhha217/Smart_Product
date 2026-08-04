@@ -4,6 +4,7 @@ from data.schemes.seller import Seller
 from data.schemes.return_policy import ReturnPolicy
 from data.schemes.category import Category
 from data.schemes.image import Image
+from taxonomy.matcher import match_category
 
 def parse_product_data(data: dict):
     
@@ -32,8 +33,19 @@ def parse_product_data(data: dict):
         warranty_duration=data.get("warranty_duration", -1)
     )
 
-    category = Category(name=data.get("category", ""))
-    
+    # Sources label categories however they like ("Điện thoại", "smartphone",
+    # "dien-thoai"); resolve them onto the one standard taxonomy so the same
+    # product type from different sites shares a category row.
+    raw_category = data.get("category", "") or ""
+    match = match_category(raw_category)
+
+    category = Category(
+        slug=match.slug,
+        name=match.name_en,
+        name_vi=match.name_vi,
+        department=match.department,
+    )
+
     product = Product(
         name=data.get("name", ""),
         product_url=data.get("url", ""),
@@ -43,6 +55,7 @@ def parse_product_data(data: dict):
         product_rating=data.get("product_rating", 0.0),
         review_count=data.get("review_count", 0),
         scraped_at=data.get("scraped_at", 0.0),
+        raw_category=raw_category,
     )
 
     images = []

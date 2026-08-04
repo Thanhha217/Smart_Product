@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from data import create_db_and_tables
+from taxonomy.matcher import warm_matcher
 from data.seed.carbon_seeder import seed_carbon_reference
 from worker.etl_worker import start_worker
 from worker.fpt_worker import fpt_worker
@@ -14,6 +15,14 @@ from worker.dienmayxanh_worker import dienmayxanh_worker
 from worker.cellphones_worker import cellphone_s_worker
 
 load_dotenv()
+
+# Prepare the category matcher before any consumer thread starts. The threads
+# below begin consuming at import time, so this cannot wait for the lifespan
+# hook -- they would otherwise race to load the embedding model on their first
+# message. A no-op unless the optional embedding backend is installed; it raises
+# only when CATEGORY_EMBEDDINGS=on, so a deployment that explicitly requires the
+# model fails loudly at boot rather than silently degrading.
+warm_matcher()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):

@@ -108,7 +108,9 @@ def load_data_into_database(obj: dict, embeddings: tuple):
         platform = get_or_create(session, obj["platform"])
         seller = get_or_create(session, obj["seller"])
         return_policy = get_or_create(session, obj["return_policy"], unique_column=["days_for_return", "free_delivery", "warranty_duration"])
-        category = get_or_create(session, obj["category"])
+        # Deduped on the taxonomy slug, not the display name, so every source's
+        # wording for the same category collapses onto one row.
+        category = get_or_create(session, obj["category"], unique_column="slug")
 
         product = obj["product"]
         product.platform_id = platform.id
