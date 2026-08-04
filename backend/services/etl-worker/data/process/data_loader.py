@@ -21,8 +21,7 @@ FAISS_IMAGE_INDEX_PATH = os.environ.get("FAISS_IMAGE_INDEX_PATH", "/opt/faiss_in
 base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 index = faiss.IndexIDMap2(base_index)
 
-image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32)
-image_base_index.metric_type = faiss.METRIC_INNER_PRODUCT
+image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 image_index = faiss.IndexIDMap2(image_base_index)
 
 index_path = Path(FAISS_INDEX_PATH)
@@ -134,10 +133,10 @@ def load_data_into_database(obj: dict, embeddings: tuple):
 
         session.commit()
 
-        # load_image_embeddings(
-        #     [image.id for image, image_embedding in images if image_embedding is not None],
-        #     [image_embedding for _, image_embedding in images if image_embedding is not None],
-        # )
+        load_image_embeddings(
+            [image.id for image, image_embedding in images if image_embedding is not None],
+            [image_embedding for _, image_embedding in images if image_embedding is not None],
+        )
         load_embedding(product.id, embeddings[0])
 
     with _faiss_lock:

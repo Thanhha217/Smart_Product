@@ -14,6 +14,12 @@ def create_text_embedding(text_to_encode):
     uri = f"{OPEN_CLIP_PROVIDER}/encode-text"
     encoded_text = _session.post(uri, json=query).json()
     return normalize_embedding(encoded_text)
+
+def create_image_embedding(image_base64):
+    query = {"image_base64": image_base64}
+    uri = f"{OPEN_CLIP_PROVIDER}/encode-image-from-base64"
+    encoded_image = _session.post(uri, json=query).json()
+    return normalize_embedding(encoded_image)
     
 
 def normalize_embedding(embedding):
