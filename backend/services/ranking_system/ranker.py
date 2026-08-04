@@ -4,13 +4,14 @@ import numpy as np
 import re
 import unicodedata
 
-from product_embeddings import create_text_embedding
+
+from product_embeddings import create_text_embedding, create_image_embedding
 from product_featurer import compute_features
 from product_searcher import get_products_from_ids, get_similar_products_indices
 
 MAX_RELEVANT_PRODUCTS = 20
 RRF_K = 60  # standard RRF damping constant
-CARBON_RRF_WEIGHT = 0.5
+CARBON_RRF_WEIGHT = 0.2
 
 new_ranker = catboost.CatBoostRanker()
 new_ranker.load_model('models/catboost_ranker_model.txt')
@@ -90,10 +91,40 @@ def _rrf_fuse(relevance_scores, co2e_values):
     rrf_scores = 1.0 / (RRF_K + relevance_ranks) + CARBON_RRF_WEIGHT / (RRF_K + carbon_ranks)
     return np.argsort(-rrf_scores, kind="stable")
 
-def query_ranking_system(query, limit):
+def query_ranking_system(query, limit, image_base64=None):
 
-    query_embedding = create_text_embedding(query)
-    indices, distances = get_similar_products_indices(query_embedding, limit)
+    if not query and not image_base64:
+        raise ValueError("Either query or image_base64 must be provided")
+
+    text_embedding = None
+    image_embedding = None
+    index_type = 'text'
+
+    if query:
+        text_embedding = create_text_embedding(query)
+
+    if image_base64:
+        image_embedding = create_image_embedding(image_base64)
+
+    if text_embedding is not None and image_embedding is not None:
+      text_embedding = text_embedding / np.linalg.norm(text_embedding)
+      image_embedding = image_embedding / np.linalg.norm(image_embedding)
+      query_embedding = (text_embedding + image_embedding) / 2.0
+      query_embedding = query_embedding / np.linalg.norm(query_embedding)
+      index_type = (
+          "image"  
+      )
+
+    elif text_embedding is not None:
+      query_embedding = text_embedding
+      index_type = "text"
+
+    elif image_embedding is not None:
+      query_embedding = image_embedding
+      index_type = "image"
+    
+    indices, distances = get_similar_products_indices(query_embedding, limit, index_type=index_type)
+    print(f"Indices: {indices}, Distances: {distances}")
     ranked_pairs = [
         (int(product_id), similarity)
         for product_id, similarity in zip(indices[0].tolist(), distances[0])
@@ -127,9 +158,12 @@ def query_ranking_system(query, limit):
 
     features = compute_features(product_list, query_distance)
 
-
-    # Get rankings for new data
-    new_predictions = new_ranker.predict(features) + _build_name_boosts(query, product_list)
+    name_boosts = (
+        _build_name_boosts(query, product_list)
+        if query
+        else np.zeros(len(product_list))
+    )
+    new_predictions = new_ranker.predict(features) + name_boosts
 
     # Sort items by ranking score (highest first)
     # ranked_indices = np.argsort(-new_predictions)  # Negative for descending order

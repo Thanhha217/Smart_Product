@@ -1,9 +1,12 @@
 import os
 import requests
 
-from fastapi import FastAPI, HTTPException, Depends
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from dto.gateway_dto import ImagePayload
 app = FastAPI()
 
 origins = [
@@ -32,29 +35,24 @@ if not DB_SEARCH_URL:
     raise ValueError("DB_SEARCH_URL environment variable is not set")
 
 
-@app.get("/query")
-def query_endpoint(q: str, limit: int = 32):
+@app.post("/query")
+async def query_endpoint(q: str = None, limit: int = 32, payload: Optional[ImagePayload] = None):
 
     # First of all, retrieve the products ids from the ranking system after passing the query to it
     try:
-        request = f"{RANKING_SYSTEM_URL}/query?q={q}&limit={limit}"
-        response = requests.get(request)
+        image_base64 = payload.image if payload else None
+
+        ranking_url = f"{DB_SEARCH_URL}/query?limit={limit}"
+        if q and q != "None":
+            ranking_url += f"&q={q}"
+
+        json_data = {"image": image_base64} if image_base64 else {}
+
+        response = requests.post(ranking_url, json=json_data)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error communicating with the ranking system")
-    
-    product_ids = response.json()
-
-    dto = {"product_ids": product_ids}
-
-    # Now, retrieve the products data from the db-search service
-    try:
-        request = f"{DB_SEARCH_URL}/products-from-ids"
-        response = requests.post(request, json=dto)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Error communicating with the db-search service")
-    
+        
     products_data = response.json()
     return {"products": products_data}
 

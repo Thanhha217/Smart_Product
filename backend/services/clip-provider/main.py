@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from dto.encode_text_images_dto import EncodeTextDTO, EncodeImageFromUrlDTO, EncodeImagesFromUrlsDTO
-from open_clip_functions import encode_text, encode_image_from_url, encode_images_from_urls
+from dto.encode_text_images_dto import EncodeTextDTO, EncodeImageFromUrlDTO, EncodeImagesFromUrlsDTO, EncodeImageFromBase64DTO
+from open_clip_functions import encode_text, encode_image_from_url, encode_images_from_urls, encode_image_from_base64
 
 app = FastAPI()
 
@@ -13,6 +13,11 @@ def root():
 async def encode_text_endpoint(body: EncodeTextDTO):
     text_vector = encode_text(body.text)
     return text_vector
+
+@app.post("/encode-image-from-base64")
+async def encode_image_from_base64_endpoint(body: EncodeImageFromBase64DTO):
+    image_vector = encode_image_from_base64(body.image_base64)
+    return image_vector
 
 @app.post("/encode-image-from-url")
 async def encode_image_endpoint(body: EncodeImageFromUrlDTO):
