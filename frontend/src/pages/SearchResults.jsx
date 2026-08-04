@@ -6,6 +6,7 @@ import Pagination from "./components/general/Pagination";
 import ProductMobileFilter from "./components/products/ProductMobileFilters";
 import { GATEWAY_URL } from "./utils/consts";
 import Throbber from "./components/general/Throbber";
+import { useI18n } from "../i18n/LanguageContext";
 
 const fetchProducts = async (query, imageQuery) => {
   const body = {};
@@ -39,6 +40,7 @@ const fetchProducts = async (query, imageQuery) => {
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const location = useLocation();
 
   const query = searchParams.get('query');
@@ -248,15 +250,15 @@ export default function SearchResults() {
         />
 
         <div className="flex justify-between items-center">
-          <p>Search results for "{query}"</p>
+          <p>{t("results.for", { query })}</p>
 
           <div className="hidden md:flex gap-4 items-center">
-            <label>Sort by</label>
-            <select name="sorting" id="sorting" className="bg-primary-100 p-1" onChange={handleSortChange}>
-              <option value="">Relevence</option>
-              <option value="price-low">Price low to high</option>
-              <option value="price-high">Price high to low</option>
-              <option value="eco-friendly">Most eco-friendly</option>
+            <label htmlFor="sorting">{t("results.sortBy")}</label>
+            <select name="sorting" id="sorting" className="bg-primary-100 p-1" value={sortValue} onChange={handleSortChange}>
+              <option value="">{t("sort.relevance")}</option>
+              <option value="price-low">{t("sort.priceLow")}</option>
+              <option value="price-high">{t("sort.priceHigh")}</option>
+              <option value="eco-friendly">{t("sort.eco")}</option>
             </select>
           </div>
         </div>
@@ -273,7 +275,7 @@ export default function SearchResults() {
         </div>
 
         <p className={`m-auto text-2xl text-primary-800 ${!loading && !filteredProducts.length ?"":"hidden"}`}>
-          No products found...
+          {t("results.empty")}
         </p>
 
         <ProductGrid products={filteredProducts.slice(maxPerPage * (page - 1), maxPerPage * page)} />

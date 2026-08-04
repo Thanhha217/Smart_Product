@@ -1,15 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../../../i18n/LanguageContext";
 
 export default function ProductSlot({ product, image_url, platform_name }) {
     const navigate = useNavigate();
-    function display_price(price) {
-        let stringPrice = price.toString();
-        for (let i = 3; i < stringPrice.length; i += 4) {
-            stringPrice = stringPrice.slice(0, stringPrice.length - i) + "." + stringPrice.slice(stringPrice.length - i, stringPrice.length)
-        }
-        return stringPrice;
-    }
+    const { t, formatNumber } = useI18n();
 
 
     const goToProduct = (e) => {
@@ -28,12 +23,12 @@ export default function ProductSlot({ product, image_url, platform_name }) {
                 <p className="line-clamp-2 h-12">{product.name}</p>
 
                 <div className="flex items-center gap-2">
-                    <p className="text-orange-400 text-2xl">{display_price(product.final_price)}₫</p>
+                    <p className="text-orange-400 text-2xl">{formatNumber(product.final_price)}₫</p>
                     <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{product.original_price != product.final_price ? "-" + (100 - Math.floor((product.final_price / product.original_price) * 100)) + "%" : ""}</p>
                 </div>
             
                 <div className="flex flex-col md:flex-row justify-between gap-x-4 gap-y-2 pt-2">
-                    <p className="text-nowrap">★ {product.review_count ? `${product.product_rating * 5.0} (${product.review_count})` : "None"}</p>
+                    <p className="text-nowrap">★ {product.review_count ? `${product.product_rating * 5.0} (${product.review_count})` : t("product.noRating")}</p>
                     <p className="text-nowrap bg-green-500 text-white rounded-2xl px-2 font-bold w-min">{product.co2e_kg} kg CO₂e</p>
                 </div>
 
