@@ -85,9 +85,11 @@ def clean(raw: str) -> str:
     return _WHITESPACE.sub(" ", text).strip()
 
 
-def _build_alias_index() -> dict[str, StandardCategory]:
+def _build_alias_index(
+    categories: tuple[StandardCategory, ...] = STANDARD_CATEGORIES,
+) -> dict[str, StandardCategory]:
     index: dict[str, StandardCategory] = {}
-    for category in STANDARD_CATEGORIES:
+    for category in categories:
         for form in category.surface_forms:
             key = clean(form).casefold()
             if key:
@@ -159,9 +161,7 @@ class CategoryMatcher:
         self.threshold = threshold
         self.categories = categories
         self.mode = mode
-        self.alias_index = (
-            ALIAS_INDEX if categories is STANDARD_CATEGORIES else _build_alias_index()
-        )
+        self.alias_index = _build_alias_index(categories)
         self._model = None
         self._forms: list[str] = []
         self._owner: list[int] = []   # form index -> index into self.categories
