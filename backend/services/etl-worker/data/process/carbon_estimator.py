@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import threading
 
 import faiss
@@ -14,10 +15,11 @@ from data.process.data_transformer import encode_text
 
 EMBED_DIM = 512
 TOP_K = 5
-LLM_PROVIDER = os.environ.get("CO2E_LLM_PROVIDER", "anthropic").lower()
-_DEFAULT_MODEL = {"ollama": "llama3.2", "anthropic": "claude-opus-4-8"}
-LLM_MODEL = os.environ.get("CO2E_LLM_MODEL") or _DEFAULT_MODEL.get(LLM_PROVIDER, "claude-opus-4-8")
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
+LLM_MODEL = os.environ.get("CO2E_LLM_MODEL", "qwen3.5:0.8b")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
+OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
+OLLAMA_NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "48"))
+PROMPT_NEIGHBOURS = 2
 
 _lock = threading.Lock()
 _ref_index = None
@@ -73,74 +75,111 @@ def _find_similar_references(product_embedding, category=None, k=TOP_K):
 
 def _build_prompt(product, neighbours):
     examples = "\n".join(
-        f"- {(n['brand'] or '')} {n['name']} ({n['category']}): {n['co2e_kg']} kg CO2e"
+        f"- {(n['brand'] or '')} {n['name']}: {n['co2e_kg']} kg CO2e"
         for n in neighbours
     )
     return (
-        "You are a Life-Cycle Assessment expert estimating a product's carbon "
-        "footprint (cradle-to-grave, in kg CO2-equivalent) following ISO 14067 and "
-        "the GHG Protocol.\n\n"
-        "Similar products with VERIFIED carbon footprints from manufacturer "
-        "environmental reports:\n"
+        "Estimate product carbon footprint in kg CO2e.\n"
+        "Use the examples as anchors. Reply in one line only.\n\n"
+        "Examples:\n"
         f"{examples}\n\n"
-        "Estimate the carbon footprint of this product by reasoning from the most "
-        "similar references above (category, brand, size, materials):\n"
-        f"- {product.name}\n"
-        f"Description: {(product.description or '')[:500]}\n\n"
-        'Reply with ONLY a JSON object: '
-        '{"co2e_kg": <number>, "explanation": "<one short sentence>"}'
+        f"Product: {product.name}\n"
+        f"Desc: {(product.description or '')[:160]}\n\n"
+        'Format exactly: co2e_kg=<number>; explanation=<short sentence>'
     )
 
 
 def _parse_estimate(text):
-    data = json.loads(text[text.index("{"): text.rindex("}") + 1])
-    return float(data["co2e_kg"]), str(data.get("explanation", ""))
+    normalized = text.strip()
+    if not normalized:
+        raise ValueError("empty model response")
+
+    kv_match = re.search(
+        r"co2e_kg\s*[:=]\s*(-?\d+(?:\.\d+)?)\s*;?\s*explanation\s*[:=]\s*(.+)",
+        normalized,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if kv_match:
+        return float(kv_match.group(1)), kv_match.group(2).strip().strip('"')
+
+    if "{" in normalized and "}" in normalized:
+        try:
+            data = json.loads(normalized[normalized.index("{"): normalized.rindex("}") + 1])
+            if isinstance(data, dict) and "co2e_kg" in data:
+                return float(data["co2e_kg"]), str(data.get("explanation", "")).strip()
+        except Exception:
+            pass
+
+    number_match = re.search(r"(-?\d+(?:\.\d+)?)", normalized)
+    if number_match:
+        return float(number_match.group(1)), normalized[:240]
+
+    raise ValueError(f"Could not parse estimate output: {normalized[:200]!r}")
 
 
-def _call_anthropic(prompt):
+def _post_ollama(endpoint, payload):
     try:
-        import anthropic
-    except ImportError:
-        return None
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
-    try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=LLM_MODEL, max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
+        response = requests.post(
+            f"{OLLAMA_HOST}{endpoint}",
+            json=payload,
+            timeout=180,
         )
-        return "".join(b.text for b in response.content if b.type == "text")
+        response.raise_for_status()
+        data = response.json()
+        if data.get("error"):
+            print(f"Ollama error on {endpoint}: {data['error']}", flush=True)
+            return None
+        return data
     except Exception as error:
-        print(f"Anthropic call failed: {error}", flush=True)
+        print(f"Ollama call failed on {endpoint}: {error}", flush=True)
         return None
 
 
 def _call_ollama(prompt):
-    try:
-        response = requests.post(
-            f"{OLLAMA_HOST}/api/chat",
-            json={"model": LLM_MODEL,
-                  "messages": [{"role": "user", "content": prompt}],
-                  "stream": False, "format": "json"},
-            timeout=180,
-        )
-        response.raise_for_status()
-        return response.json()["message"]["content"]
-    except Exception as error:
-        print(f"Ollama call failed: {error}", flush=True)
-        return None
+    chat_payload = {
+        "model": LLM_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "think": False,
+        "options": {
+            "temperature": 0,
+            "num_predict": OLLAMA_NUM_PREDICT,
+        },
+    }
+    chat_data = _post_ollama("/api/chat", chat_payload)
+    if chat_data is not None:
+        message = chat_data.get("message") or {}
+        response_text = message.get("content", "")
+        if response_text:
+            return response_text
+
+    generate_payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "think": False,
+        "options": {
+            "temperature": 0,
+            "num_predict": OLLAMA_NUM_PREDICT,
+        },
+    }
+    generate_data = _post_ollama("/api/generate", generate_payload)
+    if generate_data is not None:
+        return generate_data.get("response", "")
+    return None
 
 
 def _estimate_with_llm(product, neighbours):
     prompt = _build_prompt(product, neighbours)
-    raw = _call_ollama(prompt) if LLM_PROVIDER == "ollama" else _call_anthropic(prompt)
+    raw = _call_ollama(prompt)
     if raw is None:
         return None
     try:
         return _parse_estimate(raw)
     except Exception as error:
-        print(f"Could not parse LLM estimate: {error}", flush=True)
+        print(f"Could not parse LLM estimate for '{product.name}': {error} | raw={raw[:500]!r}", flush=True)
         return None
 
 
@@ -149,14 +188,30 @@ def _already_estimated(product):
         existing = session.exec(
             select(Product).where(Product.product_url == product.product_url)
         ).first()
-    return existing is not None and existing.co2e_kg is not None
+    if existing is not None and existing.co2e_kg is not None:
+        return existing
+    return None
+
+
+def _log_estimate(product, source):
+    explanation = product.co2e_explanation or ""
+    print(
+        f"CO2e for '{product.name}': {product.co2e_kg} kg ({source}) | explanation: {explanation}",
+        flush=True,
+    )
 
 
 def estimate_product_co2e(product, product_embedding, category=None):
     try:
-        if _already_estimated(product):
+        existing = _already_estimated(product)
+        if existing is not None:
+            product.co2e_kg = existing.co2e_kg
+            product.co2e_source = existing.co2e_source
+            product.co2e_confidence = existing.co2e_confidence
+            product.co2e_explanation = existing.co2e_explanation
+            _log_estimate(product, f"already_estimated:{product.co2e_source or 'unknown'}")
             return
-        neighbours = _find_similar_references(product_embedding, category)
+        neighbours = _find_similar_references(product_embedding, category, k=PROMPT_NEIGHBOURS)
         if not neighbours:
             return
         llm = _estimate_with_llm(product, neighbours)
@@ -171,6 +226,6 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_source = "neighbor_fallback"
             product.co2e_confidence = 0.3
             product.co2e_explanation = f"Average of {len(neighbours)} similar reference products."
-        print(f"CO2e for '{product.name}': {product.co2e_kg} kg ({product.co2e_source})", flush=True)
+        _log_estimate(product, product.co2e_source or "unknown")
     except Exception as error:
         print(f"Carbon estimation skipped: {error}", flush=True)
