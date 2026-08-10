@@ -1,0 +1,102 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Eco-conscious AI-Powered Multimodal Product Recommendation System for Vietnamese E-commerce\\
+}
+
+\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
+\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+\textit{name of organization (of Aff.)}\\
+City, Country \\
+email address or ORCID}
+}
+
+\maketitle
+
+\begin{abstract}
+The rapid growth of the Vietnamese e-commerce sector has provided consumers with unparalleled access to goods. However, this expansion has resulted in cluttered, disparate platforms that make finding the optimal price and conditions a tedious task. Furthermore, major retailers currently offer almost no transparency regarding the ecological impact or carbon footprint of consumer electronics. To address these challenges, this paper presents ``Smart Product Finder'', a novel AI-powered, multimodal search engine and price optimization platform tailored for the Vietnamese market. The system utilizes microservices for real-time web scraping, OpenCLIP for text and image embeddings, and FAISS for fast similarity retrieval. A key innovation of the platform is its two-stage recommendation pipeline, where a CatBoost model re-ranks products based on eight distinct criteria, including a Sustainability-Aware Score (SaS). To overcome the lack of Environmental Product Declarations (EPDs), the system currently employs a K-Nearest Neighbors (KNN) approach to estimate carbon footprints, with a proposed architecture utilizing localized Large Language Models (LLMs) such as Qwen for bilingual lifecycle analysis. This approach successfully balances relevance, price optimization, and environmental impact.
+\end{abstract}
+
+\begin{IEEEkeywords}
+E-commerce, Recommender Systems, Multimodal Search, Carbon Footprint Estimation, CatBoost, Vietnam
+\end{IEEEkeywords}
+
+\section{Introduction}
+The digital transformation in Vietnam has spurred a massive surge in e-commerce activity, with consumers relying heavily on platforms to purchase electronics and everyday goods. Despite this growth, consumers face a significant cognitive burden. Comparing prices, warranties, and seller reliability across major Vietnamese retail sites (e.g., CellphoneS, PhongVu, FPT Shop) is highly inefficient due to fragmented data and cluttered user interfaces. Consequently, finding the "best offer" requires tedious manual verification across multiple domains.
+
+In addition to the financial and practical hurdles, there is a distinct lack of ecological transparency in the Vietnamese e-commerce market. In the context of global climate change, consumers are becoming more environmentally conscious. However, official Environmental Product Declarations (EPDs) are rarely available for consumer electronics in Vietnam, making it virtually impossible for shoppers to factor the carbon footprint into their purchasing decisions.
+
+To mitigate these issues, we developed an intelligent, multimodal search engine that not only aggregates and optimizes pricing across platforms but also estimates the ecological impact of products. This paper outlines the system's architecture, including its real-time data pipeline, multimodal retrieval using OpenCLIP, and a CatBoost-based ranking system. We also discuss our methodology for estimating cradle-to-grave CO2 emissions, currently utilizing a K-Nearest Neighbors (KNN) approach, and outline our transition towards a bilingual (Vietnamese/English) Large Language Model (LLM) framework.
+
+\section{Related Work}
+Recent advancements in AI have significantly enhanced e-commerce platforms. Personalization has been vastly improved through Deep Reinforcement Learning (DRL) and frameworks like TensorFlow Recommenders (TFRS), which adapt dynamically to user behavior to optimize long-term engagement \cite{paper1}. Similarly, cost-effective recommendation architectures utilizing TF-IDF and cosine similarity have been proposed to empower Small and Medium Enterprises (SMEs) against larger marketplaces \cite{paper2}.
+
+In the domain of price optimization, systems have been developed to forecast trends across e-commerce, food delivery, and ride-hailing sectors using machine learning algorithms like Linear Regression, LSSVM, and Facebook Prophet \cite{paper3}. Furthermore, multi-agent systems integrating NLP chatbots and multi-attribute decision-making have shown promise in automating the shopping process and tracking historical pricing \cite{paper4}. 
+
+To move beyond traditional keyword matching, modern systems are adopting multimodal retrieval approaches. Combining models such as BLIP, CLIP, and CLIP Interrogator allows systems to match natural language queries directly with visual product representations based on deep semantic understanding \cite{paper5}. Our work builds upon these multimodal concepts while introducing a novel sustainability ranking factor tailored to the data-scarce Vietnamese market.
+
+\section{Methodology}
+
+\subsection{System Architecture and Data Collection}
+The platform is built on a scalable microservices architecture. A fleet of custom web scrapers built with Scrapy is deployed to extract real-time product data from five major Vietnamese electronics retailers. These scrapers are designed to bypass dynamic content loading and anti-bot protections.
+
+The raw data is funneled through an Apache Kafka event streaming pipeline to an ETL (Extract, Transform, Load) service. Here, the data is cleaned, normalized, and processed to generate multimodal embeddings using OpenCLIP. The structured metadata is stored in a PostgreSQL database, while the high-dimensional embeddings are indexed in a FAISS (Facebook AI Similarity Search) vector database to enable rapid nearest-neighbor searches.
+
+\subsection{Sustainability-Aware CO2 Estimation}
+A critical component of our system is evaluating the ecological impact of products despite the absence of formal EPDs. We calculate a Product Carbon Footprint (PCF) in kg CO2e based on the ISO 14067 standard, taking into account raw material acquisition, manufacturing, distribution, use phase, and end-of-life.
+
+Given the scarcity of ground-truth data in the target market, our current implementation utilizes a K-Nearest Neighbors (KNN) algorithm. The KNN model infers the carbon footprint of a new product by comparing its technical metadata and specifications against a small, curated database of products with known emission profiles. 
+
+To improve accuracy and scale, our proposed future architecture replaces the KNN with a localized Large Language Model (LLM). We plan to implement models from the Qwen family (e.g., Qwen 2.5 or 3.5) due to their efficiency in running locally and their strong bilingual capabilities in both English and Vietnamese. By acting as a Life Cycle Assessment expert, the LLM will parse unstructured product descriptions and generate zero-shot or few-shot estimates of the carbon footprint.
+
+\subsection{Multimodal Search and Ranking System}
+To ensure low latency without sacrificing recommendation quality, the system employs a two-stage retrieval and ranking pipeline. 
+
+\subsubsection{Initial Retrieval}
+When a user submits a text or image query via the React-based frontend, the system queries the FAISS vector database. This stage quickly retrieves the top 50 most semantically or visually similar products across all aggregated retailers.
+
+\subsubsection{CatBoost Re-ranking}
+The top 50 candidates are subsequently re-ranked using a fast boosting model, CatBoost. Rather than relying on a heavy deep learning model, CatBoost efficiently ranks items based on eight distinct criteria:
+\begin{enumerate}
+    \item Semantic relevance to the user's query.
+    \item Price (normalized using Robust Scaling to handle outliers).
+    \item Product reliability, calculated via a Bayesian average of ratings and review counts.
+    \item Seller rating and platform trust.
+    \item Availability of free delivery.
+    \item Duration of the return period.
+    \item Warranty duration.
+    \item Estimated CO2 emissions.
+\end{enumerate}
+
+The estimated CO2 emission is integrated into a Sustainability-Aware Score (SaS). This score is designed to penalize high-emission products while promoting greener alternatives. The model was trained on a custom dataset labeled using an LLM to accelerate the development process, ensuring that environmental impact is balanced against price and relevance without degrading the core user experience.
+
+\section{System Implementation and Results}
+The user-facing application is built using Vite (React) and Tailwind CSS, offering a clean, responsive interface inspired by Western search engines. By abstracting the complexity of the Vietnamese e-commerce ecosystem, users can search via text or image and immediately view a curated list of products that represent the optimal balance of price, reliability, and ecological impact.
+
+Preliminary evaluations of the CatBoost ranking system demonstrate that the inclusion of the Sustainability-Aware Score successfully surfaces greener products without significantly impacting the perceived relevance of the top recommendations. The use of FAISS for the initial retrieval ensures that the system maintains real-time responsiveness.
+
+\section{Conclusion and Future Work}
+This paper presents a comprehensive solution to the challenges of price fragmentation and ecological opacity in the Vietnamese e-commerce market. By combining multimodal search, event-driven data aggregation, and a CatBoost ranking algorithm, the Smart Product Finder provides users with optimal purchasing recommendations. 
+
+Future work will focus on fully implementing the Qwen-based LLM architecture for CO2 estimation. This upgrade is expected to significantly enhance the system's ability to interpret complex Vietnamese product descriptions and provide more accurate, localized cradle-to-grave carbon footprint assessments, further empowering consumers to make eco-conscious decisions.
+
+\begin{thebibliography}{00}
+\bibitem{paper1} Author A, Author B, ``AI-Powered E-Commerce Personalization and Recommendation,'' Journal of E-Commerce Research, 2023.
+\bibitem{paper2} Author C, Author D, ``AI-Powered E-commerce Platform for Small Businesses,'' International Conference on Business IT, 2023.
+\bibitem{paper3} Author E, Author F, ``AI-Powered Price Comparison For E-commerce Food Rides,'' IEEE Symposium on Data Analytics, 2023.
+\bibitem{paper4} Author G, Author H, ``Intelligent Market Insight: A Multi-Agent System for Artificial Intelligence Powered Shopping Optimization,'' AI in Retailing, 2024.
+\bibitem{paper5} Author I, Author J, ``Research on Multi-Modal Retrieval System of E-Commerce Platform Based on Pre-Training Model,'' Conference on Multimodal Systems, 2024.
+\end{thebibliography}
+
+\end{document}
