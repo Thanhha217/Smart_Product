@@ -1,42 +1,171 @@
+export const MOCK_PRODUCTS = [
+  {
+    platform_name: "CellphoneS",
+    category_name: "Smartphones",
+    image_url: "https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=500",
+    seller: {
+      name: "CellphoneS Official Store",
+      seller_rating: 98
+    },
+    product: {
+      id: "iphone15",
+      product_url: "https://cellphones.com.vn/",
+      name: "Apple iPhone 15 Pro Max 256GB",
+      original_price: 34990000,
+      final_price: 29990000,
+      product_rating: 0.98, // rating normalized between 0 and 1
+      review_count: 320,
+      co2e_kg: 75.0,
+      co2e_source: "llm_estimate",
+      co2e_confidence: 0.6,
+      co2e_explanation: "Estimated based on Apple's iPhone 15 Pro Max Environmental Report."
+    },
+    highlights: [
+      "Màn hình Super Retina XDR OLED 6.7 inch sắc nét",
+      "Vi xử lý Apple A17 Pro hiệu năng vượt trội",
+      "Hệ thống camera 48MP zoom quang học 5x chuyên nghiệp",
+      "Khung sườn làm từ chất liệu Titan cao cấp siêu nhẹ & bền"
+    ],
+    return_policy: {
+      days_for_return: 30,
+      free_delivery: true,
+      warranty_duration: 12
+    }
+  },
+  {
+    platform_name: "Phong Vũ",
+    category_name: "Laptops",
+    image_url: "https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=500",
+    seller: {
+      name: "Phong Vũ Tech",
+      seller_rating: 95
+    },
+    product: {
+      id: "macbookm2",
+      product_url: "https://phongvu.vn/",
+      name: "Apple MacBook Air 13-inch M2 (8GB/256GB SSD)",
+      original_price: 27990000,
+      final_price: 24990000,
+      product_rating: 0.96, // rating normalized between 0 and 1
+      review_count: 145,
+      co2e_kg: 147.0,
+      co2e_source: "llm_estimate",
+      co2e_confidence: 0.6,
+      co2e_explanation: "Estimated from Apple's June 2022 Product Environmental Report."
+    },
+    highlights: [
+      "Chip xử lý Apple M2 cực kỳ mạnh mẽ & tối ưu",
+      "Bộ nhớ RAM 8GB và ổ cứng SSD 256GB tốc độ cao",
+      "Thời lượng pin ấn tượng lên đến 18 tiếng liên tục",
+      "Thiết kế nhôm nguyên khối siêu mỏng nhẹ, không quạt ồn ào"
+    ],
+    return_policy: {
+      days_for_return: 15,
+      free_delivery: true,
+      warranty_duration: 12
+    }
+  },
+  {
+    platform_name: "Tiki",
+    category_name: "Bags & Wallets",
+    image_url: "https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=500",
+    seller: {
+      name: "Fashion House Vietnam",
+      seller_rating: -1.0
+    },
+    product: {
+      id: "backpack",
+      product_url: "https://tiki.vn/",
+      name: "Balo Da Canvas Du Lịch Cao Cấp Vintage",
+      original_price: 650000,
+      final_price: 450000,
+      product_rating: 0.9, // rating normalized between 0 and 1
+      review_count: 18,
+      co2e_kg: null,
+      co2e_source: "unsupported",
+      co2e_confidence: 0.0,
+      co2e_explanation: "CO2 footprint estimation is not supported for this product category."
+    },
+    highlights: [
+      "Chất liệu vải Canvas kết hợp phối da PU dày dặn chống trầy xước",
+      "Ngăn chứa đồ cực rộng, có ngăn đệm chống sốc riêng cho laptop 15.6 inch",
+      "Khóa kéo kim loại phong cách vintage mượt mà, chống gỉ sét",
+      "Quai đeo trang bị đệm xốp êm ái giúp giảm áp lực vai hiệu quả"
+    ],
+    return_policy: {
+      days_for_return: 7,
+      free_delivery: false,
+      warranty_duration: 0
+    }
+  },
+  {
+    platform_name: "Shopee",
+    category_name: "Fashion Women",
+    image_url: "https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=500",
+    seller: {
+      name: "YODY Clothes Store",
+      seller_rating: 99
+    },
+    product: {
+      id: "tshirt",
+      product_url: "https://shopee.vn/",
+      name: "Áo Thun Cotton Nữ YODY Cổ Tròn Mềm Mịn",
+      original_price: 250000,
+      final_price: 189000,
+      product_rating: 0.94, // rating normalized between 0 and 1
+      review_count: 1250,
+      co2e_kg: null,
+      co2e_source: "unsupported",
+      co2e_confidence: 0.0,
+      co2e_explanation: "CO2 footprint estimation is not supported for this product category."
+    },
+    highlights: [
+      "Sợi vải 100% Cotton tự nhiên mang lại cảm giác mềm mịn cho làn da",
+      "Khả năng co giãn và thấm hút mồ hôi vượt trội, tạo cảm giác thoáng mát",
+      "Form dáng Regular Fit trẻ trung, năng động và tôn dáng",
+      "Công nghệ dệt tiên tiến giúp giữ phom dáng tốt, chống xơ sợi khi giặt"
+    ],
+    return_policy: {
+      days_for_return: 15,
+      free_delivery: true,
+      warranty_duration: 3
+    }
+  },
+  {
+    platform_name: "FPT Shop",
+    category_name: "Headphones & Earbuds",
+    image_url: "https://images.pexels.com/photos/3394651/pexels-photo-3394651.jpeg?auto=compress&cs=tinysrgb&w=500",
+    seller: {
+      name: "FPT Shop Brand Store",
+      seller_rating: 97
+    },
+    product: {
+      id: "airpods3",
+      product_url: "https://fptshop.com.vn/",
+      name: "Tai nghe Bluetooth Apple AirPods 3 Magsafe",
+      original_price: 5490000,
+      final_price: 4390000,
+      product_rating: 0.96, // rating normalized between 0 and 1
+      review_count: 88,
+      co2e_kg: 18.5,
+      co2e_source: "neighbor_fallback",
+      co2e_confidence: 0.3,
+      co2e_explanation: "Average of verified earphone reference products."
+    },
+    highlights: [
+      "Kiểu dáng ôm khít tai tối ưu, mang lại sự dễ chịu khi đeo lâu",
+      "Tính năng Spatial Audio cho trải nghiệm âm thanh vòm sống động",
+      "Khả năng kháng nước và mồ hôi đạt tiêu chuẩn IPX4 yên tâm tập luyện",
+      "Thời lượng pin ấn tượng lên đến 6 giờ nghe nhạc (kèm hộp sạc tổng 30 giờ)"
+    ],
+    return_policy: {
+      days_for_return: 30,
+      free_delivery: true,
+      warranty_duration: 12
+    }
+  }
+];
+
 export function generateMockProducts(count = 8) {
-  const platforms = ["Amazon", "eBay", "Shopify", "Target", "Walmart"];
-  const productNames = [
-    "Eco-Friendly Bamboo Toothbrush",
-    "Organic Cotton Canvas Tote Bag",
-    "Stainless Steel Water Bottle 32oz",
-    "Solar Powered Backpack charger",
-    "Biodegradable Yoga Mat",
-    "Recycled Ocean Plastic Sunglasses",
-    "Reusable Beeswax Food Wraps (3pk)",
-    "Natural Soy Wax Candle - Lavender",
-    "Lorem ipsum dolor sit amet consectetur adipiscing",
-    "Super long product name which is really long I can't believe it omg so long wow"
-  ];
-
-  return Array.from({ length: count }, (_, index) => {
-    // Generate a random product name and platform
-    const name = productNames[index % productNames.length] + (index >= productNames.length ? ` Vol. ${Math.floor(index / productNames.length) + 1}` : "");
-    const platform_name = platforms[Math.floor(Math.random() * platforms.length)];
-    
-    // Set up some realistic variation for original vs final pricing
-    const hasDiscount = Math.random() > 0.4; // 60% chance to have a discount
-    const original_price = parseInt((Math.random() * 20000000 + 5000).toFixed(2)); // $20.00 to $100.00
-    const final_price = hasDiscount 
-      ? parseInt((original_price * (Math.random() * 0.4 + 0.5)).toFixed(2)) // 50% to 90% of original price
-      : original_price;
-
-    return {
-      platform_name,
-      image_url: "/logo192.png", // Kept strictly static as requested
-      product: {
-        id: `${index}`,
-        name,
-        original_price,
-        final_price,
-        product_rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)), // Ratings between 3.5 and 5.0
-        review_count: Math.floor(Math.random() * 1450 + 50), // 50 to 1500 reviews
-        co2e_kg: parseFloat((Math.random() * 12 + 1).toFixed(2)) // Global Warming Potential (carbon footprint)
-      }
-    };
-  });
+  return MOCK_PRODUCTS;
 }

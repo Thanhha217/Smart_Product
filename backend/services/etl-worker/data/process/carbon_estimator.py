@@ -144,6 +144,27 @@ def _estimate_with_llm(product, neighbours):
         return None
 
 
+CO2_CATEGORY_MAPPING = {
+    # Slugs
+    "smartphones": "smartphone",
+    "feature_phones": "smartphone",
+    "laptops": "laptop",
+    "gaming_laptops": "laptop",
+    "tablets": "tablet",
+    "headphones": "earphone",
+    "monitors": "computer_monitor",
+    
+    # Names
+    "Smartphones": "smartphone",
+    "Feature Phones": "smartphone",
+    "Laptops": "laptop",
+    "Gaming Laptops": "laptop",
+    "Tablets": "tablet",
+    "Headphones & Earbuds": "earphone",
+    "Monitors": "computer_monitor",
+}
+
+
 def _already_estimated(product):
     with Session(engine) as session:
         existing = session.exec(
@@ -156,21 +177,41 @@ def estimate_product_co2e(product, product_embedding, category=None):
     try:
         if _already_estimated(product):
             return
-        neighbours = _find_similar_references(product_embedding, category)
+            
+        # Category whitelist/failsafe check
+        ref_cat = None
+        if category:
+            ref_cat = CO2_CATEGORY_MAPPING.get(category)
+            
+        if not ref_cat:
+            product.co2e_kg = None
+            product.co2e_source = "unsupported"
+            product.co2e_explanation = "CO2 footprint estimation is not supported for this product category."
+            product.co2e_confidence = 0.0
+            print(f"CO2e skipped for '{product.name}' in category '{category}': Category not supported.", flush=True)
+            return
+
+        neighbours = _find_similar_references(product_embedding, ref_cat)
         if not neighbours:
             return
         llm = _estimate_with_llm(product, neighbours)
-        if llm is not None:
+        if llm is not None and 0.0 <= llm[0] <= 15000.0:
             product.co2e_kg = round(llm[0], 1)
             product.co2e_explanation = llm[1]
             product.co2e_source = "llm_estimate"
             product.co2e_confidence = 0.6
         else:
             average = sum(n["co2e_kg"] for n in neighbours) / len(neighbours)
-            product.co2e_kg = round(average, 1)
-            product.co2e_source = "neighbor_fallback"
-            product.co2e_confidence = 0.3
-            product.co2e_explanation = f"Average of {len(neighbours)} similar reference products."
+            if average >= 0.0:
+                product.co2e_kg = round(average, 1)
+                product.co2e_source = "neighbor_fallback"
+                product.co2e_confidence = 0.3
+                product.co2e_explanation = f"Average of {len(neighbours)} similar reference products."
+            else:
+                product.co2e_kg = None
+                product.co2e_source = "failed"
+                product.co2e_explanation = "Unable to estimate carbon footprint."
+                product.co2e_confidence = 0.0
         print(f"CO2e for '{product.name}': {product.co2e_kg} kg ({product.co2e_source})", flush=True)
     except Exception as error:
         print(f"Carbon estimation skipped: {error}", flush=True)
