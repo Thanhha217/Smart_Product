@@ -117,44 +117,8 @@ def _parse_estimate(text):
     raise ValueError(f"Could not parse estimate output: {normalized[:200]!r}")
 
 
-def _post_ollama(endpoint, payload):
-    try:
-        response = requests.post(
-            f"{OLLAMA_HOST}{endpoint}",
-            json=payload,
-            timeout=180,
-        )
-        response.raise_for_status()
-        data = response.json()
-        if data.get("error"):
-            print(f"Ollama error on {endpoint}: {data['error']}", flush=True)
-            return None
-        return data
-    except Exception as error:
-        print(f"Ollama call failed on {endpoint}: {error}", flush=True)
-        return None
-
-
 def _call_ollama(prompt):
-    chat_payload = {
-        "model": LLM_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "stream": False,
-        "keep_alive": OLLAMA_KEEP_ALIVE,
-        "think": False,
-        "options": {
-            "temperature": 0,
-            "num_predict": OLLAMA_NUM_PREDICT,
-        },
-    }
-    chat_data = _post_ollama("/api/chat", chat_payload)
-    if chat_data is not None:
-        message = chat_data.get("message") or {}
-        response_text = message.get("content", "")
-        if response_text:
-            return response_text
-
-    generate_payload = {
+    payload = {
         "model": LLM_MODEL,
         "prompt": prompt,
         "stream": False,
@@ -165,10 +129,17 @@ def _call_ollama(prompt):
             "num_predict": OLLAMA_NUM_PREDICT,
         },
     }
-    generate_data = _post_ollama("/api/generate", generate_payload)
-    if generate_data is not None:
-        return generate_data.get("response", "")
-    return None
+    try:
+        response = requests.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=180)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("error"):
+            print(f"Ollama error: {data['error']}", flush=True)
+            return None
+        return data.get("response", "")
+    except Exception as error:
+        print(f"Ollama call failed: {error}", flush=True)
+        return None
 
 
 def _estimate_with_llm(product, neighbours):
