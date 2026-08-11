@@ -18,7 +18,7 @@ TOP_K = 5
 LLM_MODEL = os.environ.get("CO2E_LLM_MODEL", "qwen3.5:0.8b")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
 OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
-OLLAMA_NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "96"))
+OLLAMA_NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "256"))
 PROMPT_NEIGHBOURS = 3
 
 _lock = threading.Lock()
@@ -78,70 +78,26 @@ def _build_prompt(product, neighbours):
         f"- {(n['brand'] or '')} {n['name']}: {n['co2e_kg']} kg CO2e"
         for n in neighbours
     )
+    desc = (product.description or '')[:160]
+
     return (
-        "You are a Life-Cycle Assessment expert estimating a product's carbon "
-        "footprint (cradle-to-grave, in kg CO2-equivalent) following ISO 14067 and "
-        "the GHG Protocol.\n\n"
-        "Estimate the product's total cradle-to-grave carbon footprint in kg CO2e.\n"
-        "Include manufacturing, materials, packaging, transport, use phase, maintenance or consumables when relevant, and end-of-life.\n"
-        "If the product uses consumables or accessories, account for them conservatively.\n"
-        "Write two explanations for your reasoning.\n"
-        "The first explanation must be in English.\n"
-        "The second explanation must be in Vietnamese and sound natural in Vietnamese, not like a direct English copy.\n"
-        "Do not mention the examples, anchors, verified references, or reference products in either explanation.\n"
-        "Keep each explanation to exactly one short sentence.\n"
-        f"{examples}\n\n"
-        f"Product: {product.name}\n"
-        f"Desc: {(product.description or '')[:160]}\n\n"
-        'Return only JSON with keys exactly: {"co2e_kg": <number>, "explanation_en": "<one sentence in English>", "explanation_vi": "<one sentence in Vietnamese>"}'
+        "You are a Life-Cycle Assessment expert estimating cradle-to-grave carbon footprints (kg CO2e) per ISO 14067.\n\n"
+        f"Target Product: {product.name}\n"
+        f"Description: {desc}\n\n"
+        f"Reference Benchmarks (for example purposes only):\n{examples}\n\n"
+        "Task:\n"
+        "1. Estimate cradle-to-grave kg CO2e using product power, materials, and category scale.\n"
+        "2. Provide direct, short explanations (only one sentence) in English and Vietnamese focusing on primary physical drivers (e.g., manufacturing, motor/battery size, active power).\n"
+        "3. DO NOT start explanations with filler phrases like 'The carbon footprint...' or 'Chi phí CO2...'. State drivers directly."
     )
 
-
 def _parse_estimate(text):
-    normalized = text.strip()
-    if not normalized:
-        raise ValueError("empty model response")
-
-    if "{" in normalized and "}" in normalized:
-        candidate = normalized[normalized.index("{"): normalized.rindex("}") + 1]
-        try:
-            data = json.loads(candidate)
-            if isinstance(data, dict) and "co2e_kg" in data:
-                explanation_en = str(
-                    data.get("explanation_en")
-                    or data.get("explanation")
-                    or ""
-                ).strip()
-                explanation_vi = str(data.get("explanation_vi") or "").strip()
-                return float(data["co2e_kg"]), explanation_en, explanation_vi
-        except Exception:
-            pass
-
-    co2e_match = re.search(r"[\"']?co2e_kg[\"']?\s*[:=]\s*(-?\d+(?:\.\d+)?)", normalized, re.IGNORECASE)
-    if co2e_match:
-        explanation_en_match = re.search(
-            r"[\"']?explanation_en[\"']?\s*[:=]\s*(.+?)(?:\s*,\s*[\"']?(?:explanation_vi|explanation)[\"']?\s*[:=]|$)",
-            normalized,
-            re.IGNORECASE | re.DOTALL,
-        )
-        explanation_vi_match = re.search(
-            r"[\"']?explanation_vi[\"']?\s*[:=]\s*(.+?)(?:\s*,\s*[\"']?(?:co2e_kg|explanation_en|explanation)[\"']?\s*[:=]|$)",
-            normalized,
-            re.IGNORECASE | re.DOTALL,
-        )
-        explanation_en = explanation_en_match.group(1).strip().strip('"') if explanation_en_match else normalized[:240]
-        explanation_vi = explanation_vi_match.group(1).strip().strip('"') if explanation_vi_match else explanation_en
-        return float(co2e_match.group(1)), explanation_en, explanation_vi
-
-    json_co2e_match = re.search(r'"co2e_kg"\s*:\s*(-?\d+(?:\.\d+)?)', normalized, re.IGNORECASE)
-    if json_co2e_match:
-        explanation_en_match = re.search(r'"explanation_en"\s*:\s*"([^"]*)"', normalized, re.IGNORECASE | re.DOTALL)
-        explanation_vi_match = re.search(r'"explanation_vi"\s*:\s*"([^"]*)"', normalized, re.IGNORECASE | re.DOTALL)
-        explanation_en = explanation_en_match.group(1).strip() if explanation_en_match else normalized[:240]
-        explanation_vi = explanation_vi_match.group(1).strip() if explanation_vi_match else explanation_en
-        return float(json_co2e_match.group(1)), explanation_en, explanation_vi
-
-    raise ValueError(f"Could not parse estimate output: {normalized[:200]!r}")
+    data = json.loads(text)
+    return (
+        float(data["co2e_kg"]),
+        str(data.get("explanation_en", "")).strip(),
+        str(data.get("explanation_vi", "")).strip()
+    )
 
 
 def _call_ollama(prompt):
@@ -149,11 +105,20 @@ def _call_ollama(prompt):
         "model": LLM_MODEL,
         "prompt": prompt,
         "stream": False,
-        "keep_alive": OLLAMA_KEEP_ALIVE,
         "think": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "format": {
+            "type": "object",
+            "properties": {
+                "co2e_kg": {"type": "number"},
+                "explanation_en": {"type": "string"},
+                "explanation_vi": {"type": "string"}
+            },
+            "required": ["co2e_kg", "explanation_en", "explanation_vi"]
+        },
         "options": {
-            "temperature": 0,
-            "num_predict": OLLAMA_NUM_PREDICT,
+            "temperature": 0.1,  # Slight temperature (0.2) helps thinking models produce better logic
+            "num_predict": OLLAMA_NUM_PREDICT,  # Total tokens (thinking + output)
         },
     }
     try:
@@ -172,6 +137,8 @@ def _call_ollama(prompt):
 def _estimate_with_llm(product, neighbours):
     prompt = _build_prompt(product, neighbours)
     raw = _call_ollama(prompt)
+    print(raw)
+    
     if raw is None:
         return None
     try:
