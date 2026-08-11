@@ -67,16 +67,6 @@ x-airflow-common:
     AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
     AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
     # yamllint disable rule:line-length
-    # Use simple http server on scheduler for health checks
-    # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
-    # yamllint enable rule:line-length
-    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
-    # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
-    # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-    # The following line can be used to set a custom config file, stored in the local config folder
-    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
-    AIRFLOW_CONN_KAFKA_DEFAULT: 'kafka://kafka:9092'
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/scrapers:/opt/airflow/scrapers
@@ -445,9 +435,14 @@ services:
       - ./product_images:/opt/product_images
       - faiss-db-volume:/opt/faiss_index
     depends_on:
-      - kafka
-      - smart-product-finder-database
-      - backend-clip-provider
+      kafka:
+        condition: service_started
+      smart-product-finder-database:
+        condition: service_started
+      backend-clip-provider:
+        condition: service_started
+      ollama-model-puller:
+        condition: service_completed_successfully
 
   backend-clip-provider:
     build:
@@ -507,9 +502,47 @@ services:
     ports:
       - "5432:5432"
 
+  # The core engine running the model
+  ollama:
+    image: ollama/ollama:latest
+    container_name: qwen-ollama-core
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Temporary service that downloads the 0.8B model automatically
+  ollama-model-puller:
+    image: curlimages/curl:8.10.1
+    container_name: qwen-model-puller
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - |
+        echo "Waiting for Ollama engine to start..."
+        until curl -fsS http://ollama:11434/api/tags > /dev/null; do sleep 1; done
+        echo "Downloading Qwen 3.5 0.8B model..."
+        curl -fsS http://ollama:11434/api/pull \
+          -H 'Content-Type: application/json' \
+          -d '{"name":"qwen3.5:0.8b"}'
+        echo "Waiting for model to appear in Ollama tags..."
+        until curl -fsS http://ollama:11434/api/tags | grep -q 'qwen3.5:0.8b'; do sleep 1; done
+        echo "Model installation completed successfully!"
+
 volumes:
   postgres-db-volume:
   pgvector-db-volume:
   spf-postgres-db-volume:
   kafka-data-volume:
   faiss-db-volume:
+  ollama_storage:
