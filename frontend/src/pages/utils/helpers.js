@@ -24,15 +24,24 @@ export function getProductHighlights(productInfo) {
   return lines.slice(0, 4); // return top 4 points
 }
 
-export function getRecommendationReason(productInfo, platform_name, t) {
-  if (!productInfo) return "";
+export function getRecommendationReason(productInfo, platform_name, t, isProductPage = false) {
+  if (!productInfo) return null;
   const product = productInfo.product || productInfo;
   
-  if (product.recommendation_reason) {
+  if (product && product.recommendation_reason) {
     return product.recommendation_reason;
   }
+  if (productInfo && productInfo.recommendation_reason) {
+    return productInfo.recommendation_reason;
+  }
 
-  // Generate dynamic reason based on attributes
+  // On Search Results grid (ProductSlot), only top 4 get LLM explanations.
+  // For products 5th+, no reason is shown unless on Product detail page (isProductPage = true).
+  if (!isProductPage) {
+    return null;
+  }
+
+  // On Product detail page, fall back to dynamic attribute-based reason if no LLM reason exists
   const rawRating = product.product_rating || 0.0;
   const ratingOutOfFive = rawRating <= 1.0 ? rawRating * 5.0 : rawRating;
   

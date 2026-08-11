@@ -7,7 +7,6 @@ import ProductMobileFilter from "./components/products/ProductMobileFilters";
 import { GATEWAY_URL } from "./utils/consts";
 import Throbber from "./components/general/Throbber";
 import { useI18n } from "../i18n/LanguageContext";
-import { generateMockProducts } from "./components/products/productMock";
 
 
 const fetchProducts = async (query, imageQuery) => {
@@ -116,16 +115,9 @@ export default function SearchResults() {
           setLoading(false);
         }
       } catch (error) {
-        console.error("Failed to fetch products, falling back to mock data:", error);
+        console.error("Failed to fetch products:", error);
         if (isActive) {
-          const mockData = generateMockProducts();
-          const filteredMock = query 
-            ? mockData.filter(item => 
-                item.product.name.toLowerCase().includes(query.toLowerCase()) || 
-                item.category_name.toLowerCase().includes(query.toLowerCase())
-              )
-            : mockData;
-          setProductsInfo(filteredMock.length > 0 ? filteredMock : mockData);
+          setProductsInfo([]);
           setLoading(false);
         }
       }

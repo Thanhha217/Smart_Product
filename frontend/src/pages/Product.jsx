@@ -1,15 +1,14 @@
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { generateMockProducts } from "./components/products/productMock";
-import ProductCarousel from "./components/products/ProductCarousel";
 import { GATEWAY_URL } from "./utils/consts";
 import { useI18n } from "../i18n/LanguageContext";
 import { getProductHighlights, getRecommendationReason } from "./utils/helpers";
 
 
 export default function Product() {
-    const params = useParams()
-    const { t, formatNumber } = useI18n();
+    const params = useParams();
+    const location = useLocation();
+    const { lang, t, formatNumber } = useI18n();
 
     // const productInfo = {
     //     platform_name: "Shopee",
@@ -46,14 +45,18 @@ export default function Product() {
             try {
                 const res = await fetch(`${GATEWAY_URL}/product/${productId}`);
                 const data = await res.json();
-                setProductInfo(data.product);
-            } catch (error) {
-                console.log("Failed to fetch product details, falling back to mock product:", error);
-                const mockList = generateMockProducts();
-                const matched = mockList.find(item => item.product.id === productId);
-                if (matched) {
-                    setProductInfo(matched);
+                let fetched = data.product;
+
+                const stateProduct = location.state?.product || location.state?.productInfo;
+                const stateReason = stateProduct?.recommendation_reason || stateProduct?.product?.recommendation_reason;
+                if (stateReason && fetched && fetched.product) {
+                    fetched.product.recommendation_reason = stateReason;
+                    fetched.recommendation_reason = stateReason;
                 }
+
+                setProductInfo(fetched);
+            } catch (error) {
+                console.error("Failed to fetch product details:", error);
             } finally {
                 setLoading(false);
             }
@@ -62,9 +65,9 @@ export default function Product() {
         if (params.productId) {
             fetchProductInfo(params.productId);
         }
-    }, [params.productId]);
+    }, [params.productId, location.state]);
 
-    const tagStyle = "bg-primary-200 rounded-2xl text-nowrap py-1 px-2";
+    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-xs px-2 py-1 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
 
     if (loading) {
         return <div className="flex justify-center items-center p-10 min-h-full">{t("product.loading")}</div>;
@@ -75,7 +78,10 @@ export default function Product() {
     }
 
     const highlights = getProductHighlights(productInfo);
-    const reason = getRecommendationReason(productInfo, productInfo.platform_name, t);
+    const reason = getRecommendationReason(productInfo, productInfo.platform_name, t, true);
+    const co2Explanation = lang === "vi"
+        ? (productInfo.product.co2e_explanation_vi || productInfo.product.co2e_explanation)
+        : (productInfo.product.co2e_explanation || productInfo.product.co2e_explanation_vi);
 
 
     return (
@@ -116,14 +122,16 @@ export default function Product() {
                         </div>
 
                         {/* Why Recommended Callout (Explanation) */}
-                        <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-4 my-2 w-full">
-                            <h3 className="font-bold text-orange-950 text-sm flex items-center gap-1.5 mb-1">
-                                ✨ {t("product.whyRecommended")}
-                            </h3>
-                            <p className="text-gray-700 text-sm italic">
-                                "{reason}"
-                            </p>
-                        </div>
+                        {reason && (
+                            <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-4 my-2 w-full">
+                                <h3 className="font-bold text-orange-950 text-sm flex items-center gap-1.5 mb-1">
+                                    ✨ {t("product.whyRecommended")}
+                                </h3>
+                                <p className="text-gray-700 text-sm italic">
+                                    "{reason}"
+                                </p>
+                            </div>
+                        )}
 
                         {/* Product Highlights / Specs (Details) */}
                         {highlights.length > 0 && (
@@ -152,11 +160,6 @@ export default function Product() {
                                         </div>
                                     </div>
                                 </div>
-                                {productInfo.product.co2e_explanation && (
-                                    <p className="text-sm text-primary-800 italic">
-                                        {t("product.aiExplanation")}: "{productInfo.product.co2e_explanation}"
-                                    </p>
-                                )}
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 bg-gray-400 rounded-2xl text-white p-3 w-fit">
@@ -214,7 +217,7 @@ export default function Product() {
                             <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
                                 <h3 className="font-semibold text-primary-900 text-sm mb-1">{t("product.aiExplanation")}</h3>
                                 <p className="text-gray-700 text-sm italic">
-                                    "{productInfo.product.co2e_explanation || "Estimated based on product materials, specs, and similar verified benchmarks."}"
+                                    "{co2Explanation || (lang === "vi" ? "Được ước tính dựa trên vật liệu, thông số kỹ thuật và các sản phẩm tham chiếu đã xác minh." : "Estimated based on product materials, specs, and similar verified benchmarks.")}"
                                 </p>
                             </div>
                         </div>

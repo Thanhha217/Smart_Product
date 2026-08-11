@@ -8,7 +8,7 @@ export default function ProductSlot({ product, image_url, platform_name }) {
     const { t, formatNumber } = useI18n();
 
     const goToProduct = (e) => {
-        navigate(`/product/${product.id}`)
+        navigate(`/product/${product.id}`, { state: { product } });
     };
 
     const highlights = getProductHighlights(product);
@@ -34,9 +34,11 @@ export default function ProductSlot({ product, image_url, platform_name }) {
                     </ul>
 
                     {/* Recommendation Reason / Explanation */}
-                    <div className="bg-orange-50 border border-orange-100 rounded px-1.5 py-0.5 text-[10px] text-orange-700 italic my-1 font-medium line-clamp-1">
-                        ✨ {reason}
-                    </div>
+                    {reason && (
+                        <div className="bg-orange-50 border border-orange-100 rounded px-1.5 py-0.5 text-[10px] text-orange-700 italic my-1 font-medium line-clamp-1">
+                            ✨ {reason}
+                        </div>
+                    )}
                 </div>
 
                 <div>

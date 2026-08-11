@@ -18,7 +18,9 @@ export const MOCK_PRODUCTS = [
       co2e_kg: 75.0,
       co2e_source: "llm_estimate",
       co2e_confidence: 0.6,
-      co2e_explanation: "Estimated based on Apple's iPhone 15 Pro Max Environmental Report."
+      co2e_explanation: "Estimated based on Apple's iPhone 15 Pro Max Environmental Report.",
+      co2e_explanation_vi: "Được ước tính dựa trên Báo cáo Môi trường iPhone 15 Pro Max của Apple.",
+      recommendation_reason: "Great customer ratings & top performance"
     },
     highlights: [
       "Màn hình Super Retina XDR OLED 6.7 inch sắc nét",
@@ -51,7 +53,9 @@ export const MOCK_PRODUCTS = [
       co2e_kg: 147.0,
       co2e_source: "llm_estimate",
       co2e_confidence: 0.6,
-      co2e_explanation: "Estimated from Apple's June 2022 Product Environmental Report."
+      co2e_explanation: "Estimated from Apple's June 2022 Product Environmental Report.",
+      co2e_explanation_vi: "Được ước tính từ Báo cáo Môi trường Sản phẩm tháng 6/2022 của Apple.",
+      recommendation_reason: "Best price/quality ratio in laptops"
     },
     highlights: [
       "Chip xử lý Apple M2 cực kỳ mạnh mẽ & tối ưu",
@@ -84,7 +88,9 @@ export const MOCK_PRODUCTS = [
       co2e_kg: null,
       co2e_source: "unsupported",
       co2e_confidence: 0.0,
-      co2e_explanation: "CO2 footprint estimation is not supported for this product category."
+      co2e_explanation: "CO2 footprint estimation is not supported for this product category.",
+      co2e_explanation_vi: "Ước tính dấu chân CO2 chưa hỗ trợ cho danh mục sản phẩm này.",
+      recommendation_reason: "Huge 30% sale discount"
     },
     highlights: [
       "Chất liệu vải Canvas kết hợp phối da PU dày dặn chống trầy xước",
@@ -117,7 +123,9 @@ export const MOCK_PRODUCTS = [
       co2e_kg: null,
       co2e_source: "unsupported",
       co2e_confidence: 0.0,
-      co2e_explanation: "CO2 footprint estimation is not supported for this product category."
+      co2e_explanation: "CO2 footprint estimation is not supported for this product category.",
+      co2e_explanation_vi: "Ước tính dấu chân CO2 chưa hỗ trợ cho danh mục sản phẩm này.",
+      recommendation_reason: "Best budget value choice"
     },
     highlights: [
       "Sợi vải 100% Cotton tự nhiên mang lại cảm giác mềm mịn cho làn da",
@@ -150,7 +158,9 @@ export const MOCK_PRODUCTS = [
       co2e_kg: 18.5,
       co2e_source: "neighbor_fallback",
       co2e_confidence: 0.3,
-      co2e_explanation: "Average of verified earphone reference products."
+      co2e_explanation: "Average of verified earphone reference products.",
+      co2e_explanation_vi: "Trung bình của các sản phẩm tai nghe tham chiếu đã xác minh.",
+      recommendation_reason: null
     },
     highlights: [
       "Kiểu dáng ôm khít tai tối ưu, mang lại sự dễ chịu khi đeo lâu",

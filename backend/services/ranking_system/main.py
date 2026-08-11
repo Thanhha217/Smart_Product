@@ -15,11 +15,11 @@ async def query_endpoint(q: str = None, limit: int = 32, payload: QueryWithImage
   try:
     image_base64 = payload.image if payload else None
 
-    product_ids = query_ranking_system(
+    product_ids, reasons = query_ranking_system(
         query=q, limit=limit, image_base64=image_base64
     )
 
-    return {"products": product_ids}
+    return {"products": product_ids, "reasons": reasons}
 
   except Exception as e:
     print("--- ERREUR INTERNE DETAILS ---")
