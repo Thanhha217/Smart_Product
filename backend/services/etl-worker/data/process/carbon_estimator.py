@@ -114,17 +114,18 @@ def _build_stage1_prompt(product, neighbours):
         f"- {(n['brand'] or '')} {n['name']}: {n['co2e_kg']} kg CO2e"
         for n in neighbours
     )
-    desc = (product.description or "")[:160]
+    desc = (product.description or "")[:400]
 
     return (
         "You are a Life-Cycle Assessment expert estimating cradle-to-grave carbon footprints (kg CO2e) per ISO 14067.\n\n"
         f"Target Product: {product.name}\n"
+        # f"Category: {product.category}\n"
         f"Description: {desc}\n\n"
-        f"Reference Benchmarks:\n{examples}\n\n"
+        # f"Reference Benchmarks:\n{examples}\n\n"
         "Analyze step-by-step:\n"
         "1. Identify the product's physical category, size, and power scale.\n"
-        "2. State an estimated kg CO2e.\n"
-        "3. Verify how plausible the estimation is and change the value if necessary. \n"
+        "2. State an estimated kg CO2e based on the previous analysis.\n"
+        "3. Verify how realistic the estimation is (for example: A computer mouse shouldn't have a CO2 estimation of 100kg) and modify the value if necessary.\n"
         "4. Explain your estimation in two short sentences"
     )
 
