@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import threading
 
 import faiss
@@ -14,10 +15,10 @@ from data.process.data_transformer import encode_text
 
 EMBED_DIM = 512
 TOP_K = 5
-LLM_PROVIDER = os.environ.get("CO2E_LLM_PROVIDER", "anthropic").lower()
-_DEFAULT_MODEL = {"ollama": "llama3.2", "anthropic": "claude-opus-4-8"}
-LLM_MODEL = os.environ.get("CO2E_LLM_MODEL") or _DEFAULT_MODEL.get(LLM_PROVIDER, "claude-opus-4-8")
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://host.docker.internal:11434")
+LLM_MODEL = os.environ.get("CO2E_LLM_MODEL", "qwen3.5:0.8b")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
+OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
+PROMPT_NEIGHBOURS = 3
 
 _lock = threading.Lock()
 _ref_index = None
@@ -44,8 +45,12 @@ def _build_reference_index():
             for ref in references:
                 vectors.append(encode_text(_reference_text(ref)))
                 ids.append(ref.id)
-                by_id[ref.id] = {"name": ref.name, "category": ref.category,
-                                 "brand": ref.brand, "co2e_kg": ref.co2e_kg}
+                by_id[ref.id] = {
+                    "name": ref.name,
+                    "category": ref.category,
+                    "brand": ref.brand,
+                    "co2e_kg": ref.co2e_kg,
+                }
             matrix = np.asarray(vectors, dtype="float32")
             faiss.normalize_L2(matrix)
             index.add_with_ids(matrix, np.asarray(ids, dtype=np.int64))
@@ -71,76 +76,168 @@ def _find_similar_references(product_embedding, category=None, k=TOP_K):
     return ranked[:k]
 
 
-def _build_prompt(product, neighbours):
+def _sanitize_neighbours(neighbours):
+    if not neighbours or len(neighbours) < 2:
+        return neighbours
+    values = sorted([n["co2e_kg"] for n in neighbours])
+    median_val = values[len(values) // 2]
+    filtered = [
+        n for n in neighbours
+        if (median_val / 8.0) <= n["co2e_kg"] <= (median_val * 8.0)
+    ]
+    return filtered if filtered else neighbours
+
+
+def _is_physically_plausible(product_name, co2e_kg):
+    name_lower = product_name.lower()
+    small_tech_keywords = [
+        "loa", "speaker", "tai nghe", "earphone", "headphone", "sạc", "charger",
+        "cáp", "cable", "chuột", "mouse", "bàn phím", "keyboard", "đồng hồ",
+        "watch", "ốp lưng", "thẻ nhớ", "usb", "pin dự phòng", "powerbank", "cân", "scale"
+    ]
+    if any(k in name_lower for k in small_tech_keywords) and co2e_kg > 150:
+        print(f"Sanity Check Failed: '{product_name}' estimate too high ({co2e_kg} kg)", flush=True)
+        return False
+
+    if co2e_kg < 0.1 or co2e_kg > 5000:
+        return False
+
+    return True
+
+
+# =====================================================================
+# STAGE 1: Simplified Reasoning
+# =====================================================================
+
+def _build_stage1_prompt(product, neighbours):
     examples = "\n".join(
-        f"- {(n['brand'] or '')} {n['name']} ({n['category']}): {n['co2e_kg']} kg CO2e"
+        f"- {(n['brand'] or '')} {n['name']}: {n['co2e_kg']} kg CO2e"
         for n in neighbours
     )
+    desc = (product.description or "")[:400]
+
     return (
-        "You are a Life-Cycle Assessment expert estimating a product's carbon "
-        "footprint (cradle-to-grave, in kg CO2-equivalent) following ISO 14067 and "
-        "the GHG Protocol.\n\n"
-        "Similar products with VERIFIED carbon footprints from manufacturer "
-        "environmental reports:\n"
-        f"{examples}\n\n"
-        "Estimate the carbon footprint of this product by reasoning from the most "
-        "similar references above (category, brand, size, materials):\n"
-        f"- {product.name}\n"
-        f"Description: {(product.description or '')[:500]}\n\n"
-        'Reply with ONLY a JSON object: '
-        '{"co2e_kg": <number>, "explanation": "<one short sentence>"}'
+        "You are a Life-Cycle Assessment expert estimating cradle-to-grave carbon footprints (kg CO2e) per ISO 14067.\n\n"
+        f"Target Product: {product.name}\n"
+        # f"Category: {product.category}\n"
+        f"Description: {desc}\n\n"
+        # f"Reference Benchmarks:\n{examples}\n\n"
+        "Analyze step-by-step:\n"
+        "1. Identify the product's physical category, size, and power scale.\n"
+        "2. State an estimated kg CO2e based on the previous analysis.\n"
+        "3. Verify how realistic the estimation is (for example: A computer mouse shouldn't have a CO2 estimation of 100kg) and modify the value if necessary.\n"
+        "4. Explain your estimation in two short sentences"
     )
 
 
-def _parse_estimate(text):
-    data = json.loads(text[text.index("{"): text.rindex("}") + 1])
-    return float(data["co2e_kg"]), str(data.get("explanation", ""))
-
-
-def _call_anthropic(prompt):
+def _call_ollama_reasoning(prompt):
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "think": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "options": {
+            "temperature": 0.1,
+            "num_predict": 256,  # Fast execution limit
+        },
+    }
     try:
-        import anthropic
-    except ImportError:
-        return None
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
-    try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=LLM_MODEL, max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return "".join(b.text for b in response.content if b.type == "text")
-    except Exception as error:
-        print(f"Anthropic call failed: {error}", flush=True)
-        return None
-
-
-def _call_ollama(prompt):
-    try:
-        response = requests.post(
-            f"{OLLAMA_HOST}/api/chat",
-            json={"model": LLM_MODEL,
-                  "messages": [{"role": "user", "content": prompt}],
-                  "stream": False, "format": "json"},
-            timeout=180,
-        )
+        response = requests.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=60)
         response.raise_for_status()
-        return response.json()["message"]["content"]
+        text = response.json().get("response", "")
+        if not text or not text.strip():
+            print(f"Stage 1 returned empty response payload.", flush=True)
+            return None
+        return text
     except Exception as error:
-        print(f"Ollama call failed: {error}", flush=True)
+        print(f"Stage 1 Ollama call error: {error}", flush=True)
         return None
+
+
+# =====================================================================
+# STAGE 2: Structured JSON Extraction & Translation
+# =====================================================================
+
+def _build_stage2_prompt(stage1_analysis):
+    return (
+        f"Analysis:\n{stage1_analysis}\n\n"
+        "Task: Convert the analysis into JSON format.\n"
+        "- co2e_kg: numerical value only.\n"
+        "- explanation_en: 1 concise English sentence.\n"
+        "- explanation_vi: 1 concise Vietnamese translation."
+    )
+
+
+def _call_ollama_extraction(prompt):
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "think": False,
+        "format": {
+            "type": "object",
+            "properties": {
+                "co2e_kg": {"type": "number"},
+                "explanation_en": {"type": "string"},
+                "explanation_vi": {"type": "string"},
+            },
+            "required": ["co2e_kg", "explanation_en", "explanation_vi"],
+        },
+        "options": {
+            "temperature": 0.0,
+            "num_predict": 256,
+        },
+    }
+    try:
+        response = requests.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=60)
+        response.raise_for_status()
+        return response.json().get("response", "")
+    except Exception as error:
+        print(f"Stage 2 Ollama call error: {error}", flush=True)
+        return None
+
+
+# =====================================================================
+# Pipeline Orchestration
+# =====================================================================
+
+def _parse_estimate(text):
+    data = json.loads(text)
+    return (
+        float(data["co2e_kg"]),
+        str(data.get("explanation_en", "")).strip(),
+        str(data.get("explanation_vi", "")).strip(),
+    )
 
 
 def _estimate_with_llm(product, neighbours):
-    prompt = _build_prompt(product, neighbours)
-    raw = _call_ollama(prompt) if LLM_PROVIDER == "ollama" else _call_anthropic(prompt)
-    if raw is None:
+    # --- STAGE 1 ---
+    p1 = _build_stage1_prompt(product, neighbours)
+    reasoning_output = _call_ollama_reasoning(p1)
+
+    if not reasoning_output:
+        print(f"Stage 1 reasoning failed for '{product.name}'", flush=True)
         return None
+
+    # --- STAGE 2 ---
+    p2 = _build_stage2_prompt(reasoning_output)
+    raw_json = _call_ollama_extraction(p2)
+
+    if not raw_json:
+        print(f"Stage 2 extraction failed for '{product.name}'", flush=True)
+        return None
+
     try:
-        return _parse_estimate(raw)
+        co2e, exp_en, exp_vi = _parse_estimate(raw_json)
+
+        if not _is_physically_plausible(product.name, co2e):
+            return None
+
+        return co2e, exp_en, exp_vi
     except Exception as error:
-        print(f"Could not parse LLM estimate: {error}", flush=True)
+        print(f"Could not parse Stage 2 JSON for '{product.name}': {error} | raw={raw_json!r}", flush=True)
         return None
 
 
@@ -149,20 +246,43 @@ def _already_estimated(product):
         existing = session.exec(
             select(Product).where(Product.product_url == product.product_url)
         ).first()
-    return existing is not None and existing.co2e_kg is not None
+    if existing is not None and existing.co2e_kg is not None:
+        return existing
+    return None
+
+
+def _log_estimate(product, source):
+    explanation = product.co2e_explanation or ""
+    explanation_vi = product.co2e_explanation_vi or ""
+    print(
+        f"CO2e for '{product.name}': {product.co2e_kg} kg ({source}) | explanation_en: {explanation} | explanation_vi: {explanation_vi}",
+        flush=True,
+    )
 
 
 def estimate_product_co2e(product, product_embedding, category=None):
     try:
-        if _already_estimated(product):
+        existing = _already_estimated(product)
+        if existing is not None:
+            product.co2e_kg = existing.co2e_kg
+            product.co2e_source = existing.co2e_source
+            product.co2e_confidence = existing.co2e_confidence
+            product.co2e_explanation = existing.co2e_explanation
+            product.co2e_explanation_vi = existing.co2e_explanation_vi
+            _log_estimate(product, f"already_estimated:{product.co2e_source or 'unknown'}")
             return
-        neighbours = _find_similar_references(product_embedding, category)
+
+        neighbours = _find_similar_references(product_embedding, category, k=PROMPT_NEIGHBOURS)
+        neighbours = _sanitize_neighbours(neighbours)
+
         if not neighbours:
             return
+
         llm = _estimate_with_llm(product, neighbours)
-        if llm is not None:
+        if llm is not None and 0.0 <= llm[0] <= 15000.0:
             product.co2e_kg = round(llm[0], 1)
             product.co2e_explanation = llm[1]
+            product.co2e_explanation_vi = llm[2]
             product.co2e_source = "llm_estimate"
             product.co2e_confidence = 0.6
         else:
@@ -171,6 +291,8 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_source = "neighbor_fallback"
             product.co2e_confidence = 0.3
             product.co2e_explanation = f"Average of {len(neighbours)} similar reference products."
-        print(f"CO2e for '{product.name}': {product.co2e_kg} kg ({product.co2e_source})", flush=True)
+            product.co2e_explanation_vi = f"Trung bình của {len(neighbours)} sản phẩm tham chiếu tương tự."
+
+        _log_estimate(product, product.co2e_source or "unknown")
     except Exception as error:
         print(f"Carbon estimation skipped: {error}", flush=True)

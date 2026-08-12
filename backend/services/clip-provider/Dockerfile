@@ -4,6 +4,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# CPU-only torch and torchvision first to prevent open-clip-torch from pulling in 2GB CUDA images
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
 COPY ./requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt

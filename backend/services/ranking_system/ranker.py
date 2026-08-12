@@ -8,6 +8,7 @@ import unicodedata
 from product_embeddings import create_text_embedding, create_image_embedding
 from product_featurer import compute_features
 from product_searcher import get_products_from_ids, get_similar_products_indices
+from explanation_generator import generate_ranking_explanations
 
 MAX_RELEVANT_PRODUCTS = 20
 RRF_K = 60  # standard RRF damping constant
@@ -179,5 +180,8 @@ def query_ranking_system(query, limit, image_base64=None):
 
     product_ids = [product_list[i].product_id for i in fused_order]
 
-    # return indices[0][ranked_indices].tolist()
-    return product_ids
+    # Generate brief LLM recommendation explanations for top 4 ranked products
+    top_4_products = [product_list[i] for i in fused_order[:4]]
+    reasons = generate_ranking_explanations(query, top_4_products)
+
+    return product_ids, reasons

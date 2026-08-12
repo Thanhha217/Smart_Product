@@ -32,3 +32,4 @@ class Product(ProductBase, table=True):
     co2e_source: Optional[str] = Field(default=None)  # llm_estimate | neighbor_fallback
     co2e_confidence: Optional[float] = Field(default=None)
     co2e_explanation: Optional[str] = Field(default=None)
+    co2e_explanation_vi: Optional[str] = Field(default=None)
