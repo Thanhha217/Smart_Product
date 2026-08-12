@@ -1,102 +1,284 @@
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
-\title{Eco-conscious AI-Powered Multimodal Product Recommendation System for Vietnamese E-commerce\\
-}
+\title{Eco-Conscious AI-Powered Multimodal Product Recommendation System for Vietnamese E-Commerce}
 
-\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
-}
+\author{\IEEEauthorblockN{Dat Nguyen, Duc Dang, Quyen Huynh, Ha Nguyen, Baptiste Monsterleet, and Thomas Portelette}
+\IEEEauthorblockA{International Institute of Technology DNIIT, The University of Danang, Vietnam}}
 
 \maketitle
 
 \begin{abstract}
-The rapid growth of the Vietnamese e-commerce sector has provided consumers with unparalleled access to goods. However, this expansion has resulted in cluttered, disparate platforms that make finding the optimal price and conditions a tedious task. Furthermore, major retailers currently offer almost no transparency regarding the ecological impact or carbon footprint of consumer electronics. To address these challenges, this paper presents ``Smart Product Finder'', a novel AI-powered, multimodal search engine and price optimization platform tailored for the Vietnamese market. The system utilizes microservices for real-time web scraping, OpenCLIP for text and image embeddings, and FAISS for fast similarity retrieval. A key innovation of the platform is its two-stage recommendation pipeline, where a CatBoost model re-ranks products based on eight distinct criteria, including a Sustainability-Aware Score (SaS). To overcome the lack of Environmental Product Declarations (EPDs), the system currently employs a K-Nearest Neighbors (KNN) approach to estimate carbon footprints, with a proposed architecture utilizing localized Large Language Models (LLMs) such as Qwen for bilingual lifecycle analysis. This approach successfully balances relevance, price optimization, and environmental impact.
+The rapid growth of Vietnam's e-commerce sector has given consumers broad access to consumer electronics and home appliances, yet significant obstacles persist. Product data is fragmented across competing platforms, making price and warranty comparisons tedious. Furthermore, retailers provide virtually no transparency regarding the environmental impact of the products they sell. This paper presents \textit{Smart Product Finder}, an AI-powered multimodal search engine tailored for the Vietnamese market. The system employs daily-scheduled Scrapy web scrapers orchestrated by Apache Airflow to aggregate product data from five major Vietnamese retailers through an Apache Kafka event-streaming pipeline. Multimodal embeddings are generated using OpenCLIP (ViT-B-32) and indexed in dual FAISS vector stores for fast text and image retrieval. A three-stage recommendation pipeline first retrieves the top 50 semantically similar candidates, re-ranks them with a CatBoost learning-to-rank model evaluated on seven criteria, and finally fuses the relevance ranking with carbon footprint estimates via weighted Reciprocal Rank Fusion (RRF). To address the absence of official Environmental Product Declarations (EPDs), a two-stage local Large Language Model pipeline (Qwen~3.5 0.8B, served by Ollama) generates cradle-to-grave CO\textsubscript{2} estimates anchored by a curated reference seed dataset. Preliminary evaluation shows promising ranking performance, while carbon estimation accuracy remains an active area of improvement. The deployment highlights practical challenges including processing latency, model limitations, and data acquisition constraints imposed by budget restrictions.
 \end{abstract}
 
 \begin{IEEEkeywords}
-E-commerce, Recommender Systems, Multimodal Search, Carbon Footprint Estimation, CatBoost, Vietnam
+E-commerce, Recommender Systems, Multimodal Retrieval, Reciprocal Rank Fusion, Carbon Footprint Estimation, CatBoost, Learning to Rank, Local LLM
 \end{IEEEkeywords}
 
+% ================================================================
 \section{Introduction}
-The digital transformation in Vietnam has spurred a massive surge in e-commerce activity, with consumers relying heavily on platforms to purchase electronics and everyday goods. Despite this growth, consumers face a significant cognitive burden. Comparing prices, warranties, and seller reliability across major Vietnamese retail sites (e.g., CellphoneS, PhongVu, FPT Shop) is highly inefficient due to fragmented data and cluttered user interfaces. Consequently, finding the "best offer" requires tedious manual verification across multiple domains.
+% ================================================================
 
-In addition to the financial and practical hurdles, there is a distinct lack of ecological transparency in the Vietnamese e-commerce market. In the context of global climate change, consumers are becoming more environmentally conscious. However, official Environmental Product Declarations (EPDs) are rarely available for consumer electronics in Vietnam, making it virtually impossible for shoppers to factor the carbon footprint into their purchasing decisions.
+Vietnam's digital economy has undergone rapid transformation, with e-commerce revenues growing steadily year over year. Despite this expansion, consumers face a significant cognitive burden when shopping for electronics and home appliances online. Comparing prices, warranties, return policies, and seller reliability across major Vietnamese retail platforms requires tedious manual navigation through fragmented and cluttered user interfaces. Finding the genuinely ``best offer'' for a given product remains an inefficient process.
 
-To mitigate these issues, we developed an intelligent, multimodal search engine that not only aggregates and optimizes pricing across platforms but also estimates the ecological impact of products. This paper outlines the system's architecture, including its real-time data pipeline, multimodal retrieval using OpenCLIP, and a CatBoost-based ranking system. We also discuss our methodology for estimating cradle-to-grave CO2 emissions, currently utilizing a K-Nearest Neighbors (KNN) approach, and outline our transition towards a bilingual (Vietnamese/English) Large Language Model (LLM) framework.
+Compounding this issue is a distinct lack of ecological transparency. Official Environmental Product Declarations (EPDs) and Life Cycle Assessment (LCA) data are rarely available for consumer products in the Vietnamese market, making it virtually impossible for environmentally conscious shoppers to factor carbon footprint into their purchasing decisions. Recent research has demonstrated that post-hoc carbon-aware re-ranking can achieve substantial environmental improvements---reducing recommended product carbon footprints by 70--86\%---with only minimal losses in recommendation relevance~\cite{carbon_reranking, ecommerce_carbon}.
 
-\section{Related Work}
-Recent advancements in AI have significantly enhanced e-commerce platforms. Personalization has been vastly improved through Deep Reinforcement Learning (DRL) and frameworks like TensorFlow Recommenders (TFRS), which adapt dynamically to user behavior to optimize long-term engagement \cite{paper1}. Similarly, cost-effective recommendation architectures utilizing TF-IDF and cosine similarity have been proposed to empower Small and Medium Enterprises (SMEs) against larger marketplaces \cite{paper2}.
+To address these dual challenges of market fragmentation and ecological opacity, we developed \textit{Smart Product Finder}, an intelligent multimodal search engine that aggregates product data across platforms, optimizes recommendations through multi-criteria ranking, and estimates the environmental impact of products. The principal contributions of this work are as follows:
 
-In the domain of price optimization, systems have been developed to forecast trends across e-commerce, food delivery, and ride-hailing sectors using machine learning algorithms like Linear Regression, LSSVM, and Facebook Prophet \cite{paper3}. Furthermore, multi-agent systems integrating NLP chatbots and multi-attribute decision-making have shown promise in automating the shopping process and tracking historical pricing \cite{paper4}. 
-
-To move beyond traditional keyword matching, modern systems are adopting multimodal retrieval approaches. Combining models such as BLIP, CLIP, and CLIP Interrogator allows systems to match natural language queries directly with visual product representations based on deep semantic understanding \cite{paper5}. Our work builds upon these multimodal concepts while introducing a novel sustainability ranking factor tailored to the data-scarce Vietnamese market.
-
-\section{Methodology}
-
-\subsection{System Architecture and Data Collection}
-The platform is built on a scalable microservices architecture. A fleet of custom web scrapers built with Scrapy is deployed to extract real-time product data from five major Vietnamese electronics retailers. These scrapers are designed to bypass dynamic content loading and anti-bot protections.
-
-The raw data is funneled through an Apache Kafka event streaming pipeline to an ETL (Extract, Transform, Load) service. Here, the data is cleaned, normalized, and processed to generate multimodal embeddings using OpenCLIP. The structured metadata is stored in a PostgreSQL database, while the high-dimensional embeddings are indexed in a FAISS (Facebook AI Similarity Search) vector database to enable rapid nearest-neighbor searches.
-
-\subsection{Sustainability-Aware CO2 Estimation}
-A critical component of our system is evaluating the ecological impact of products despite the absence of formal EPDs. We calculate a Product Carbon Footprint (PCF) in kg CO2e based on the ISO 14067 standard, taking into account raw material acquisition, manufacturing, distribution, use phase, and end-of-life.
-
-Given the scarcity of ground-truth data in the target market, our current implementation utilizes a K-Nearest Neighbors (KNN) algorithm. The KNN model infers the carbon footprint of a new product by comparing its technical metadata and specifications against a small, curated database of products with known emission profiles. 
-
-To improve accuracy and scale, our proposed future architecture replaces the KNN with a localized Large Language Model (LLM). We plan to implement models from the Qwen family (e.g., Qwen 2.5 or 3.5) due to their efficiency in running locally and their strong bilingual capabilities in both English and Vietnamese. By acting as a Life Cycle Assessment expert, the LLM will parse unstructured product descriptions and generate zero-shot or few-shot estimates of the carbon footprint.
-
-\subsection{Multimodal Search and Ranking System}
-To ensure low latency without sacrificing recommendation quality, the system employs a two-stage retrieval and ranking pipeline. 
-
-\subsubsection{Initial Retrieval}
-When a user submits a text or image query via the React-based frontend, the system queries the FAISS vector database. This stage quickly retrieves the top 50 most semantically or visually similar products across all aggregated retailers.
-
-\subsubsection{CatBoost Re-ranking}
-The top 50 candidates are subsequently re-ranked using a fast boosting model, CatBoost. Rather than relying on a heavy deep learning model, CatBoost efficiently ranks items based on eight distinct criteria:
 \begin{enumerate}
-    \item Semantic relevance to the user's query.
-    \item Price (normalized using Robust Scaling to handle outliers).
-    \item Product reliability, calculated via a Bayesian average of ratings and review counts.
-    \item Seller rating and platform trust.
-    \item Availability of free delivery.
-    \item Duration of the return period.
-    \item Warranty duration.
-    \item Estimated CO2 emissions.
+    \item A complete microservices-based platform that aggregates product data from five major Vietnamese electronics and appliance retailers through a daily Airflow-orchestrated, Kafka-mediated data pipeline.
+    \item A multimodal search system supporting both text and image queries, powered by OpenCLIP embeddings and dual FAISS vector indexes.
+    \item A hybrid three-stage ranking pipeline combining FAISS retrieval, CatBoost learning-to-rank, and weighted Reciprocal Rank Fusion (RRF) with carbon footprint estimates.
+    \item A two-stage local LLM pipeline for estimating cradle-to-grave CO\textsubscript{2} emissions using a lightweight quantized model (Qwen~3.5 0.8B), anchored by a curated reference dataset of known carbon footprints.
 \end{enumerate}
 
-The estimated CO2 emission is integrated into a Sustainability-Aware Score (SaS). This score is designed to penalize high-emission products while promoting greener alternatives. The model was trained on a custom dataset labeled using an LLM to accelerate the development process, ensuring that environmental impact is balanced against price and relevance without degrading the core user experience.
+% ================================================================
+\section{Related Work}
+% ================================================================
 
-\section{System Implementation and Results}
-The user-facing application is built using Vite (React) and Tailwind CSS, offering a clean, responsive interface inspired by Western search engines. By abstracting the complexity of the Vietnamese e-commerce ecosystem, users can search via text or image and immediately view a curated list of products that represent the optimal balance of price, reliability, and ecological impact.
+\subsection{E-Commerce Recommendation and Price Comparison}
 
-Preliminary evaluations of the CatBoost ranking system demonstrate that the inclusion of the Sustainability-Aware Score successfully surfaces greener products without significantly impacting the perceived relevance of the top recommendations. The use of FAISS for the initial retrieval ensures that the system maintains real-time responsiveness.
+Recent advances in e-commerce recommendation have explored diverse methodological avenues. Deep Reinforcement Learning (DRL) combined with TensorFlow Recommenders (TFRS) has been shown to improve recommendation accuracy by 15--25\% over static models~\cite{paper1}. Cost-effective architectures utilizing TF-IDF vectorization and cosine similarity have been proposed to empower small and medium enterprises (SMEs) against larger marketplaces~\cite{paper2}. AI-powered price comparison systems have employed predictive models including Random Forest and LSSVM to forecast price trends across e-commerce and food delivery platforms~\cite{paper3}. Multi-agent systems integrating NLP chatbots have demonstrated the potential for automated shopping optimization across multiple vendors~\cite{paper4}.
 
+\subsection{Multimodal Retrieval}
+
+Beyond traditional keyword matching, modern retrieval systems adopt multimodal approaches. Zhang et al.~\cite{paper5} proposed a multi-modal retrieval architecture fusing BLIP, CLIP, and CLIP Interrogator to bridge the gap between natural language queries and visual product representations, demonstrating superior image-text alignment over keyword-based search. OpenCLIP~\cite{openclip} provides open-source contrastive language--image models trained on large-scale datasets, enabling high-quality zero-shot embeddings for both text and images.
+
+\subsection{Carbon-Aware Recommendation}
+
+The intersection of sustainability and recommender systems is an emerging research area. Vestrum et al.~\cite{carbon_reranking} introduced a retrieval-augmented Product Carbon Footprint (PCF) estimation pipeline using few-shot LLM prompting anchored by the Carbon Catalogue, demonstrating that under a modest 5\% NDCG budget loss, carbon footprint reductions of 70--86\% are achievable through post-hoc re-ranking. Spillo et al.~\cite{ecommerce_carbon} presented the Eco-Amazon dataset, enriching e-commerce catalogs with LLM-estimated carbon footprints and demonstrating high ordinal ranking consistency (Spearman $\rho > 0.9$) even when absolute gram-level precision varies. Xu et al.~\cite{carbon_estimation} proposed a Progressive Layered Extraction (PLE) multi-task learning model for carbon estimation in electromechanical manufacturing, achieving $R^2 \approx 0.94$.
+
+Our work builds upon these multimodal and sustainability-aware concepts, introducing a practical ranking fusion strategy tailored to the data-scarce Vietnamese market, utilizing a lightweight local LLM for carbon estimation to avoid dependency on cloud-based APIs.
+
+% ================================================================
+\section{System Architecture}
+% ================================================================
+
+\subsection{Overview}
+
+The Smart Product Finder platform is built on a fully containerized microservices architecture, orchestrated through Docker Compose. Fig.~\ref{fig:architecture} illustrates the high-level system design, comprising five principal layers: data collection, event streaming, data processing, storage, and presentation. This decoupled design ensures that resource-intensive background operations (scraping, embedding generation, carbon estimation) do not degrade the responsiveness of user-facing search queries.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{fig_architecture}}
+\caption{System architecture overview. Data collection (right) is orchestrated by Apache Airflow, which schedules Scrapy spiders to extract product data from five Vietnamese retailers. Raw data flows through platform-specific Apache Kafka topics to an ETL service, which generates OpenCLIP embeddings and persists structured metadata to PostgreSQL and vector embeddings to dual FAISS indexes. The Ranking System (left) serves user queries by retrieving candidates from FAISS, re-ranking with CatBoost, and fusing with carbon estimates via RRF.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Data Collection Pipeline}
+
+Product data is collected from five major Vietnamese electronics and appliance retailers: CellphoneS, Phong V\~{u}, FPT Shop, Th\'{e} Gi\'{o}i Di \DJ\d{o}ng (TGDD), and \DJ i\d{e}n M\'ay Xanh (DMX). Custom Scrapy web spiders are implemented for each platform, scheduled to execute daily via Apache Airflow DAGs. This daily batch approach was chosen because product catalogs update infrequently, and high-frequency scraping would exhaust server resources without adding meaningful value.
+
+Several platforms employ anti-bot protections. For Cloudflare-protected sites, we integrate a local FlareSolverr proxy container that automatically solves challenge tokens and maintains valid session cookies, avoiding the cost of commercial proxy services. Major marketplace platforms such as Shopee and Lazada were excluded due to aggressive anti-bot measures requiring residential proxy rotation, which was cost-prohibitive given the project's budget constraints.
+
+Each spider publishes raw product data to platform-specific Apache Kafka topics, providing asynchronous decoupling between the scraping and processing stages. An ETL worker service subscribes to these topics, validates and normalizes the incoming data, requests multimodal embeddings from the OpenCLIP service, estimates carbon footprints via the local LLM, and persists the results to the storage layer.
+
+\subsection{Embedding Generation and Storage}
+
+The ETL worker generates dense multimodal vector representations for each product using OpenCLIP~\cite{openclip} with the ViT-B-32 architecture, pretrained on the LAION-2B dataset. Both textual embeddings (derived from product names and descriptions) and visual embeddings (derived from product images) are computed. These embeddings are indexed in two separate FAISS~\cite{faiss} vector stores---one for text and one for images---using an inner-product similarity index (\texttt{IndexFlatIP}). Structured product metadata (prices, ratings, seller information, return policies, warranties) is stored in a PostgreSQL relational database.
+
+% ================================================================
+\section{Methodology}
+% ================================================================
+
+\subsection{Multimodal Search and Retrieval}
+
+The system supports three query modalities: text-only, image-only, and combined text-and-image queries. Fig.~\ref{fig:pipeline} illustrates the complete retrieval and ranking pipeline.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\columnwidth]{fig_ranking_pipeline}}
+\caption{Three-stage retrieval and ranking pipeline. A user query (text or image) is embedded via OpenCLIP and matched against the corresponding FAISS index to retrieve the top~50 candidates. Product features are computed from PostgreSQL metadata, re-ranked by CatBoost, and fused with carbon emission rankings through weighted RRF before returning the final ordered list.}
+\label{fig:pipeline}
+\end{figure}
+
+For text queries, the input is tokenized and encoded via the OpenCLIP text encoder. For image queries, the uploaded image is preprocessed and encoded via the OpenCLIP vision encoder. When both modalities are provided simultaneously, the resulting embeddings are L2-normalized and averaged to produce a fused query vector. The query vector is then matched against the appropriate FAISS index (text or image) to retrieve the top~50 most similar product candidates based on cosine similarity.
+
+\subsection{Hybrid Ranking System}
+
+The 50 candidates retrieved from FAISS are re-ranked using a CatBoost~\cite{catboost} learning-to-rank model, which was selected after careful evaluation of alternatives.
+
+\subsubsection{Model Selection: CatBoost vs. TFRS}
+
+Deep learning frameworks such as TensorFlow Recommenders (TFRS) were initially considered for the ranking engine. However, TFRS requires massive volumes of user interaction data and substantial GPU hardware~\cite{paper1}. Given the project's hardware constraints---a shared server limited to 16\,GB of RAM without a dedicated GPU---and the absence of extensive historical interaction data, a gradient boosting approach proved far more practical. Among boosting algorithms, CatBoost was selected over XGBoost and LightGBM because it requires fewer hyperparameter adjustments and provides built-in mechanisms to reduce overfitting, which is critical when working with small datasets of highly similar electronic products~\cite{catboost}.
+
+\subsubsection{Feature Engineering}
+
+CatBoost re-ranks candidates based on seven engineered features. Prices are normalized using Robust Scaling to mitigate the influence of outlier products (e.g., accessories returned alongside high-value items):
+\begin{equation}
+z_i = \frac{x_i - \tilde{x}}{Q_3 - Q_1}
+\label{eq:robust}
+\end{equation}
+where $\tilde{x}$ is the median price and $Q_3 - Q_1$ is the interquartile range, followed by min-max normalization to the $[0, 1]$ interval.
+
+Product reliability is computed using a Bayesian weighted average to prevent products with very few reviews from being overvalued:
+\begin{equation}
+\hat{r}_i = \frac{n_i \cdot \bar{r}_i + C \cdot m}{n_i + C}
+\label{eq:bayesian}
+\end{equation}
+where $n_i$ is the review count, $\bar{r}_i$ is the raw average rating, $C = 5$ is a confidence parameter, and $m = 0.75$ is the prior mean rating.
+
+Since the scraped platforms are direct retailers rather than marketplaces with third-party sellers, no direct seller ratings are available. To approximate seller reliability, we employ three universally available proxy features. The complete set of seven ranking criteria is:
+
+\begin{enumerate}
+    \item \textbf{Semantic relevance}: cosine similarity between the query and product embeddings.
+    \item \textbf{Price}: robust-scaled and inverted (lower price receives a higher score).
+    \item \textbf{Product reliability}: Bayesian weighted average of user ratings (Eq.~\ref{eq:bayesian}).
+    \item \textbf{Seller rating}: platform-provided rating when available; defaults to the prior mean $m$ otherwise.
+    \item \textbf{Free delivery}: binary indicator serving as a proxy for seller reliability.
+    \item \textbf{Return period duration}: robust-scaled number of days; proxy for seller reliability.
+    \item \textbf{Warranty duration}: robust-scaled warranty length; proxy for seller reliability.
+\end{enumerate}
+
+Additionally, a post-scoring title-matching boost is applied after CatBoost inference. This additive signal rewards products whose names exactly or partially match the user's query, compensating for cases where dense OpenCLIP embeddings---which encode full product descriptions---may dilute brand-name relevance (e.g., returning Samsung devices for an ``iPhone 16'' query).
+
+\subsubsection{Custom Dataset Creation}
+
+No pre-existing dataset was suitable for training the CatBoost model on our specific combination of features. We constructed a custom dataset in LibSVM format through the following process:
+
+\begin{enumerate}
+    \item \textbf{Candidate generation}: For each of 40 curated search queries, the FAISS index returned the top 8 most relevant products, yielding approximately 300 initial entries.
+    \item \textbf{Negative injection}: A custom negative generator was developed to inject 4 random, out-of-context, or poorly reviewed products per query group, preventing the model from failing to distinguish poor recommendations from relevant ones.
+    \item \textbf{LLM-assisted labeling}: Manual relevance labeling (scores 0--3) is historically tedious and resource-intensive. We accelerated dataset creation by utilizing Google Gemini through a few-shot prompting technique, supplying approximately 30 manually labeled examples and strict formatting requirements, enabling the LLM to autonomously label the remaining entries.
+    \item \textbf{Data augmentation}: Query groups were duplicated with random row dropping, expanding the dataset to approximately 800 training entries.
+\end{enumerate}
+
+\subsubsection{Reciprocal Rank Fusion (RRF)}
+
+Unlike traditional approaches that merge all signals into a single model, our system separates environmental impact from core e-commerce metrics. The CatBoost relevance scores are fused with the carbon footprint estimates using a weighted variant of Reciprocal Rank Fusion~\cite{rrf}:
+\begin{equation}
+\text{RRF}(d) = \frac{1}{k + r_{\text{rel}}(d)} + w_c \cdot \frac{1}{k + r_{\text{CO}_2}(d)}
+\label{eq:rrf}
+\end{equation}
+where $r_{\text{rel}}(d)$ and $r_{\text{CO}_2}(d)$ are the rank positions of product $d$ in the relevance and carbon rankings respectively, $k = 60$ is the standard RRF damping constant, and $w_c = 0.2$ is the carbon weighting factor. Products without carbon estimates are assigned the last rank position, ensuring they are not penalized but also do not benefit from the carbon signal.
+
+This post-hoc re-ranking mechanism is motivated by recent findings demonstrating that even when absolute carbon estimates are imprecise, ordinal consistency---sorting functionally similar items from greenest to least green---remains highly effective for comparative ranking~\cite{ecommerce_carbon, carbon_reranking}. The system also generates transparent ranking explanations for the top results using the local LLM, promoting environmental awareness during the purchasing process.
+
+\subsection{Carbon Footprint Estimation}
+
+A critical component of the system is evaluating ecological impact despite the absence of formal EPDs in the Vietnamese market. We estimate a Product Carbon Footprint (PCF) based on the cradle-to-grave framework defined by ISO~14067~\cite{iso14067}, encompassing raw material acquisition, manufacturing, distribution, use phase, and end-of-life.
+
+\subsubsection{Carbon Reference Seed Dataset}
+
+To anchor LLM estimates and provide empirical grounding, we curated a reference seed dataset containing products with known or reliably estimated carbon footprint values sourced from published LCA studies and manufacturer EPDs. Each reference product is encoded as a textual OpenCLIP embedding and indexed in a dedicated FAISS inner-product index. For any new product requiring estimation, the system retrieves the $k = 5$ nearest reference products (prioritizing same-category matches) and passes their known CO\textsubscript{2}e values as contextual anchors to the LLM.
+
+\subsubsection{Two-Stage LLM Estimation Pipeline}
+
+The carbon estimation employs a lightweight, highly quantized Large Language Model (Qwen~3.5 0.8B) served locally via Ollama. This model was selected to minimize computational overhead while maintaining bilingual capability (English and Vietnamese). The estimation follows a two-stage pipeline:
+
+\textbf{Stage~1 -- Reasoning:} The LLM receives a structured prompt framing the task as an ISO~14067 life-cycle assessment. It is instructed to: (1)~identify the product's physical category, size, and power scale; (2)~produce an estimated CO\textsubscript{2}e value; and (3)~verify the plausibility of its estimate (e.g., a computer mouse should not exceed 100\,kg CO\textsubscript{2}e). This stage uses free-form text generation with low temperature ($T = 0.1$) and a 256-token generation limit for fast execution.
+
+\textbf{Stage~2 -- Structured Extraction:} The free-form reasoning output is fed to a second LLM call with enforced JSON schema output, extracting three fields: \texttt{co2e\_kg} (numerical estimate), \texttt{explanation\_en} (one-sentence English explanation), and \texttt{explanation\_vi} (Vietnamese translation). This structured extraction with $T = 0.0$ ensures deterministic, parseable output.
+
+\subsubsection{Plausibility Checking and Fallback}
+
+The system applies domain-specific plausibility checks after LLM estimation. Products identified as small accessories (speakers, cables, mice, chargers) are flagged if their estimated footprint exceeds 150\,kg CO\textsubscript{2}e. Global bounds reject any estimate below 0.1\,kg or above 5{,}000\,kg. When the LLM estimate fails validation or the model returns an unparseable response, the system falls back to an unweighted average of the nearest reference products' known carbon footprints, assigned a lower confidence score.
+
+% ================================================================
+\section{Preliminary Evaluation}
+% ================================================================
+
+\subsection{CatBoost Ranking Performance}
+
+The CatBoost learning-to-rank model was trained on the custom LibSVM dataset of approximately 800 entries derived from 40 search queries. Offline evaluation on a held-out test split yielded a classification accuracy of 95\% on the four-level relevance scale (0--3). While this result is encouraging, we note several caveats: the dataset remains relatively small, the evaluation is offline (without live user interaction data), and the metric does not capture nuanced ranking quality measures such as NDCG or MAP, which require a larger and more diverse evaluation corpus.
+
+\subsection{Carbon Estimation: Current Status}
+
+The codebase includes a leave-one-out cross-validation framework that benchmarks both the LLM estimator and a neighbour-average baseline against known reference values, reporting Mean Absolute Error (MAE), Mean Absolute Percentage Error (MAPE), and Spearman rank correlation. However, preliminary testing has revealed that the current Qwen~3.5 0.8B model produces carbon estimates with insufficient accuracy for reliable quantitative reporting. The model's limited parameter count constrains its ability to reason about complex manufacturing dynamics and life-cycle stages.
+
+This finding is consistent with the broader literature. Vestrum et al.~\cite{carbon_reranking} demonstrated that even larger models (Qwen~2.5 3B) exhibit substantial absolute errors (MAE~$= 695$\,kg CO\textsubscript{2}e), though their ordinal rankings remain useful. Spillo et al.~\cite{ecommerce_carbon} showed that frontier models (GPT-o3-mini) achieve strong Spearman correlation ($\rho > 0.96$) despite absolute inaccuracies. Our sub-1B parameter model falls short of these benchmarks, and improving estimation accuracy through model scaling or retrieval-augmented prompting is a priority for future work. Nevertheless, the ordinal consistency property means that even imperfect estimates provide value within the RRF framework for relative product comparison.
+
+% ================================================================
+\section{Challenges and Limitations}
+% ================================================================
+
+\subsection{Processing Speed and Explainability Latency}
+
+Deploying a local LLM introduces significant latency. The two-stage carbon estimation pipeline and the LLM-powered ranking explanation generator both contribute to response times that substantially exceed user expectations for real-time search. This bottleneck is primarily constrained by the lack of GPU hardware on the deployment server.
+
+\subsection{Estimation Accuracy}
+
+As discussed in Section~V-B, the highly quantized 0.8B-parameter model lacks the reasoning capacity of frontier models. Empirical testing confirmed that enabling advanced reasoning modes (extended thinking) did not meaningfully improve estimation precision, as the model's knowledge representation is the fundamental limiting factor rather than its inference strategy.
+
+\subsection{Knowledge Cutoff and Data Scarcity}
+
+Because the LLM runs entirely locally and offline, it is limited by its training data cutoff. Newly released products featuring novel eco-friendly materials or manufacturing processes will not be recognized without periodic model updates. Furthermore, the absence of publicly available LCA data and EPDs for electronics in the Vietnamese market prevents robust ground-truth anchoring beyond the curated reference seed dataset.
+
+\subsection{Data Collection Constraints}
+
+Budget limitations prevented the acquisition of commercial proxy infrastructure required to reliably scrape heavily protected marketplace platforms (Shopee, Lazada). Consequently, the system is limited to five specialized electronics retailers, which restricts catalog comprehensiveness. Expanding platform coverage requires either partnerships with retailers or investment in residential proxy networks.
+
+\subsection{Embedding Information Dilution}
+
+Dense OpenCLIP embeddings encode the full product title and description into a single vector, which occasionally causes cross-brand false positives. For example, a query for ``iPhone 16'' may return Samsung devices when their descriptions share technical vocabulary. The post-scoring title-matching boost partially mitigates this issue but represents an ad-hoc solution rather than a principled architectural fix.
+
+% ================================================================
 \section{Conclusion and Future Work}
-This paper presents a comprehensive solution to the challenges of price fragmentation and ecological opacity in the Vietnamese e-commerce market. By combining multimodal search, event-driven data aggregation, and a CatBoost ranking algorithm, the Smart Product Finder provides users with optimal purchasing recommendations. 
+% ================================================================
 
-Future work will focus on fully implementing the Qwen-based LLM architecture for CO2 estimation. This upgrade is expected to significantly enhance the system's ability to interpret complex Vietnamese product descriptions and provide more accurate, localized cradle-to-grave carbon footprint assessments, further empowering consumers to make eco-conscious decisions.
+This paper presented Smart Product Finder, a comprehensive multimodal product recommendation system addressing the dual challenges of price fragmentation and ecological opacity in the Vietnamese e-commerce market. By combining OpenCLIP-powered multimodal search, CatBoost learning-to-rank, and Reciprocal Rank Fusion with LLM-estimated carbon footprints, the system provides users with optimized and environmentally informed purchasing recommendations across five major Vietnamese retailers.
 
+The current implementation demonstrates the viability of the architectural approach, with the CatBoost ranking model achieving promising offline performance and the RRF fusion mechanism successfully integrating environmental signals. However, the carbon estimation component requires further refinement, particularly through model scaling or retrieval-augmented generation techniques.
+
+Future work will focus on four key directions: (1)~upgrading to larger language models with improved reasoning capabilities, supported by better server infrastructure including GPU acceleration; (2)~integrating retrieval-augmented generation (RAG) to bypass knowledge cutoffs by dynamically incorporating up-to-date LCA data and manufacturer sustainability reports; (3)~exploring cost-effective data aggregation strategies, including retailer API partnerships, to expand platform coverage; and (4)~conducting large-scale user studies with live interaction data to evaluate ranking quality using standard information retrieval metrics such as NDCG and MAP.
+
+% ================================================================
+% REFERENCES
+% ================================================================
 \begin{thebibliography}{00}
-\bibitem{paper1} Author A, Author B, ``AI-Powered E-Commerce Personalization and Recommendation,'' Journal of E-Commerce Research, 2023.
-\bibitem{paper2} Author C, Author D, ``AI-Powered E-commerce Platform for Small Businesses,'' International Conference on Business IT, 2023.
-\bibitem{paper3} Author E, Author F, ``AI-Powered Price Comparison For E-commerce Food Rides,'' IEEE Symposium on Data Analytics, 2023.
-\bibitem{paper4} Author G, Author H, ``Intelligent Market Insight: A Multi-Agent System for Artificial Intelligence Powered Shopping Optimization,'' AI in Retailing, 2024.
-\bibitem{paper5} Author I, Author J, ``Research on Multi-Modal Retrieval System of E-Commerce Platform Based on Pre-Training Model,'' Conference on Multimodal Systems, 2024.
+
+\bibitem{paper1}
+S.~Tulasi~T and I.~Ahamed~S~B, ``AI-powered e-commerce personalization and recommendation systems,'' \textit{J. Informatics Educ. Res.}, vol.~5, no.~1, pp.~2092--2099, 2025.
+
+\bibitem{paper2}
+B.~R.~V.~Naga~Chandra~Reddy \textit{et~al.}, ``AI-powered e-commerce platform for small businesses,'' \textit{Int. J. Innov. Sci. Res. Technol.}, vol.~10, no.~4, pp.~495--501, Apr. 2025.
+
+\bibitem{paper3}
+M.~Raj, V.~Saroj, S.~Sen, Y.~Mittal, S.~Gupta, and A.~Shukla, ``AI-powered price comparison for e-commerce food rides,'' in \textit{Proc. 7th Int. Conf. Inf. Syst. Comput. Netw. (ISCON)}, Mathura, India, 2025.
+
+\bibitem{paper4}
+A.~Jayaraj, P.~Nair, S.~T~R, A.~Raj, A.~R, and G.~B~Shankar, ``Intelligent market insight: A multi-agent system for artificial intelligence powered shopping optimization,'' in \textit{Proc. 3rd Int. Conf. Sustain. Comput. Data Commun. Syst. (ICSCDS)}, 2025.
+
+\bibitem{paper5}
+B.~Zhang, Y.~Han, and X.~Han, ``Research on multi-modal retrieval system of e-commerce platform based on pre-training model,'' \textit{Artif. Intell. Technol. Res.}, vol.~2, no.~9, pp.~86--89, 2025.
+
+\bibitem{carbon_reranking}
+A.~Vestrum, J.~Bergh, and N.~L.~Syrdal, ``Trading engagement for sustainability: Carbon-aware re-ranking for e-commerce recommendations,'' \textit{arXiv preprint arXiv:2606.04550}, 2026.
+
+\bibitem{carbon_estimation}
+F.~Xu, D.~Xiang, K.~Fang, and G.~Chen, ``Carbon footprint estimation and carbon data validation in the manufacturing phase of electromechanical products,'' \textit{Chin. J. Mech. Eng.}, vol.~39, art.~100157, 2026.
+
+\bibitem{ecommerce_carbon}
+G.~Spillo, A.~De~Filippo, C.~Musto, M.~Milano, and G.~Semeraro, ``Eco-Amazon: Enriching e-commerce datasets with product carbon footprint for sustainable recommendations,'' \textit{arXiv preprint arXiv:2602.15508}, 2026.
+
+\bibitem{catboost}
+L.~Prokhorenkova, G.~Gusev, A.~Vorobev, A.~V.~Dorogush, and A.~Gulin, ``CatBoost: Unbiased boosting with categorical features,'' in \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 2018, pp.~6638--6648.
+
+\bibitem{openclip}
+M.~Cherti, R.~Beaumont, R.~Wightman, M.~Wortsman, G.~Ilharco, C.~Gordon, C.~Schuhmann, L.~Schmidt, and J.~Jitsev, ``Reproducible scaling laws for contrastive language--image learning,'' in \textit{Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)}, 2023, pp.~2818--2829.
+
+\bibitem{faiss}
+J.~Johnson, M.~Douze, and H.~J\'egou, ``Billion-scale similarity search with GPUs,'' \textit{IEEE Trans. Big Data}, vol.~7, no.~3, pp.~535--547, 2021.
+
+\bibitem{rrf}
+G.~V.~Cormack, C.~L.~A.~Clarke, and S.~B\"uttcher, ``Reciprocal rank fusion outperforms condorcet and individual rank learning methods,'' in \textit{Proc. 32nd Int. ACM SIGIR Conf. Res. Develop. Inf. Retrieval}, 2009, pp.~758--759.
+
+\bibitem{iso14067}
+ISO~14067:2018, ``Greenhouse gases---Carbon footprint of products---Requirements and guidelines for quantification,'' International Organization for Standardization, Geneva, Switzerland, 2018.
+
 \end{thebibliography}
 
 \end{document}
