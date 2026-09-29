@@ -13,6 +13,7 @@ export default function Header() {
                 <LanguageSwitcher className="md:hidden" />
             </div>
             <SearchBar className="w-full h-full"/>
+            <Link to="/assistant" className="hidden md:block text-primary-500 font-semibold whitespace-nowrap hover:underline">{t("nav.assistant")}</Link>
             <LanguageSwitcher className="hidden md:flex" />
         </nav>
   );

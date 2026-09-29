@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import Header from './pages/components/header/Header';
 import Product from './pages/Product';
+import Assistant from './pages/Assistant';
 
 function LayoutWithHeader() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route element={<LayoutWithHeader />}>
             <Route path="/search" element={<SearchResults />} />
             <Route path="/product/:productId" element={<Product />} />
+            <Route path="/assistant" element={<Assistant />} />
           </Route>
         </Routes>
       </div>

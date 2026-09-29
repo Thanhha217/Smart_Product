@@ -1,5 +1,7 @@
 # Product Carbon Footprint (CO2e) Estimation — Setup
 
+> **Lưu ý (nhánh `new-research`)**: tài liệu này mô tả cách ước lượng CO₂ bằng LLM cũ. Công thức CO₂ vòng đời mới và lượng CO₂ giảm thải sau 6/12 tháng được mô tả ở [research/co2-formula.md](research/co2-formula.md); tổng quan 4 yêu cầu của giáo viên ở [research/advisor-requirements.md](research/advisor-requirements.md).
+
 This feature estimates each product's cradle-to-grave carbon footprint (kg CO2e).
 For every product, it retrieves the most similar products from a verified
 reference catalog (built from manufacturer Environmental Product Declarations),
