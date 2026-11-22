@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import threading
 
 import faiss
@@ -11,10 +12,15 @@ from data import engine
 from data.schemes.carbon_reference import CarbonReference
 from data.schemes.product import Product
 from data.process.data_transformer import encode_text
+from green.fallback import CategoryStats, canonical_category, estimate_without_neighbours
 
 EMBED_DIM = 512          # Dimensionality of the CLIP text embedding vectors
 TOP_K = 5               # Number of candidate neighbours retrieved from the FAISS index before similarity filtering
 LLM_MODEL = os.environ.get("CO2E_LLM_MODEL", "qwen3.5:0.8b")
+# The number comes from reference products (or green.fallback), never from the LLM
+# unless this is set to 1 -- then Qwen may adjust the average of the close neighbours,
+# as in the paper experiments.  Without close neighbours the LLM is never asked.
+USE_LLM = os.environ.get("CO2E_USE_LLM", "0") == "1"
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
 OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
 PROMPT_NEIGHBOURS = 5   # Maximum number of close neighbours shown to the LLM in the anchored prompt
@@ -30,11 +36,11 @@ PROMPT_NEIGHBOURS = 5   # Maximum number of close neighbours shown to the LLM in
 # score ≥ 0.66 against one another, while cross-category pairs (e.g. a laptop
 # query matched against monitor references) typically score < 0.65.
 #
-# When a product has NO neighbours above this threshold the estimator switches
-# to "unanchored mode": the LLM receives only the product name, category label,
-# description, and a broad prior range derived from CATEGORY_BOUNDS.  This
-# avoids anchoring the model to misleading reference values (e.g. anchoring a
-# Bluetooth speaker estimate against smartphone LCA data).
+# When a product has NO neighbours above this threshold the estimator does not
+# guess with the LLM any more: green.fallback tries, in order, the lifecycle
+# formula (appliances), the category model of the reference catalogue (brand +
+# screen size) and the price-based EEIO factor, and leaves the product empty when
+# none applies.  See docs/research/co2-fallback.md.
 SIMILARITY_THRESHOLD = 0.66
 
 # ---------------------------------------------------------------------------
@@ -414,6 +420,7 @@ _SLUG_TO_REF: dict[str, str] = {
 _lock = threading.Lock()
 _ref_index = None
 _ref_by_id = None
+_category_stats = None  # green.fallback.CategoryStats, built with the index
 
 
 def _reference_text(ref):
@@ -421,7 +428,7 @@ def _reference_text(ref):
 
 
 def _build_reference_index():
-    global _ref_index, _ref_by_id
+    global _ref_index, _ref_by_id, _category_stats
     if _ref_index is not None:
         return
     with _lock:
@@ -438,13 +445,14 @@ def _build_reference_index():
                 ids.append(ref.id)
                 by_id[ref.id] = {
                     "name": ref.name,
-                    "category": ref.category,
+                    "category": canonical_category(ref.category),
                     "brand": ref.brand,
                     "co2e_kg": ref.co2e_kg,
                 }
             matrix = np.asarray(vectors, dtype="float32")
             faiss.normalize_L2(matrix)
             index.add_with_ids(matrix, np.asarray(ids, dtype=np.int64))
+        _category_stats = CategoryStats.from_references(by_id.values())
         _ref_index = index
         _ref_by_id = by_id
         print(f"Carbon reference index built with {len(by_id)} products.", flush=True)
@@ -720,7 +728,39 @@ def _log_estimate(product, source):
     )
 
 
+def _round_kg(value):
+    return round(value, 2) if value < 1 else round(value, 1)
+
+
+# Step 1 of the final method: the manufacturer published a figure for this exact model.
+USE_FALLBACK = os.environ.get("CO2E_FALLBACK", "0") == "1"
+
+
+def _tokens(text):
+    return " ".join(re.findall(r"[a-z0-9]+", (text or "").lower()))
+
+
+def _exact_reference(name):
+    """Longest reference name (>= 3 tokens) contained word-for-word in the product name."""
+    _build_reference_index()
+    haystack = f" {_tokens(name)} "
+    best = None
+    for ref in (_ref_by_id or {}).values():
+        key = _tokens(ref["name"])
+        if len(key.split()) >= 3 and f" {key} " in haystack and (best is None or len(key) > len(_tokens(best["name"]))):
+            best = ref
+    return best
+
+
 def estimate_product_co2e(product, product_embedding, category=None):
+    """Fill product.co2e_* in place.
+
+    1. Reuse a number already stored for the same product_url.
+    2. Close neighbours (cosine >= SIMILARITY_THRESHOLD, outliers removed): their
+       average (optionally adjusted by the LLM when CO2E_USE_LLM=1).
+    3. No close neighbour: green.fallback (formula -> category model -> price/EEIO).
+    4. Nothing applies: leave co2e_kg empty.
+    """
     try:
         existing = _already_estimated(product)
         if existing is not None:
@@ -732,7 +772,17 @@ def estimate_product_co2e(product, product_embedding, category=None):
             _log_estimate(product, f"already_estimated:{product.co2e_source or 'unknown'}")
             return
 
-        ref_category = _normalize_to_ref_category(category)
+        exact = _exact_reference(product.name)
+        if exact is not None:
+            product.co2e_kg = _round_kg(exact["co2e_kg"])
+            product.co2e_source = "manufacturer"
+            product.co2e_confidence = 0.9
+            product.co2e_explanation = f"Manufacturer-published figure for {exact['name']}."
+            product.co2e_explanation_vi = f"Số CO₂ do hãng công bố cho đúng mẫu {exact['name']}."
+            _log_estimate(product, "manufacturer")
+            return
+
+        ref_category = canonical_category(_normalize_to_ref_category(category))
         scored = _find_similar_references(product_embedding, ref_category, k=PROMPT_NEIGHBOURS)
         scored = _sanitize_neighbours(scored)
 
@@ -743,26 +793,43 @@ def estimate_product_co2e(product, product_embedding, category=None):
             flush=True,
         )
 
-        # Use the LLM regardless; close_neighbours may be empty (unanchored mode).
-        llm = _estimate_with_llm(product, close, ref_category=ref_category)
-        if llm is not None and 0.0 <= llm[0] <= 15000.0:
-            product.co2e_kg = round(llm[0], 1)
-            product.co2e_explanation = llm[1]
-            product.co2e_explanation_vi = llm[2]
-            product.co2e_source = "llm_estimate"
-            product.co2e_confidence = 0.6 if close else 0.4
-        elif close:
-            # LLM failed but we have trustworthy close neighbours — use their average.
-            average = _neighbour_average(close)
-            product.co2e_kg = round(average, 1)
-            product.co2e_source = "neighbor_fallback"
-            product.co2e_confidence = 0.3
-            product.co2e_explanation = f"Estimated based on similar products in the same category."
-            product.co2e_explanation_vi = "Ước tính dựa trên các sản phẩm tương tự trong cùng danh mục."
+        if close:
+            llm = _estimate_with_llm(product, close, ref_category=ref_category) if USE_LLM else None
+            if llm is not None and 0.0 <= llm[0] <= 15000.0:
+                product.co2e_kg = _round_kg(llm[0])
+                product.co2e_explanation = llm[1]
+                product.co2e_explanation_vi = llm[2]
+                product.co2e_source = "llm_estimate"
+                product.co2e_confidence = 0.6
+            else:
+                average = _neighbour_average(close)
+                product.co2e_kg = _round_kg(average)
+                product.co2e_source = "neighbor_average"
+                product.co2e_confidence = 0.5
+                product.co2e_explanation = (
+                    f"Average of {len(close)} similar products whose manufacturers published their carbon footprint."
+                )
+                product.co2e_explanation_vi = (
+                    f"Trung bình của {len(close)} sản phẩm tương tự có số CO₂ do hãng công bố."
+                )
+                print(f"  references used: {[n['name'] for n, _ in close]}", flush=True)
         else:
-            # No close neighbours and LLM failed — skip rather than show a misleading value.
-            print(f"No reliable estimate possible for '{product.name}' — skipping.", flush=True)
-            return
+            if not USE_FALLBACK:
+                print(f"No reference with cosine >= {SIMILARITY_THRESHOLD} for '{product.name}' — leaving empty.", flush=True)
+                return
+            estimate = estimate_without_neighbours(
+                ref_category, product.name, product.description,
+                getattr(product, "final_price", None), _category_stats,
+            )
+            if estimate is None:
+                print(f"No reliable estimate possible for '{product.name}' (ref_cat={ref_category!r}) — leaving empty.", flush=True)
+                return
+            product.co2e_kg = _round_kg(estimate.co2e_kg)
+            product.co2e_source = estimate.source
+            product.co2e_confidence = estimate.confidence
+            product.co2e_explanation = estimate.explanation_en
+            product.co2e_explanation_vi = estimate.explanation_vi
+            print(f"  fallback detail: {estimate.detail}", flush=True)
 
         _log_estimate(product, product.co2e_source or "unknown")
     except Exception as error:

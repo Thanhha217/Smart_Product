@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from dto.gateway_dto import ImagePayload
+from dto.gateway_dto import AssistantPayload, ImagePayload
 app = FastAPI()
 
 origins = [
@@ -55,6 +55,23 @@ async def query_endpoint(q: str = None, limit: int = 32, payload: Optional[Image
         
     products_data = response.json()
     return {"products": products_data}
+
+# Optional: the AI assistant service. Left unset, /assistant answers 503 and
+# the rest of the gateway keeps working.
+ASSISTANT_URL = os.environ.get("ASSISTANT_URL")
+
+
+@app.post("/assistant")
+def assistant_endpoint(payload: AssistantPayload):
+    if not ASSISTANT_URL:
+        raise HTTPException(status_code=503, detail="Assistant service is not configured")
+    try:
+        response = requests.post(f"{ASSISTANT_URL}/assistant", json=payload.model_dump(), timeout=300)
+        response.raise_for_status()
+    except requests.exceptions.RequestException:
+        raise HTTPException(status_code=502, detail="Error communicating with the assistant service")
+    return response.json()
+
 
 @app.get("/product/{product_id}")
 def product_endpoint(product_id: str):

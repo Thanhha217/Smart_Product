@@ -14,7 +14,7 @@ import numpy as np
 from data.process.data_transformer import encode_text
 from data.process.carbon_estimator import _estimate_with_llm
 
-SEED_FILE = Path(__file__).parent / "data" / "seed" / "carbon_reference_seed.json"
+SEED_FILE = Path(__file__).parent / "data" / "seed" / "carbon_reference_seed_expanded.json"
 TOP_K = 5
 SAMPLE_N = int(os.environ.get("VALIDATE_N", "30"))
 RANDOM_SEED = 42

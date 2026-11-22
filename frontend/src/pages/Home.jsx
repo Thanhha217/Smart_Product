@@ -3,6 +3,7 @@ import Carousel from './components/carousel/Carousel.jsx';
 import SearchBar from "./components/search/SearchBar.jsx"
 import LanguageSwitcher from "./components/header/LanguageSwitcher.jsx";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useI18n } from "../i18n/LanguageContext";
 
 export default function Home() {
@@ -23,6 +24,9 @@ export default function Home() {
         </div>
 
         <SearchBar className="w-9/10 md:w-6/10"/>
+        <Link to="/assistant" className="mt-4 bg-primary-500 text-white rounded-2xl px-5 py-2 font-semibold">
+          {t("nav.assistant")} →
+        </Link>
       </div>
 
     {/* Hide categories for now */}

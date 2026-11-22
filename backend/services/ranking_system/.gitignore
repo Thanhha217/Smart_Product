@@ -33,3 +33,5 @@ archive.zip
 .codspeed
 
 /faiss_index
+# Offline evaluation outputs (LLM labels, results)
+evaluation/out/
