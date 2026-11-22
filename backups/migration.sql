@@ -15,6 +15,7 @@ ALTER TABLE product ADD COLUMN IF NOT EXISTS co2e_kg double precision;
 ALTER TABLE product ADD COLUMN IF NOT EXISTS co2e_source varchar;
 ALTER TABLE product ADD COLUMN IF NOT EXISTS co2e_confidence double precision;
 ALTER TABLE product ADD COLUMN IF NOT EXISTS co2e_explanation varchar;
+ALTER TABLE product ADD COLUMN IF NOT EXISTS co2e_explanation_vi varchar;
 
 -- 2. Preserve the original label before the category rows are collapsed.
 UPDATE product p SET raw_category = c.name
