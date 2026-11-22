@@ -7,3 +7,8 @@ python-dotenv==1.2.2
 faiss-cpu==1.14.2
 numpy==2.4.6
 requests==2.34.2
+anthropic==0.69.0
+# Category normalisation. Pulls in torch -- the Dockerfile installs the CPU-only
+# build first so pip does not fetch the ~2GB CUDA wheels. Pin this to the exact
+# version once the first image build succeeds.
+sentence-transformers>=4.0,<6.0

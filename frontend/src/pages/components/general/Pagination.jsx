@@ -1,9 +1,11 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ArrowLeft } from './icons';
+import { useI18n } from '../../../i18n/LanguageContext';
 
 export default function Pagination({ page, setPage, numberOfPages }) {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     const basePageBtnStyle = "min-w-10 min-h-10 px-1 rounded-md"
 
@@ -43,7 +45,6 @@ export default function Pagination({ page, setPage, numberOfPages }) {
 
     
 
-    console.log(minBoundary, maxBoundary)
 
     for (let i = minBoundary; i < maxBoundary; i++) {
         createPageSlot(i)
@@ -66,11 +67,11 @@ export default function Pagination({ page, setPage, numberOfPages }) {
     return (
         <div className="flex justify-end items-center">
             <div className="flex gap-2 justify-between items-center">
-                <button className={pageSwitchBtnStyle} onClick={() => setPage(page-1)} disabled={page === 1}>
+                <button className={pageSwitchBtnStyle} onClick={() => setPage(page-1)} disabled={page === 1} aria-label={t("pagination.prev")}>
                     <ArrowLeft/>
                 </button>
                 {pageNav}
-                <button className={pageSwitchBtnStyle} onClick={() => setPage(page+1)} disabled={page === numberOfPages}>
+                <button className={pageSwitchBtnStyle} onClick={() => setPage(page+1)} disabled={page === numberOfPages} aria-label={t("pagination.next")}>
                     <ArrowRight/>
                 </button>
             </div>

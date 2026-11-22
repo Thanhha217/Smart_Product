@@ -27,3 +27,8 @@ def generate_embeddings(parsed_data):
             print(f"Error processing product images: {e}", flush=True)
 
     return text_vector, image_embeddings
+
+
+def encode_text(text):
+    # CLIP text embedding via the provider (used by carbon_estimator).
+    return _post_to_clip_provider("/encode-text", {"text": text})

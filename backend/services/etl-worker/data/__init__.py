@@ -3,6 +3,7 @@ import os
 from sqlmodel import SQLModel, create_engine, text
 
 # Necessary in order to create the tables if they doesn't already exist DO NOT DELETE
+from data.schemes.carbon_reference import CarbonReference
 from data.schemes.category import Category
 from data.schemes.image import Image
 from data.schemes.platform import Platform

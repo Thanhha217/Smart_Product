@@ -35,7 +35,7 @@ export function generateMockProducts(count = 8) {
         final_price,
         product_rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)), // Ratings between 3.5 and 5.0
         review_count: Math.floor(Math.random() * 1450 + 50), // 50 to 1500 reviews
-        gwp: parseFloat((Math.random() * 12 + 1).toFixed(2)) // Global Warming Potential (carbon footprint)
+        co2e_kg: parseFloat((Math.random() * 12 + 1).toFixed(2)) // Global Warming Potential (carbon footprint)
       }
     };
   });

@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { generateMockProducts } from "./components/products/productMock";
 import ProductCarousel from "./components/products/ProductCarousel";
 import { GATEWAY_URL } from "./utils/consts";
+import { useI18n } from "../i18n/LanguageContext";
 
 export default function Product() {
     const params = useParams()
+    const { t, formatNumber } = useI18n();
 
     // const productInfo = {
     //     platform_name: "Shopee",
@@ -43,7 +45,6 @@ export default function Product() {
                 const res = await fetch(`${GATEWAY_URL}/product/${productId}`);
                 const data = await res.json();
                 setProductInfo(data.product);
-                console.log(data);
             } catch (error) {
                 console.log(error);
             } finally {
@@ -56,29 +57,14 @@ export default function Product() {
         }
     }, [params.productId]);
 
-    function display_price(price) {
-    if (price == null) return "";
-    let stringPrice = String(price);
-    let parts = [];
-    
-    // Slice the string from right to left in chunks of 3
-    while (stringPrice.length > 3) {
-        parts.unshift(stringPrice.slice(-3));
-        stringPrice = stringPrice.slice(0, -3);
-    }
-    parts.unshift(stringPrice);
-    
-    return parts.join(".");
-}
-
     const tagStyle = "bg-primary-200 rounded-2xl text-nowrap py-1 px-2";
 
     if (loading) {
-        return <div className="flex justify-center items-center p-10 min-h-full">Loading product...</div>;
+        return <div className="flex justify-center items-center p-10 min-h-full">{t("product.loading")}</div>;
     }
 
     if (!productInfo) {
-        return <div className="flex justify-center items-center p-10 min-h-full">Product not found.</div>;
+        return <div className="flex justify-center items-center p-10 min-h-full">{t("product.notFound")}</div>;
     }
 
 
@@ -97,22 +83,28 @@ export default function Product() {
                         <h1 className="text-4xl">{productInfo.product.name}</h1>
 
                         <div className="flex gap-4">
-                            <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : "None"}</p>
-                            <p>Seller: {`${productInfo.seller.name} (${productInfo.seller.seller_rating <= 0 ? "No ratings available" : (productInfo.seller.seller_rating+"% good ratings")})`}</p>
+                            <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : t("product.noRating")}</p>
+                            <p>
+                                {t("product.seller")}: {productInfo.seller.name} (
+                                {productInfo.seller.seller_rating <= 0
+                                    ? t("product.noSellerRating")
+                                    : t("product.goodRatings", { percent: productInfo.seller.seller_rating })}
+                                )
+                            </p>
                         </div>
 
-                        <p className="text-orange-400 text-4xl font-bold">{display_price(productInfo.product.final_price)}₫</p>
+                        <p className="text-orange-400 text-4xl font-bold">{formatNumber(productInfo.product.final_price)}₫</p>
                         <div className={"flex gap-4 " + (productInfo.product.original_price != productInfo.product.final_price ? "" : "hidden")}>
-                            <p className="text-primary-800 line-through">{display_price(productInfo.product.original_price)}₫</p>
+                            <p className="text-primary-800 line-through">{formatNumber(productInfo.product.original_price)}₫</p>
                             <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{"-" + (100 - Math.floor((productInfo.product.final_price / productInfo.product.original_price) * 100)) + "%"}</p>
                         </div>
                         
                         <div className="flex flex-wrap gap-x-4 gap-y-2 md:gap-6">
-                            <p className={(productInfo.return_policy.free_delivery ? "" : "hidden ") + tagStyle}>Free delivery</p>
-                            <p className={(productInfo.return_policy.days_for_return ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.days_for_return} days for return</p>
-                            <p className={(productInfo.return_policy.warranty_duration ? "" : "hidden ") + tagStyle}>{productInfo.return_policy.warranty_duration} months warranty</p>
+                            <p className={(productInfo.return_policy.free_delivery ? "" : "hidden ") + tagStyle}>{t("product.freeDelivery")}</p>
+                            <p className={(productInfo.return_policy.days_for_return ? "" : "hidden ") + tagStyle}>{t("product.daysReturn", { days: productInfo.return_policy.days_for_return })}</p>
+                            <p className={(productInfo.return_policy.warranty_duration ? "" : "hidden ") + tagStyle}>{t("product.warranty", { months: productInfo.return_policy.warranty_duration })}</p>
                         </div>
-                        <p className="text-nowrap bg-green-500 rounded-2xl text-white p-3 w-min">Estimated GWP: <span className="font-bold">{productInfo.product.gwp}</span> kg CO₂e</p>
+                        <p className="text-nowrap bg-green-500 rounded-2xl text-white p-3 w-min">{t("product.estimatedGwp")}: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</p>
 
                     </div>
                     <div className="py-2">
@@ -121,7 +113,7 @@ export default function Product() {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-center w-full bg-primary-500 rounded-2xl text-2xl font-bold text-primary-100 px-4 py-2  p-100 cursor-pointer hover:bg-primary-800 transition duration-100 ease-in-out">
-                            Check On Website
+                            {t("product.checkOnWebsite")}
                         </a>
                     </div>
                 </div>

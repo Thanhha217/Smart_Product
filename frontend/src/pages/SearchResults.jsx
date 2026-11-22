@@ -1,28 +1,62 @@
 import ProductFilter from "./components/products/ProductFilters";
 import ProductGrid from "./components/products/ProductGrid";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Pagination from "./components/general/Pagination";
 import ProductMobileFilter from "./components/products/ProductMobileFilters";
 import { GATEWAY_URL } from "./utils/consts";
 import Throbber from "./components/general/Throbber";
+import { useI18n } from "../i18n/LanguageContext";
 
-const fetchProducts = async (query) => {
-  const res = await fetch(`${GATEWAY_URL}/query?q=${encodeURIComponent(query)}`);
+const fetchProducts = async (query, imageQuery) => {
+  const body = {};
+  
+  if (imageQuery) {
+    body.image = imageQuery;
+  }
 
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  };
+
+  
+  const res = await fetch(`${GATEWAY_URL}/query${query ? `?q=${encodeURIComponent(query)}` : ''}`, options);
+  
   if (!res.ok) {
     throw new Error(`HTTP error! status: ${res.status}`);
   }
 
   const data = await res.json();
-  return Array.isArray(data) ? data : (Array.isArray(data?.products) ? data.products : []);
-} 
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.products?.products)) return data.products.products;
+  return [];
+}
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
+  const location = useLocation();
 
   const query = searchParams.get('query');
+  const [imageQuery, setImageQuery] = useState(null);
+  useEffect(() => {
+    const file = location.state?.imageFile;
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageQuery(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImageQuery(null);
+    }
+  }, [location.state]);
   // const [page, setPage] = useState(parseInt(searchParams.get('page') ?? 1));
   const page = parseInt(searchParams.get('page') ?? 1)
 
@@ -34,7 +68,7 @@ export default function SearchResults() {
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
   const [starValue, setStarValue] = useState(0);
   const gwpLimit = productsInfo.length
-    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.gwp))))
+    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.co2e_kg))))
     : 0;
   const [maxGwpValue, setMaxGwpValue] = useState(gwpLimit);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
@@ -60,22 +94,20 @@ export default function SearchResults() {
     let isActive = true;
 
     const loadProducts = async () => {
-      if (!query) {
+      if (!query && !imageQuery) {
         if (isActive) {
           setProductsInfo([]);
           setLoading(false);
         }
-
         return;
       }
 
       if (isActive) {
         setLoading(true);
       }
-      
 
       try {
-        const data = await fetchProducts(query);
+        const data = await fetchProducts(query, imageQuery);
 
         if (isActive) {
           setProductsInfo(data);
@@ -96,7 +128,7 @@ export default function SearchResults() {
     return () => {
       isActive = false;
     };
-  }, [query]);
+  }, [query, imageQuery]);
 
   const handleSortChange = (event) => {
     setSortValue(event.target.value);
@@ -106,7 +138,10 @@ export default function SearchResults() {
   let filteredProducts = productsInfo
   // Price filter
   filteredProducts = filteredProducts.filter(item => item.product.final_price <= maxPriceValue*1000);
-  filteredProducts = filteredProducts.filter(item => item.product.final_price >= minPriceValue*1000);
+
+  if (maxPriceValue > 0) {
+    filteredProducts = filteredProducts.filter(item => item.product.final_price <= maxPriceValue*1000);
+  }
 
   // Rating filter
   if (starValue > 0) {
@@ -114,7 +149,9 @@ export default function SearchResults() {
   }
 
   // Gwp filter
-  filteredProducts = filteredProducts.filter(item => item.product.gwp <= maxGwpValue);
+  if (maxGwpValue > 0) {
+    filteredProducts = filteredProducts.filter(item => item.product.co2e_kg <= maxGwpValue);
+  }
 
   // Options filter
   if (onSaleOnly) {
@@ -136,7 +173,7 @@ export default function SearchResults() {
       filteredProducts = filteredProducts.sort((a, b) => b.product.final_price - a.product.final_price);
       break;
     case "eco-friendly":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.gwp - b.product.gwp);
+      filteredProducts = filteredProducts.sort((a, b) => a.product.co2e_kg - b.product.co2e_kg);
       break;
   }
 
@@ -213,15 +250,15 @@ export default function SearchResults() {
         />
 
         <div className="flex justify-between items-center">
-          <p>Search results for "{query}"</p>
+          <p>{t("results.for", { query })}</p>
 
           <div className="hidden md:flex gap-4 items-center">
-            <label>Sort by</label>
-            <select name="sorting" id="sorting" className="bg-primary-100 p-1" onChange={handleSortChange}>
-              <option value="">Relevence</option>
-              <option value="price-low">Price low to high</option>
-              <option value="price-high">Price high to low</option>
-              <option value="eco-friendly">Most eco-friendly</option>
+            <label htmlFor="sorting">{t("results.sortBy")}</label>
+            <select name="sorting" id="sorting" className="bg-primary-100 p-1" value={sortValue} onChange={handleSortChange}>
+              <option value="">{t("sort.relevance")}</option>
+              <option value="price-low">{t("sort.priceLow")}</option>
+              <option value="price-high">{t("sort.priceHigh")}</option>
+              <option value="eco-friendly">{t("sort.eco")}</option>
             </select>
           </div>
         </div>
@@ -238,7 +275,7 @@ export default function SearchResults() {
         </div>
 
         <p className={`m-auto text-2xl text-primary-800 ${!loading && !filteredProducts.length ?"":"hidden"}`}>
-          No products found...
+          {t("results.empty")}
         </p>
 
         <ProductGrid products={filteredProducts.slice(maxPerPage * (page - 1), maxPerPage * page)} />

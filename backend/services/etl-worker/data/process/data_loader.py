@@ -21,8 +21,7 @@ FAISS_IMAGE_INDEX_PATH = os.environ.get("FAISS_IMAGE_INDEX_PATH", "/opt/faiss_in
 base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 index = faiss.IndexIDMap2(base_index)
 
-image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32)
-image_base_index.metric_type = faiss.METRIC_INNER_PRODUCT
+image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
 image_index = faiss.IndexIDMap2(image_base_index)
 
 index_path = Path(FAISS_INDEX_PATH)
@@ -83,7 +82,15 @@ def get_or_create_product(session: Session, product, platform_id):
         existing_product.seller_id = product.seller_id
         existing_product.return_policy_id = product.return_policy_id
         existing_product.scraped_at = datetime.now().timestamp()
-        
+
+        # Carry over a fresh CO2e estimate. The estimator leaves these as None when
+        # the row already had a value, so copying unconditionally would wipe it.
+        if product.co2e_kg is not None:
+            existing_product.co2e_kg = product.co2e_kg
+            existing_product.co2e_source = product.co2e_source
+            existing_product.co2e_confidence = product.co2e_confidence
+            existing_product.co2e_explanation = product.co2e_explanation
+
         session.add(existing_product)
         session.commit()
         session.refresh(existing_product)
@@ -101,7 +108,9 @@ def load_data_into_database(obj: dict, embeddings: tuple):
         platform = get_or_create(session, obj["platform"])
         seller = get_or_create(session, obj["seller"])
         return_policy = get_or_create(session, obj["return_policy"], unique_column=["days_for_return", "free_delivery", "warranty_duration"])
-        category = get_or_create(session, obj["category"])
+        # Deduped on the taxonomy slug, not the display name, so every source's
+        # wording for the same category collapses onto one row.
+        category = get_or_create(session, obj["category"], unique_column="slug")
 
         product = obj["product"]
         product.platform_id = platform.id
@@ -124,10 +133,10 @@ def load_data_into_database(obj: dict, embeddings: tuple):
 
         session.commit()
 
-        # load_image_embeddings(
-        #     [image.id for image, image_embedding in images if image_embedding is not None],
-        #     [image_embedding for _, image_embedding in images if image_embedding is not None],
-        # )
+        load_image_embeddings(
+            [image.id for image, image_embedding in images if image_embedding is not None],
+            [image_embedding for _, image_embedding in images if image_embedding is not None],
+        )
         load_embedding(product.id, embeddings[0])
 
     with _faiss_lock:
