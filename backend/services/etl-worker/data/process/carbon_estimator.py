@@ -779,6 +779,8 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_confidence = 0.9
             product.co2e_explanation = f"Manufacturer-published figure for {exact['name']}."
             product.co2e_explanation_vi = f"Số CO₂ do hãng công bố cho đúng mẫu {exact['name']}."
+            product.co2e_category = exact["category"]
+            product.co2e_references = json.dumps([{"name": exact["name"], "co2e_kg": exact["co2e_kg"], "cosine": 1.0}], ensure_ascii=False)
             _log_estimate(product, "manufacturer")
             return
 
@@ -813,6 +815,9 @@ def estimate_product_co2e(product, product_embedding, category=None):
                     f"Trung bình của {len(close)} sản phẩm tương tự có số CO₂ do hãng công bố."
                 )
                 print(f"  references used: {[n['name'] for n, _ in close]}", flush=True)
+            product.co2e_category = ref_category or close[0][0]["category"]
+            product.co2e_references = json.dumps(
+                [{"name": n["name"], "co2e_kg": n["co2e_kg"], "cosine": round(s, 3)} for n, s in close], ensure_ascii=False)
         else:
             if not USE_FALLBACK:
                 print(f"No reference with cosine >= {SIMILARITY_THRESHOLD} for '{product.name}' — leaving empty.", flush=True)
@@ -829,6 +834,7 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_confidence = estimate.confidence
             product.co2e_explanation = estimate.explanation_en
             product.co2e_explanation_vi = estimate.explanation_vi
+            product.co2e_category = ref_category
             print(f"  fallback detail: {estimate.detail}", flush=True)
 
         _log_estimate(product, product.co2e_source or "unknown")

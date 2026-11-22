@@ -1,9 +1,7 @@
 {
   "app.title": "Smart Product Finder",
   "home.tagline": "Compare prices and CO₂e across Vietnamese stores",
-
   "lang.switchLabel": "Change language",
-
   "search.placeholder": "Search...",
   "search.button": "Search",
   "search.image.button": "Image",
@@ -18,7 +16,6 @@
   "search.image.use": "Use image",
   "search.image.errorType": "Please choose an image file.",
   "search.image.errorEmpty": "Pick an image before continuing.",
-
   "results.for": "Search results for \"{query}\"",
   "results.empty": "No products found...",
   "results.sortBy": "Sort by",
@@ -26,7 +23,6 @@
   "sort.priceLow": "Price low to high",
   "sort.priceHigh": "Price high to low",
   "sort.eco": "Most eco-friendly",
-
   "filter.open": "Open filters",
   "filter.close": "Close filters",
   "filter.priceRange": "Price range",
@@ -36,10 +32,8 @@
   "filter.productFilters": "Product filters",
   "filter.onSale": "On sale",
   "filter.ignoreGwp": "Ignore GWP",
-
   "pagination.prev": "Previous page",
   "pagination.next": "Next page",
-
   "product.loading": "Loading product...",
   "product.notFound": "Product not found.",
   "product.noRating": "None",
@@ -79,7 +73,6 @@
   "product.reasonBalanced": "Balanced choice with competitive pricing and solid customer feedback.",
   "product.whyRecommended": "Highlights & Why Recommended",
   "product.keyHighlights": "Key Highlights & Specifications",
-
   "nav.assistant": "Green AI assistant",
   "assistant.title": "Green product AI assistant",
   "assistant.subtitle": "Describe what you need by voice or typing. The AI finds products, draws comparison charts and tells you how much CO₂ you save after 6 months / 1 year of use.",
@@ -102,5 +95,14 @@
   "assistant.col.co2_saved_12m_kg": "CO₂ saved 1 year (kg)",
   "assistant.col.money_saved_12m_vnd": "Electricity cost saved 1 year (₫)",
   "assistant.col.lifecycle_co2_kg": "Lifecycle CO₂ (kg)",
-  "assistant.col.rating": "Rating"
+  "assistant.col.rating": "Rating",
+  "product.greenScore": "Green score",
+  "product.greenNoScore": "No green score",
+  "product.greenScoreHint": "Compared with products of the same type: 5 = lowest footprint, 0 = highest (range {low}–{high} kg).",
+  "product.co2Source": "Data source",
+  "product.co2SourceManufacturer": "Manufacturer-published figure for this exact model",
+  "product.co2SourceAverage": "Average of the most similar products with manufacturer figures",
+  "product.co2SourceOther": "Estimate",
+  "product.co2References": "Reference products used",
+  "product.co2Similarity": "similarity"
 }

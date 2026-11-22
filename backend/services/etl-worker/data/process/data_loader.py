@@ -91,6 +91,8 @@ def get_or_create_product(session: Session, product, platform_id):
             existing_product.co2e_confidence = product.co2e_confidence
             existing_product.co2e_explanation = product.co2e_explanation
             existing_product.co2e_explanation_vi = product.co2e_explanation_vi
+            existing_product.co2e_category = getattr(product, "co2e_category", None)
+            existing_product.co2e_references = getattr(product, "co2e_references", None)
 
         session.add(existing_product)
         session.commit()

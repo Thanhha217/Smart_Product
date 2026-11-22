@@ -2,7 +2,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { GATEWAY_URL } from "./utils/consts";
 import { useI18n } from "../i18n/LanguageContext";
-import { getProductHighlights, getRecommendationReason } from "./utils/helpers";
+import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey } from "./utils/helpers";
 
 
 export default function Product() {
@@ -201,16 +201,47 @@ export default function Product() {
                                 <span className="text-gray-600 text-sm font-semibold uppercase tracking-wider">{t("product.estimatedGwp")}</span>
                                 <span className="text-5xl font-black text-green-700">{productInfo.product.co2e_kg} <span className="text-2xl font-normal">kg CO₂e</span></span>
                                 
-                                {/* Carbon Rating Badge */}
-                                <span className={`mt-2 px-3 py-1 rounded-full text-sm font-bold text-white ${
-                                    productInfo.product.co2e_kg < 50 ? "bg-green-600" :
-                                    productInfo.product.co2e_kg < 200 ? "bg-amber-500" : "bg-red-500"
-                                }`}>
-                                    {t("product.carbonRating")}: {
-                                        productInfo.product.co2e_kg < 50 ? t("product.carbonRatingLow") :
-                                        productInfo.product.co2e_kg < 200 ? t("product.carbonRatingMed") : t("product.carbonRatingHigh")
-                                    }
-                                </span>
+                                {/* Green score 0-5 within the category */}
+                                {(() => {
+                                    const score = productInfo.product.green_score;
+                                    const level = getGreenLevel(score);
+                                    return (
+                                        <div className="w-full flex flex-col items-center gap-2 mt-2">
+                                            <span className={`text-3xl font-black ${level.text}`}>
+                                                {t("product.greenScore")}: {score ?? "–"}<span className="text-lg font-normal">/5</span>
+                                            </span>
+                                            {score !== null && score !== undefined && (
+                                                <div className="w-full max-w-xs h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div className={`h-full ${level.bg}`} style={{ width: `${(score / 5) * 100}%` }} />
+                                                </div>
+                                            )}
+                                            <span className={`px-3 py-1 rounded-full text-sm font-bold text-white ${level.bg}`}>
+                                                {t("product.carbonRating")}: {t(level.key)}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Where the number comes from */}
+                            <div className="bg-white rounded-xl p-4 border border-primary-100 flex flex-col gap-2">
+                                <h3 className="font-semibold text-primary-900 text-sm">{t("product.co2Source")}</h3>
+                                <p className="text-gray-700 text-sm">{t(getCo2SourceKey(productInfo.product.co2e_source))}</p>
+                                {productInfo.product.co2e_references?.length > 0 && (
+                                    <>
+                                        <h4 className="font-semibold text-primary-900 text-xs mt-1">{t("product.co2References")}</h4>
+                                        <ul className="text-xs text-gray-600 flex flex-col gap-1">
+                                            {productInfo.product.co2e_references.map((ref, i) => (
+                                                <li key={i} className="flex justify-between gap-2 border-b border-gray-100 pb-1">
+                                                    <span className="line-clamp-1">{ref.name}</span>
+                                                    <span className="text-nowrap font-semibold">
+                                                        {ref.co2e_kg} kg{ref.cosine < 1 ? ` · ${t("product.co2Similarity")} ${ref.cosine}` : ""}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                )}
                             </div>
 
                             {/* Explanation Text */}

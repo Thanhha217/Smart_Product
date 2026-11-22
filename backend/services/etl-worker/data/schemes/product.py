@@ -35,3 +35,7 @@ class Product(ProductBase, table=True):
     co2e_confidence: Optional[float] = Field(default=None)
     co2e_explanation: Optional[str] = Field(default=None)
     co2e_explanation_vi: Optional[str] = Field(default=None)
+    # Reference category the number was computed in (for the 0-5 green score) and the
+    # reference products used, as a JSON list of {name, co2e_kg, cosine}.
+    co2e_category: Optional[str] = Field(default=None)
+    co2e_references: Optional[str] = Field(default=None)
