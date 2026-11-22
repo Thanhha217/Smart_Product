@@ -1,9 +1,7 @@
 {
   "app.title": "Smart Product Finder",
   "home.tagline": "So sánh giá và CO₂e giữa các cửa hàng tại Việt Nam",
-
   "lang.switchLabel": "Đổi ngôn ngữ",
-
   "search.placeholder": "Tìm kiếm...",
   "search.button": "Tìm kiếm",
   "search.image.button": "Hình ảnh",
@@ -18,7 +16,6 @@
   "search.image.use": "Dùng ảnh này",
   "search.image.errorType": "Vui lòng chọn một tệp hình ảnh.",
   "search.image.errorEmpty": "Hãy chọn ảnh trước khi tiếp tục.",
-
   "results.for": "Kết quả tìm kiếm cho \"{query}\"",
   "results.empty": "Không tìm thấy sản phẩm nào...",
   "results.sortBy": "Sắp xếp theo",
@@ -26,7 +23,6 @@
   "sort.priceLow": "Giá thấp đến cao",
   "sort.priceHigh": "Giá cao đến thấp",
   "sort.eco": "Thân thiện môi trường nhất",
-
   "filter.open": "Mở bộ lọc",
   "filter.close": "Đóng bộ lọc",
   "filter.priceRange": "Khoảng giá",
@@ -36,10 +32,8 @@
   "filter.productFilters": "Bộ lọc sản phẩm",
   "filter.onSale": "Đang giảm giá",
   "filter.ignoreGwp": "Bỏ qua GWP",
-
   "pagination.prev": "Trang trước",
   "pagination.next": "Trang sau",
-
   "product.loading": "Đang tải sản phẩm...",
   "product.notFound": "Không tìm thấy sản phẩm.",
   "product.noRating": "Chưa có",
@@ -79,7 +73,6 @@
   "product.reasonBalanced": "Sản phẩm cân bằng tốt giữa mức giá hợp lý và chất lượng dịch vụ ổn định.",
   "product.whyRecommended": "Điểm nổi bật & Lý do khuyên dùng",
   "product.keyHighlights": "Thông số nổi bật & Chi tiết sản phẩm",
-
   "nav.assistant": "Trợ lý AI xanh",
   "assistant.title": "Trợ lý AI chọn sản phẩm xanh",
   "assistant.subtitle": "Mô tả nhu cầu bằng lời nói hoặc gõ phím. AI sẽ tìm sản phẩm, vẽ biểu đồ so sánh và cho biết lượng CO₂ bạn giảm được sau 6 tháng / 1 năm sử dụng.",
@@ -102,5 +95,14 @@
   "assistant.col.co2_saved_12m_kg": "CO₂ giảm 1 năm (kg)",
   "assistant.col.money_saved_12m_vnd": "Tiền điện tiết kiệm 1 năm (₫)",
   "assistant.col.lifecycle_co2_kg": "CO₂ vòng đời (kg)",
-  "assistant.col.rating": "Đánh giá"
+  "assistant.col.rating": "Đánh giá",
+  "product.greenScore": "Điểm xanh",
+  "product.greenNoScore": "Chưa có điểm xanh",
+  "product.greenScoreHint": "So với các sản phẩm cùng loại: 5 = phát thải thấp nhất, 0 = cao nhất (khoảng {low}–{high} kg).",
+  "product.co2Source": "Nguồn số liệu",
+  "product.co2SourceManufacturer": "Số do hãng công bố cho đúng mẫu này",
+  "product.co2SourceAverage": "Trung bình các sản phẩm giống nhất có số của hãng",
+  "product.co2SourceOther": "Ước tính",
+  "product.co2References": "Sản phẩm tham chiếu đã dùng",
+  "product.co2Similarity": "độ giống"
 }

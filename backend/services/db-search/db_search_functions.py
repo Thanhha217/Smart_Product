@@ -1,5 +1,6 @@
 import os
 from sqlmodel import Session, create_engine, text
+from green_score import green_score, parse_references
 
 POSTGRES_URL = os.environ.get("POSTGRES_URL")
 
@@ -23,6 +24,9 @@ def get_product_data_from_ids(product_id):
                 product.co2e_kg AS co2e_kg,
                 product.co2e_explanation AS co2e_explanation,
                 product.co2e_explanation_vi AS co2e_explanation_vi,
+                product.co2e_source AS co2e_source,
+                product.co2e_category AS co2e_category,
+                product.co2e_references AS co2e_references,
 
                 category.name AS category_name,
 
@@ -77,6 +81,10 @@ def get_product_data_from_ids(product_id):
                 "co2e_kg": product_data_dict["co2e_kg"],
                 "co2e_explanation": product_data_dict.get("co2e_explanation"),
                 "co2e_explanation_vi": product_data_dict.get("co2e_explanation_vi"),
+                "co2e_source": product_data_dict.get("co2e_source"),
+                "co2e_category": product_data_dict.get("co2e_category"),
+                "co2e_references": parse_references(product_data_dict.get("co2e_references")),
+                "green_score": green_score(product_data_dict["co2e_kg"], product_data_dict.get("co2e_category")),
             },
             "return_policy": {
                 "days_for_return": product_data_dict["days_for_return"],

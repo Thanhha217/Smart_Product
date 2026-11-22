@@ -68,3 +68,18 @@ export function getRecommendationReason(productInfo, platform_name, t, isProduct
   
   return t("product.reasonBalanced");
 }
+
+// Colour + label for the 0-5 green score (computed in db-search, higher = greener
+// within the product's category). Falls back to grey when there is no score.
+export function getGreenLevel(score) {
+  if (score === null || score === undefined) return { bg: "bg-gray-500", text: "text-gray-700", key: "product.greenNoScore" };
+  if (score >= 3.5) return { bg: "bg-green-600", text: "text-green-700", key: "product.carbonRatingLow" };
+  if (score >= 2) return { bg: "bg-amber-500", text: "text-amber-600", key: "product.carbonRatingMed" };
+  return { bg: "bg-red-500", text: "text-red-600", key: "product.carbonRatingHigh" };
+}
+
+export function getCo2SourceKey(source) {
+  if (source === "manufacturer") return "product.co2SourceManufacturer";
+  if (source === "neighbor_average") return "product.co2SourceAverage";
+  return "product.co2SourceOther";
+}

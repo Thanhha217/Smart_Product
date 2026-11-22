@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n/LanguageContext";
-import { getProductHighlights, getRecommendationReason } from "../../utils/helpers";
+import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey } from "../../utils/helpers";
 
 export default function ProductSlot({ product, image_url, platform_name }) {
     const navigate = useNavigate();
@@ -50,7 +50,10 @@ export default function ProductSlot({ product, image_url, platform_name }) {
                     <div className="flex flex-col md:flex-row justify-between gap-x-4 gap-y-2 pt-2">
                         <p className="text-nowrap">★ {product.review_count ? `${product.product_rating * 5.0} (${product.review_count})` : t("product.noRating")}</p>
                         {product.co2e_kg !== null && product.co2e_kg !== undefined ? (
-                            <p className="text-nowrap bg-green-500 text-white rounded-2xl px-2 font-bold w-min">{product.co2e_kg} kg CO₂e</p>
+                            <p className={`text-nowrap ${getGreenLevel(product.green_score).bg} text-white rounded-2xl px-2 font-bold w-min`}
+                               title={`${t("product.greenScore")}: ${product.green_score ?? "–"}/5 · ${t(getCo2SourceKey(product.co2e_source))}`}>
+                                🍃 {product.co2e_kg} kg CO₂e{product.green_score !== null && product.green_score !== undefined ? ` · ${product.green_score}/5` : ""}
+                            </p>
                         ) : (
                             <p className="text-nowrap bg-gray-400 text-white rounded-2xl px-2 font-bold w-min text-xs flex items-center justify-center">{t("product.co2ShortUnavailable")}</p>
                         )}
