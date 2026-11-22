@@ -8,7 +8,6 @@ class BaseProductSpider(scrapy.Spider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "scrapers.base.pipeline.KafkaPipeline": 300,
-            "scrapy.pipelines.files.FilesPipeline": 1,
         }
     }
 
