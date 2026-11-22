@@ -24,5 +24,5 @@ def create_db_and_tables():
     # create_all never adds columns to an existing table
     if engine.dialect.name == "postgresql":
         with engine.begin() as conn:
-            for column in ("co2e_category", "co2e_references"):
+            for column in ("co2e_explanation_vi", "co2e_category", "co2e_references"):
                 conn.execute(text(f"ALTER TABLE product ADD COLUMN IF NOT EXISTS {column} VARCHAR"))

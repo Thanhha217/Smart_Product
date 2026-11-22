@@ -745,10 +745,16 @@ def _exact_reference(name):
     _build_reference_index()
     haystack = f" {_tokens(name)} "
     best = None
+    best_len = 0
     for ref in (_ref_by_id or {}).values():
         key = _tokens(ref["name"])
-        if len(key.split()) >= 3 and f" {key} " in haystack and (best is None or len(key) > len(_tokens(best["name"]))):
-            best = ref
+        keys = [key]
+        brand = _tokens(ref.get("brand"))
+        if brand and key.startswith(brand + " "):
+            keys.append(key[len(brand) + 1:])      # shops often drop the brand: "Điện thoại iPhone 15 128GB"
+        for k in keys:
+            if len(k.split()) >= 3 and f" {k} " in haystack and len(k) > best_len:
+                best, best_len = ref, len(k)
     return best
 
 
