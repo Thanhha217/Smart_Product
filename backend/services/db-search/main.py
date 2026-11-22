@@ -44,8 +44,20 @@ def query(q: str = None, limit: int = 32, payload: Optional[QueryWithImageDTO] =
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error communicating with the ranking system")
 
-    product_ids = response.json()
-    product_ids = product_ids.get("products", [])
+    ranking_resp = response.json()
+    product_ids = ranking_resp.get("products", [])
+    reasons = ranking_resp.get("reasons", {})
 
     products_data = get_products_data_from_ids(product_ids)
+
+    if reasons:
+        for item in products_data:
+            if isinstance(item, dict):
+                pid = item.get("product", {}).get("id")
+                pid_str = str(pid) if pid is not None else ""
+                if pid_str in reasons:
+                    explanation = reasons[pid_str]
+                    item["product"]["recommendation_reason"] = explanation
+                    item["recommendation_reason"] = explanation
+
     return {"products": products_data}

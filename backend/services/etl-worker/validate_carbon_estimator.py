@@ -64,7 +64,14 @@ def main():
     for position, i in enumerate(indices, 1):
         neighbours = _neighbours(embeddings, rows, i, rows[i]["category"])
         baseline = sum(n["co2e_kg"] for n in neighbours) / len(neighbours)
-        result = _estimate_with_llm(SimpleNamespace(name=rows[i]["name"], description=""), neighbours)
+        # _estimate_with_llm expects (neighbour_dict, score) tuples; score=1.0
+        # because the validation loop already selects semantically close neighbours.
+        scored_neighbours = [(n, 1.0) for n in neighbours]
+        result = _estimate_with_llm(
+            SimpleNamespace(name=rows[i]["name"], description=""),
+            scored_neighbours,
+            ref_category=rows[i]["category"],
+        )
         llm = result[0] if result is not None else baseline
         used_llm += result is not None
         trues.append(rows[i]["co2e_kg"])

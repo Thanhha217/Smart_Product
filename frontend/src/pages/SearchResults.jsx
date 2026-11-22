@@ -8,6 +8,7 @@ import { GATEWAY_URL } from "./utils/consts";
 import Throbber from "./components/general/Throbber";
 import { useI18n } from "../i18n/LanguageContext";
 
+
 const fetchProducts = async (query, imageQuery) => {
   const body = {};
   
@@ -68,7 +69,7 @@ export default function SearchResults() {
   const [maxPriceValue, setMaxPriceValue] = useState(priceLimit);
   const [starValue, setStarValue] = useState(0);
   const gwpLimit = productsInfo.length
-    ? Math.ceil(Math.max(...productsInfo.map(item => parseInt(item.product.co2e_kg))))
+    ? Math.ceil(Math.max(...productsInfo.map(item => item.product.co2e_kg !== null && item.product.co2e_kg !== undefined ? parseFloat(item.product.co2e_kg) : 0)))
     : 0;
   const [maxGwpValue, setMaxGwpValue] = useState(gwpLimit);
   const [onSaleOnly, setOnSaleOnly] = useState(false);
@@ -114,12 +115,11 @@ export default function SearchResults() {
           setLoading(false);
         }
       } catch (error) {
+        console.error("Failed to fetch products:", error);
         if (isActive) {
           setProductsInfo([]);
           setLoading(false);
         }
-
-        console.error("Failed to fetch products:", error);
       }
     };
 
@@ -150,7 +150,7 @@ export default function SearchResults() {
 
   // Gwp filter
   if (maxGwpValue > 0) {
-    filteredProducts = filteredProducts.filter(item => item.product.co2e_kg <= maxGwpValue);
+    filteredProducts = filteredProducts.filter(item => item.product.co2e_kg === null || item.product.co2e_kg === undefined || item.product.co2e_kg <= maxGwpValue);
   }
 
   // Options filter
@@ -173,7 +173,11 @@ export default function SearchResults() {
       filteredProducts = filteredProducts.sort((a, b) => b.product.final_price - a.product.final_price);
       break;
     case "eco-friendly":
-      filteredProducts = filteredProducts.sort((a, b) => a.product.co2e_kg - b.product.co2e_kg);
+      filteredProducts = filteredProducts.sort((a, b) => {
+        const co2A = a.product.co2e_kg !== null && a.product.co2e_kg !== undefined ? a.product.co2e_kg : Infinity;
+        const co2B = b.product.co2e_kg !== null && b.product.co2e_kg !== undefined ? b.product.co2e_kg : Infinity;
+        return co2A - co2B;
+      });
       break;
   }
 

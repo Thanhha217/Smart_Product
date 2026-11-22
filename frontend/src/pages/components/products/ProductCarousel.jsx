@@ -1,5 +1,5 @@
 import Carousel from '../carousel/Carousel.jsx';
-import { generateMockProducts } from './productMock.jsx';
+// import { generateMockProducts } from './productMock.jsx';
 import ProductSlot from "./ProductSlot.jsx";
 import { useRef, useState, useLayoutEffect } from "react";
 
