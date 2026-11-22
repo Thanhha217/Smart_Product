@@ -1,14 +1,21 @@
 # Product Carbon Footprint (CO2e) Estimation — Setup
 
-> **Lưu ý (nhánh `new-research`)**: tài liệu này mô tả cách ước lượng CO₂ bằng LLM cũ. Công thức CO₂ vòng đời mới và lượng CO₂ giảm thải sau 6/12 tháng được mô tả ở [research/co2-formula.md](research/co2-formula.md); tổng quan 4 yêu cầu của giáo viên ở [research/advisor-requirements.md](research/advisor-requirements.md).
+> **Lưu ý (nhánh `new-research`)**: mục 2 bên dưới (chọn LLM) là của bản cũ; LLM không còn sinh số CO₂. Các bước dự phòng khi không có sản phẩm giống: [research/co2-fallback.md](research/co2-fallback.md). Công thức CO₂ vòng đời mới và lượng CO₂ giảm thải sau 6/12 tháng được mô tả ở [research/co2-formula.md](research/co2-formula.md); tổng quan 4 yêu cầu của giáo viên ở [research/advisor-requirements.md](research/advisor-requirements.md).
 
-This feature estimates each product's cradle-to-grave carbon footprint (kg CO2e).
-For every product, it retrieves the most similar products from a verified
-reference catalog (built from manufacturer Environmental Product Declarations),
-then asks an LLM to estimate the footprint by analogy (few-shot, ISO 14067 /
-GHG Protocol). If the LLM is unavailable it falls back to the average of the
-nearest references. The estimate runs inside `etl-worker` as part of
-`data/process/data_processing.py::process_message` and never blocks ingestion.
+This feature estimates each product's cradle-to-grave carbon footprint (kg CO2e)
+inside `etl-worker` (`data/process/data_processing.py::process_message`, never
+blocks ingestion). Order of steps (details: [research/co2-fallback.md](research/co2-fallback.md)):
+
+1. Reuse the value already stored for the same `product_url`.
+2. Average of the reference products (manufacturer EPD/PCF, table `carbonreference`)
+   whose CLIP cosine is >= 0.66 → `co2e_source = neighbor_average`.
+3. No close reference → `green/fallback.py`: lifecycle formula for home appliances
+   (`lifecycle_formula`), brand/screen-size model of the reference catalogue
+   (`category_model`), or price x US EPA supply-chain factor (`eeio_price`).
+4. Nothing applies → `co2e_kg` stays NULL.
+
+The LLM (Qwen via Ollama) no longer produces the number. With `CO2E_USE_LLM=1`
+it may adjust the neighbour average when close references exist (paper experiments).
 
 ---
 
@@ -45,14 +52,16 @@ Selected with the `CO2E_LLM_PROVIDER` environment variable.
 
 ## 3. Environment variables
 
-| Variable             | Default                              | Purpose                                              |
-| -------------------- | ------------------------------------ | ---------------------------------------------------- |
-| `CO2E_LLM_PROVIDER`  | `anthropic`                          | LLM backend: `ollama` or `anthropic`                 |
-| `CO2E_LLM_MODEL`     | `llama3.2` / `claude-opus-4-8`       | Model name (per provider default)                    |
-| `OLLAMA_HOST`        | `http://host.docker.internal:11434`  | Ollama server URL (used when provider is `ollama`)   |
-| `ANTHROPIC_API_KEY`  | _(unset)_                            | Claude API key (used when provider is `anthropic`)   |
+| Variable           | Default                 | Purpose                                                        |
+| ------------------ | ----------------------- | -------------------------------------------------------------- |
+| `CO2E_FALLBACK`    | `0`                     | `1` = when no reference reaches cosine 0.66, use green.fallback (formula / category model / EEIO); `0` = leave empty (final method) |
+| `CO2E_USE_LLM`     | `0`                     | `1` = let Qwen adjust the neighbour average (never without neighbours) |
+| `CO2E_LLM_MODEL`   | `qwen3.5:0.8b`          | Ollama model, only used when `CO2E_USE_LLM=1`                  |
+| `OLLAMA_HOST`      | `http://ollama:11434`   | Ollama server URL                                              |
+| `CO2_GRID_EF`      | `0.6592`                | Vietnam grid factor (kg CO2e/kWh) for the lifecycle formula    |
+| `CO2_VND_PER_USD`  | `25900`                 | VND per USD for the price-based (EEIO) step                    |
+| `CO2_CPI_NOW`      | `336.940`               | Current US CPI-U, deflates prices to the 2022 USD of the factors |
 
-To run fully free/local, set `CO2E_LLM_PROVIDER=ollama`.
 
 ## 4. Database
 
@@ -85,7 +94,8 @@ docker compose -f docker-compose.dev.yml exec backend-etl-worker \
 As products are ingested, the worker logs lines such as:
 
 ```
-CO2e for 'Laptop XYZ': 312.0 kg (llm_estimate)
+CO2e for 'Laptop XYZ': 312.0 kg (neighbor_average)
+CO2e for 'Máy lạnh Daikin Inverter 1.5 HP': 6118.4 kg (lifecycle_formula)
 ```
 
 ## 6. Validation (measure accuracy)
@@ -109,5 +119,6 @@ docker compose -f docker-compose.dev.yml exec \
   manufacturer's use-phase reflects **their** electricity grid, not Vietnam's.
   Treat the output as a **relative** environmental indicator — strongest for
   ranking/comparison, not as a certified absolute footprint.
-- `co2e_confidence` (0.6 for LLM, 0.3 for fallback) are heuristic placeholders;
-  calibrate them from the validation error once measured.
+- `co2e_confidence`: 0.5 neighbour average, 0.35 category model / formula with energy label,
+  0.25–0.3 formula with defaults or rated power, 0.15 price-based. Heuristic; calibrate from
+  the validation error.

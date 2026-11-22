@@ -29,7 +29,9 @@ class Product(ProductBase, table=True):
 
     # Carbon footprint (kg CO2e); filled by carbon_estimator, NULL until then.
     co2e_kg: Optional[float] = Field(default=None)
-    co2e_source: Optional[str] = Field(default=None)  # llm_estimate | neighbor_fallback
+    # neighbor_average | category_model | lifecycle_formula | eeio_price
+    # (older rows: llm_estimate | neighbor_fallback). See green/fallback.py.
+    co2e_source: Optional[str] = Field(default=None)
     co2e_confidence: Optional[float] = Field(default=None)
     co2e_explanation: Optional[str] = Field(default=None)
     co2e_explanation_vi: Optional[str] = Field(default=None)

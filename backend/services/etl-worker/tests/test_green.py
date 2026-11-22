@@ -23,6 +23,10 @@ class TestSpecParser:
         assert parse_specs("Smart Tivi LG 55 inch").screen_inch == 55
         assert parse_specs("Máy giặt LG 9 kg").load_kg == 9
 
+    def test_model_code_is_not_power(self):
+        assert parse_specs("Máy giặt LG Inverter 9 kg FV1409S4W").power_w is None
+        assert parse_specs("Quạt đứng 55W").power_w == 55
+
     def test_btu_converted_to_hp(self):
         assert parse_specs("Điều hòa 18.000 BTU").cooling_hp == 2.0
 

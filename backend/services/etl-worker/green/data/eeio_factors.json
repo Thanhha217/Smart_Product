@@ -1,0 +1,196 @@
+{
+  "_about": "US EPA Supply Chain Greenhouse Gas Emission Factors v1.3.0 by NAICS-6 (USEEIO v2.2, GHG data 2022, AR5 GWP-100). Column used: 'Supply Chain Emission Factors with Margins' = cradle-to-shelf, kg CO2e per 2022 USD purchaser price. Same family of factors as P5 (Balaji et al. 2023, CaML, uses USEEIO). No use phase, no end of life.",
+  "source_url": "https://pasteur.epa.gov/uploads/10.23719/1531143/SupplyChainGHGEmissionFactors_v1.3.0_NAICS_CO2e_USD2022.csv",
+  "source_doi": "https://doi.org/10.23719/1531143",
+  "source_sha256": "6025a14c4fe16675735efba1683030e4d36011e3973f3c4261f8231aa69c002f",
+  "retrieved": "2026-11-07",
+  "currency": {
+    "vnd_per_usd": 25900,
+    "vnd_per_usd_note": "Vietcombank USD 15/10/2026: buy (transfer) 25,710, sell 26,090 -> mid 25,900. Override with CO2_VND_PER_USD.",
+    "cpi_u_2022": 292.655,
+    "cpi_u_now": 336.94,
+    "cpi_note": "BLS CPI-U all items, 1982-84=100: 2022 annual average 292.655; Sep 2026 336.940 (release 14/10/2026). Override with CO2_CPI_NOW."
+  },
+  "factors": {
+    "311111": {
+      "title": "Dog and Cat Food Manufacturing",
+      "kg_per_usd2022": 0.333
+    },
+    "311999": {
+      "title": "All Other Miscellaneous Food Manufacturing",
+      "kg_per_usd2022": 0.401
+    },
+    "315280": {
+      "title": "Other Cut and Sew Apparel Manufacturing",
+      "kg_per_usd2022": 0.12
+    },
+    "316210": {
+      "title": "Footwear Manufacturing",
+      "kg_per_usd2022": 0.282
+    },
+    "316992": {
+      "title": "Women's Handbag and Purse Manufacturing",
+      "kg_per_usd2022": 0.282
+    },
+    "325412": {
+      "title": "Pharmaceutical Preparation Manufacturing",
+      "kg_per_usd2022": 0.099
+    },
+    "325620": {
+      "title": "Toilet Preparation Manufacturing",
+      "kg_per_usd2022": 0.194
+    },
+    "333316": {
+      "title": "Photographic and Photocopying Equipment Manufacturing",
+      "kg_per_usd2022": 0.135
+    },
+    "333415": {
+      "title": "Air-Conditioning and Warm Air Heating Equipment and Commercial and Industrial Refrigeration Equipment Manufacturing",
+      "kg_per_usd2022": 0.184
+    },
+    "334111": {
+      "title": "Electronic Computer Manufacturing",
+      "kg_per_usd2022": 0.058
+    },
+    "334118": {
+      "title": "Computer Terminal and Other Computer Peripheral Equipment Manufacturing",
+      "kg_per_usd2022": 0.143
+    },
+    "334210": {
+      "title": "Telephone Apparatus Manufacturing",
+      "kg_per_usd2022": 0.096
+    },
+    "334220": {
+      "title": "Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing",
+      "kg_per_usd2022": 0.111
+    },
+    "334290": {
+      "title": "Other Communications Equipment Manufacturing",
+      "kg_per_usd2022": 0.08
+    },
+    "334310": {
+      "title": "Audio and Video Equipment Manufacturing",
+      "kg_per_usd2022": 0.081
+    },
+    "334510": {
+      "title": "Electromedical and Electrotherapeutic Apparatus Manufacturing",
+      "kg_per_usd2022": 0.135
+    },
+    "335121": {
+      "title": "Residential Electric Lighting Fixture Manufacturing",
+      "kg_per_usd2022": 0.185
+    },
+    "335210": {
+      "title": "Small Electrical Appliance Manufacturing",
+      "kg_per_usd2022": 0.157
+    },
+    "335220": {
+      "title": "Major Household Appliance Manufacturing",
+      "kg_per_usd2022": 0.172
+    },
+    "335999": {
+      "title": "All Other Miscellaneous Electrical Equipment and Component Manufacturing",
+      "kg_per_usd2022": 0.128
+    },
+    "336390": {
+      "title": "Other Motor Vehicle Parts Manufacturing",
+      "kg_per_usd2022": 0.265
+    },
+    "336411": {
+      "title": "Aircraft Manufacturing",
+      "kg_per_usd2022": 0.139
+    },
+    "336991": {
+      "title": "Motorcycle, Bicycle, and Parts Manufacturing",
+      "kg_per_usd2022": 0.222
+    },
+    "337122": {
+      "title": "Nonupholstered Wood Household Furniture Manufacturing",
+      "kg_per_usd2022": 0.178
+    },
+    "339910": {
+      "title": "Jewelry and Silverware Manufacturing",
+      "kg_per_usd2022": 0.108
+    },
+    "339920": {
+      "title": "Sporting and Athletic Goods Manufacturing",
+      "kg_per_usd2022": 0.167
+    },
+    "339930": {
+      "title": "Doll, Toy, and Game Manufacturing",
+      "kg_per_usd2022": 0.146
+    },
+    "339940": {
+      "title": "Office Supplies (except Paper) Manufacturing",
+      "kg_per_usd2022": 0.265
+    },
+    "339999": {
+      "title": "All Other Miscellaneous Manufacturing",
+      "kg_per_usd2022": 0.182
+    },
+    "511130": {
+      "title": "Book Publishers",
+      "kg_per_usd2022": 0.107
+    }
+  },
+  "category_to_naics": {
+    "air_conditioner": "333415",
+    "air_purifier": "335210",
+    "arts_craft": "339940",
+    "automotive_accessory": "336390",
+    "bag": "316992",
+    "beauty_tool": "335210",
+    "bicycle": "336991",
+    "blender_juicer": "335210",
+    "book": "511130",
+    "camera": "333316",
+    "clothes_dryer": "335220",
+    "computer_monitor": "334118",
+    "computer_peripheral": "334118",
+    "desktop": "334111",
+    "drone": "336411",
+    "electric_fan": "335210",
+    "fashion_clothing": "315280",
+    "feature_phone": "334220",
+    "fitness_equipment": "339920",
+    "food_beverage": "311999",
+    "gaming_laptop": "334111",
+    "hair_care": "325620",
+    "headphone": "334310",
+    "home_furniture": "337122",
+    "jewelry": "339910",
+    "laptop": "334111",
+    "lighting": "335121",
+    "makeup": "325620",
+    "medical_device": "334510",
+    "microwave_oven": "335220",
+    "mom_baby": "339999",
+    "networking": "334210",
+    "pc_component": "334118",
+    "perfume": "325620",
+    "personal_care": "325620",
+    "pet_supply": "311111",
+    "phone_accessory": "335999",
+    "refrigerator": "335220",
+    "rice_cooker": "335210",
+    "shoe": "316210",
+    "skincare": "325620",
+    "smart_home": "334290",
+    "smartphone": "334220",
+    "smartwatch": "334220",
+    "speaker": "334310",
+    "sports_equipment": "339920",
+    "sports_shoe": "316210",
+    "sportswear": "315280",
+    "stationery": "339940",
+    "stove": "335220",
+    "supplement": "325412",
+    "tablet": "334111",
+    "television": "334310",
+    "toy": "339930",
+    "vacuum_cleaner": "335210",
+    "washing_machine": "335220",
+    "water_purifier": "335210",
+    "wearable": "334220"
+  }
+}

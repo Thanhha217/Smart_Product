@@ -84,8 +84,8 @@ def parse_specs(*texts: str | None) -> ProductSpecs:
 
     # Rated power: prefer a value introduced by "công suất"; otherwise the first "<n> W".
     m = re.search(r"cong\s*suat[^0-9]{0,40}" + _NUM + r"\s*(kw|w)\b", s) or re.search(
-        _NUM + r"\s*(kw|w)\b(?!\s*/)", s
-    )
+        r"(?<![a-z0-9])" + _NUM + r"\s*(kw|w)\b(?!\s*/)", s
+    )  # the look-behind keeps model codes such as "FV1409S4W" from reading as 4 W
     if m:
         value = _to_float(m.group(1))
         specs.power_w = value * 1000 if m.group(2) == "kw" else value
