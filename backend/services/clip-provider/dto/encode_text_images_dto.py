@@ -5,3 +5,6 @@ class EncodeTextDTO(BaseModel):
 
 class EncodeImageFromUrlDTO(BaseModel):
     image_url: str
+
+class EncodeImagesFromUrlsDTO(BaseModel):
+    image_urls: list[str]

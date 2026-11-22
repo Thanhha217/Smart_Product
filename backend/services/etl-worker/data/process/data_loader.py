@@ -112,18 +112,22 @@ def load_data_into_database(obj: dict, embeddings: tuple):
         product = get_or_create_product(session, product, platform.id)
         
         images = []
+        image_embeddings = embeddings[1] if len(embeddings) > 1 else []
 
-        for image, image_embedding in zip(obj["images"], embeddings[1]):
+        # Persist all images first, even when one or more embeddings are missing.
+        for idx, image in enumerate(obj["images"]):
             image.product_id = product.id
             session.add(image)
-            images.append((image, image_embedding))
+
+            embedding = image_embeddings[idx] if idx < len(image_embeddings) else None
+            images.append((image, embedding))
 
         session.commit()
 
-        image_ids = [image.id for image, _ in images]
-        image_embeddings = [image_embedding for _, image_embedding in images]
-
-        # load_image_embeddings(image_ids, image_embeddings)
+        # load_image_embeddings(
+        #     [image.id for image, image_embedding in images if image_embedding is not None],
+        #     [image_embedding for _, image_embedding in images if image_embedding is not None],
+        # )
         load_embedding(product.id, embeddings[0])
 
     with _faiss_lock:
@@ -145,7 +149,6 @@ def load_embedding(id: int, embedding: list[float]):
         index.add_with_ids(np_embedding, ids)
 
 def load_embeddings(ids: list[int], embeddings: list[list[float]], index=index):
-    print(f"Loading embeddings for IDs: {ids}", flush=True)
     if not ids:
         return
     try:

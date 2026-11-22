@@ -427,7 +427,6 @@ services:
       - backend-clip-provider
       - ranking-system
       - db-search
-      - smart-product-finder-database
 
   # ADD OTHER BACKEND SERVICES (e.g., product-service, user-service, etc.) HERE
   
