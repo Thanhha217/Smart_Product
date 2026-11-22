@@ -1,4 +1,6 @@
 import os
+import re
+from camoufox.pkgman import launch_path
 # Scrapy settings for scrapers project
 #
 # For simplicity, this file contains only settings considered important or
@@ -17,7 +19,7 @@ ADDONS = {}
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "scrapers (+http://www.yourdomain.com)"
+# USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -34,11 +36,65 @@ DOWNLOAD_DELAY = 1.0
 TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
 DEFAULT_REQUEST_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "vi-VN,vi;q=0.9,en;q=0.8",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "vi-VN,vi;q=0.9,en-Me;q=0.8,en;q=0.7",
+    "User-Agent": USER_AGENT,
 }
+
+DOWNLOAD_HANDLERS = {
+    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+}
+
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+PLAYWRIGHT_BROWSER_TYPE = "firefox"
+
+PLAYWRIGHT_LAUNCH_OPTIONS = {
+    "executable_path": launch_path(),
+    "headless": False,
+    "args": [
+        "--disable-blink-features=AutomationControlled",
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--disable-dev-shm-usage",  
+        "--no-sandbox",
+        # "--blink-settings=imagesEnabled=false",
+    ],
+}
+
+PLAYWRIGHT_CONTEXT_ARGS = {
+    "locale": "vi-VN",
+    "timezone_id": "Asia/Ho_Chi_Minh",
+    # "user_agent": USER_AGENT,
+}
+
+# PLAYWRIGHT_CONTEXTS = {
+#     "default": {
+#         "user_data_dir": "data_dir",
+#     },
+# }
+
+# 1. Define the handler function
+BLOCK_EXTENSIONS_PATTERN = re.compile(
+    r"\.(jpg|jpeg|png|gif|webp|svg|ico|mp3|mp4|avi|mov|wav|flv|mkv|webm|woff|woff2|ttf|eot|otf|css)(\?|$)", 
+    re.IGNORECASE
+)
+
+def should_abort_request(request):
+    # 1. Broad category block provided natively by Playwright
+    if request.resource_type in ["media"]:
+        return True
+    
+    # 2. Fast regex fallback lookup for hidden extensions in CDN parameters
+    # if BLOCK_EXTENSIONS_PATTERN.search(request.url):
+    #     return True
+        
+    return False
+
+# PLAYWRIGHT_ABORT_REQUEST = should_abort_request
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
@@ -76,6 +132,7 @@ DOWNLOADER_MIDDLEWARES = {
     # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
 }
 
+
 FAKEUSERAGENT_PROVIDERS = [
     'scrapy_fake_useragent.providers.FakeUserAgentProvider',
     'scrapy_fake_useragent.providers.FakerProvider',  
@@ -107,11 +164,11 @@ AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-HTTPCACHE_ENABLED = True
-HTTPCACHE_EXPIRATION_SECS = 21600  # 6 hours
-HTTPCACHE_DIR = "/opt/airflow/httpcache"
-HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504]
-HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+# HTTPCACHE_ENABLED = True
+# HTTPCACHE_EXPIRATION_SECS = 21600  # 6 hours
+# HTTPCACHE_DIR = "/opt/airflow/httpcache"
+# HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504]
+# HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"

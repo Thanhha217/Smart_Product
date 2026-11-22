@@ -1,5 +1,25 @@
 FROM apache/airflow:3.2.1
 
+USER root
+
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    libxrender1 \
+    libxtst6 \
+    libxi6 \
+    libgtk-3-0 \
+    libdbus-glib-1-2 \
+    libnss3 \
+    libx11-xcb1 \
+    libasound2 \
+    libgbm1 \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
 COPY airflow-requirements.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/airflow-requirements.txt && \
     pip uninstall -y typing
+
+# RUN camoufox fetch
+RUN patchright install
