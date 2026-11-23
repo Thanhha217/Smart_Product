@@ -1,6 +1,6 @@
 # Danh sách 10.000 sản phẩm có CO₂
 
-`danh_sach_10000_san_pham_co2.csv` là bản xuất CSV (UTF-8) của bảng tính chung của nhóm
+`Dataset_CO2SmartProduct.xlsx` là bản gốc của nhóm; `danh_sach_10000_san_pham_co2.csv` là bản xuất CSV (UTF-8) của bảng tính chung của nhóm
 ("Danh sách 10000 sản phẩm", Google Sheets, xuất ngày 23/11/2026). Sửa dữ liệu ở bảng tính gốc rồi xuất lại vào đây.
 
 | Nguồn dữ liệu | Số dòng | Dùng làm mẫu (`carbonreference`)? |
