@@ -1,0 +1,14 @@
+# Bộ câu hỏi demo cố định (đặc tả mục 11). Một câu mỗi dòng; dòng bắt đầu bằng # bị bỏ qua.
+# Dùng cho video demo, kiểm thử đầu–cuối và đếm number_check_failures (mục tiêu = 0).
+laptop dưới 20 triệu ít CO2 để học
+màn hình 27 inch xanh nhất
+máy lạnh 1 HP tiết kiệm điện
+tủ lạnh 300 lít
+điện thoại pin trâu ít phát thải
+máy giặt 9 kg inverter tiết kiệm điện dưới 10 triệu
+tivi 55 inch tiêu thụ điện thấp
+so sánh MacBook Air M3 và Dell Latitude về CO2
+máy tính bảng cho học sinh ít phát thải
+quạt điện tiết kiệm điện nhất
+Find a low-carbon laptop under 20 million VND for students
+Chọn giúp tôi máy lạnh 1 HP tiết kiệm điện nhất dưới 10 triệu rồi đặt mua
