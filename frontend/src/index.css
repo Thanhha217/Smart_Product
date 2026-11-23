@@ -148,3 +148,35 @@ input[type="range"].hide-track {
 input[type="range"].hide-thumb {
   --thumb-color: transparent;
 }
+/* ---- shared controls (one look for every page) ---- */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1F5D3A] px-4 py-2.5 text-[15px] font-semibold text-white
+      transition-colors hover:bg-[#174a2e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2E7D4F]
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl border border-[#d9d4c4] bg-white px-3.5 py-2.5 text-[15px] font-medium text-[#1E2B22]
+      transition-colors hover:border-[#2E7D4F] hover:text-[#1F5D3A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary-active {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl border border-[#2E7D4F] bg-[#eef4ec] px-3.5 py-2.5 text-[15px] font-medium text-[#1F5D3A]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F];
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[#d9d4c4] bg-white px-3 py-1.5 text-[14px] text-[#1E2B22]
+      transition-colors hover:border-[#2E7D4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F];
+  }
+  .chip-active {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[#1F5D3A] bg-[#1F5D3A] px-3 py-1.5 text-[14px] text-white
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2E7D4F];
+  }
+  .page-wrap { @apply mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8 py-6 md:py-8; }
+  .page-title { font-family: var(--font-display); @apply text-[32px] md:text-[38px] leading-tight text-[#1E2B22]; }
+  .page-lead { @apply mt-1.5 text-[17px] text-[#4b5563] max-w-3xl; }
+}
+:focus-visible { outline-color: #2E7D4F; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

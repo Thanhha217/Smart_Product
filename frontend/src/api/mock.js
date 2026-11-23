@@ -517,3 +517,25 @@ export async function getHealth() {
     s("mcp", "MCP cho ChatGPT", 11), { key: "etl", name: "ETL + tính CO₂", status: "offline", detail: "mock" },
   ], checked_at: new Date().toISOString() };
 }
+
+
+// ---- offline demo of GET /api/search and /api/categories (sample data, never shown as live)
+export async function search(params = {}) {
+  await delay();
+  const q = String(params.q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d");
+  let items = Object.values(PRODUCTS).map(clone);
+  if (q) items = items.filter((p) => p.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").includes(q));
+  if (params.max_price) items = items.filter((p) => p.price_vnd && p.price_vnd <= Number(params.max_price));
+  if (params.min_price) items = items.filter((p) => p.price_vnd && p.price_vnd >= Number(params.min_price));
+  if (params.sort === "co2_asc") items.sort((a, b) => (a.co2e_kg ?? Infinity) - (b.co2e_kg ?? Infinity));
+  if (params.sort === "price_asc") items.sort((a, b) => (a.price_vnd ?? Infinity) - (b.price_vnd ?? Infinity));
+  return { query: params.q || "", understood: { terms: q ? q.split(" ") : [] }, unsupported: null, filters: {}, sort: params.sort || "relevance",
+           effective_sort: params.sort || "relevance", page: 1, page_size: items.length, total: items.length, items,
+           facets: { category: [], brand: [], platform: [], co2_source: [], has_price: items.length, has_co2: items.length, accessories_hidden: 0 },
+           relaxations: [], sample: true };
+}
+
+export async function getCategories() {
+  await delay();
+  return { categories: [], sample: true };
+}

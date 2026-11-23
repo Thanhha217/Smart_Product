@@ -13,9 +13,14 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, { body, headers, timeoutMs = 60000 } = {}) {
+async function request(method, path, { body, headers, timeoutMs = 60000, signal } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // a caller's signal (e.g. a newer search replacing this one) cancels the request too
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method,
@@ -37,7 +42,10 @@ async function request(method, path, { body, headers, timeoutMs = 60000 } = {}) 
     return data;
   } catch (e) {
     if (e instanceof ApiError) throw e;
-    if (e.name === "AbortError") throw new ApiError(0, "timeout", "Request timed out");
+    if (e.name === "AbortError") {
+      if (signal?.aborted) throw new ApiError(0, "cancelled", "Request cancelled");
+      throw new ApiError(0, "timeout", "Request timed out");
+    }
     throw new ApiError(0, "network", e.message);
   } finally {
     clearTimeout(timer);
@@ -134,6 +142,18 @@ export const api = {
   },
   getHealth: () => (MOCK_API ? mock.getHealth() : request("GET", "/api/health", { timeoutMs: 15000 })),
   // Existing search endpoint (gateway wraps db-search's {"products": [...]} once more).
+  /** Filtered search (GET /api/search). params: q, category, brand, platform, min_price, max_price,
+   *  has_co2, has_price, co2_source, sort, page, page_size, include_accessories. */
+  search: (params = {}, { signal } = {}) => {
+    if (MOCK_API) return mock.search(params);
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === null || v === undefined || v === "" || v === false) continue;
+      qs.set(k, String(v));
+    }
+    return request("GET", `/api/search?${qs.toString()}`, { signal, timeoutMs: 30000 });
+  },
+  getCategories: () => (MOCK_API ? mock.getCategories() : request("GET", "/api/categories", { timeoutMs: 20000 })),
   searchProducts: async (q, limit = 12) => {
     if (MOCK_API) return mock.searchProducts(q, limit);
     const data = await request("POST", `/query?q=${encodeURIComponent(q)}&limit=${limit}`, { body: {} });
