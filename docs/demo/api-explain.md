@@ -18,7 +18,8 @@ Qua gateway: `POST http://localhost:8000/api/explain` (assistant service).
 ```
 
 `topic` ∈ `co2e_total, green_score, confidence, materials, factory, transport, use, grid, end_of_life,
-formula, category, greener_alternative, wefe, what_if, free` (`free` = câu hỏi tự do trong `question`).
+formula, category, greener_alternative, wefe, what_if, insight, free` (`free` = câu hỏi tự do trong `question`;
+`insight` = nhận định ngắn "vì sao nên chọn / cân nhắc" so với trung vị cùng loại, chặng nặng nhất, một việc giảm CO₂; trên trung vị thì nói thật và gợi ý món xanh hơn).
 Có `question` thì AI trả lời câu đó trong ngữ cảnh `topic`.
 
 Quy tắc: số nào trong câu trả lời không có trong `facts` (hoặc `scenario`) thì câu đó bị bỏ và tăng

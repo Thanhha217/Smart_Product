@@ -20,7 +20,7 @@ import llm_provider
 from page_spec import fmt_kg, fmt_number, fmt_price
 
 TOPICS = ("co2e_total", "green_score", "confidence", "materials", "factory", "transport", "use", "grid",
-          "end_of_life", "formula", "category", "greener_alternative", "wefe", "what_if", "free")
+          "end_of_life", "formula", "category", "greener_alternative", "wefe", "what_if", "insight", "free")
 GRID_EF = 0.681
 TREE_KG = 21.8
 CAR_KM_PER_KG = 4.1
@@ -52,7 +52,11 @@ Rules:
 - CO2 figures are estimates; say which method produced the number when relevant (facts.method).
 - A scenario is a what-if simulation, not the product's official figure (facts.co2e_kg).
 - Encourage lower-CO2 choices with reasons tied to the facts, without exaggerating.
-- No markdown, no emojis."""
+- No markdown, no emojis.
+- When clicked is "insight": a short buying insight for this product. Say why it is (or is not) a good lower-CO2
+  choice compared with its category (category_stats), which stage of its life weighs most, and one action that
+  lowers its footprint (use it longer, recycle it). Be encouraging but honest: if it emits more than the category
+  median, say so and point to the greener alternative when facts have one."""
 
 
 # ------------------------------------------------------------------ facts
@@ -215,6 +219,51 @@ def rule_based(topic: str, f: dict, lang: str, scenario: dict | None = None) -> 
         answer = T("Một lựa chọn mua sắm chạm tới cả bốn: điện than cần nhiều nước làm mát, rác điện tử ảnh hưởng đất canh tác, và CO₂ làm nóng khí hậu. Chọn món ít CO₂ hơn là giảm áp lực lên cả hệ thống đô thị.",
                    "One purchase touches all four: coal power needs cooling water, e-waste harms farmland, CO₂ warms the climate. A lower-CO₂ choice eases the whole city system.",
                    "Un achat touche les quatre : l’électricité au charbon consomme de l’eau de refroidissement, les déchets électroniques abîment les terres agricoles, le CO₂ réchauffe le climat. Choisir plus sobre allège tout le système urbain.")
+    elif topic == "insight":
+        st = f.get("category_stats") or {}
+        stages = f.get("stages_kg_and_percent") or {}
+        alt = f.get("greener_alternative")
+        pct = st.get("greener_than_pct")
+        big = max(stages.items(), key=lambda kv: kv[1].get("pct") or 0) if stages else None
+        stage_name = {"materials_production": T("sản xuất", "manufacturing", "la fabrication"),
+                      "transport": T("vận chuyển", "transport", "le transport"),
+                      "use": T("lúc sử dụng", "use", "l’usage"),
+                      "end_of_life": T("thải bỏ", "end of life", "la fin de vie")}
+        if pct is not None and st.get("median_kg") is not None and pct >= 50:
+            title = T("Vì sao nên chọn sản phẩm này", "Why this is a good pick", "Pourquoi c’est un bon choix")
+            answer = T(f"Sản phẩm này ít CO₂ hơn {n(pct, 0)}% sản phẩm cùng loại: {k(kg)} kg so với mức giữa {k(st['median_kg'])} kg. Chọn nó là bạn đã giảm phát thải ngay từ lúc mua.",
+                       f"It emits less CO₂ than {n(pct, 0)}% of its category: {k(kg)} kg against a median of {k(st['median_kg'])} kg. Choosing it cuts emissions from the moment you buy.",
+                       f"Il émet moins de CO₂ que {n(pct, 0)} % de sa catégorie : {k(kg)} kg contre une médiane de {k(st['median_kg'])} kg. Le choisir réduit les émissions dès l’achat.")
+        elif pct is not None and st.get("median_kg") is not None:
+            title = T("Cân nhắc trước khi mua", "Worth a second look", "À réfléchir avant d’acheter")
+            answer = T(f"Sản phẩm này thải {k(kg)} kg CO₂, cao hơn mức giữa {k(st['median_kg'])} kg của loại. Nếu thật sự cần, hãy dùng thật lâu; nếu không, có lựa chọn xanh hơn.",
+                       f"It emits {k(kg)} kg CO₂, above its category median of {k(st['median_kg'])} kg. If you need it, keep it for a long time; otherwise a greener option exists.",
+                       f"Il émet {k(kg)} kg de CO₂, au-dessus de la médiane de sa catégorie ({k(st['median_kg'])} kg). Si vous en avez besoin, gardez-le longtemps ; sinon, il existe plus sobre.")
+        else:
+            title = T("Nhận định nhanh", "Quick insight", "En bref")
+            answer = T(f"Sản phẩm này thải khoảng {k(kg)} kg CO₂ trong cả vòng đời. Chưa đủ dữ liệu cùng loại để so sánh.",
+                       f"It causes about {k(kg)} kg CO₂ over its life. There is not enough category data to compare it.",
+                       f"Il émet environ {k(kg)} kg de CO₂ sur sa vie. Pas assez de données de catégorie pour comparer.")
+        if big:
+            key, val = big
+            bullets.append(T(f"{n(val['pct'], 0)}% CO₂ nằm ở khâu {stage_name.get(key, key)}.",
+                             f"{n(val['pct'], 0)}% of its CO₂ comes from {stage_name.get(key, key)}.",
+                             f"{n(val['pct'], 0)} % de son CO₂ vient de {stage_name.get(key, key)}."))
+            if key == "materials_production":
+                bullets.append(T("Phần này đã thải ra trước khi bạn mua: dùng càng lâu, mỗi năm càng nhẹ.",
+                                 "That part is spent before you buy: the longer you use it, the lighter each year.",
+                                 "Cette part est émise avant l’achat : plus vous l’utilisez longtemps, plus chaque année est légère."))
+            elif key == "use":
+                bullets.append(T("Tắt hẳn khi không dùng và chọn chế độ tiết kiệm điện giúp giảm phần này.",
+                                 "Switching it off fully and using power-saving mode cuts this part.",
+                                 "L’éteindre complètement et utiliser le mode économie réduit cette part."))
+        if alt and pct is not None and pct < 50:
+            bullets.append(T(f"Món xanh hơn giá tương đương: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e.",
+                             f"Greener choice at a similar price: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e.",
+                             f"Option plus sobre à prix similaire : {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e."))
+        bullets.append(T("Hết dùng, mang tới điểm thu gom để vật liệu quay lại sản xuất.",
+                         "At the end, bring it to a collection point so its materials go back into new products.",
+                         "En fin de vie, déposez-le en point de collecte pour que ses matériaux servent à nouveau."))
     elif topic == "what_if":
         title = T("Kịch bản mô phỏng", "What-if scenario", "Scénario de simulation")
         total = (scenario or {}).get("total_kg")

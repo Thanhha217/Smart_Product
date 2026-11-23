@@ -51,7 +51,9 @@ Các API cũ (`POST /query`, `GET /product/{id}`, `POST /assistant`) giữ nguy�
 // GET /api/products/{id}/co2
 {"product": ProductCard, "explanation_vi": "...", "explanation_en": "...",
  "references": [{"name": "...", "co2e_kg": 290, "cosine": 0.81}],
- "formula": Formula, "lifecycle": Lifecycle}
+ "formula": Formula, "lifecycle": Lifecycle,
+ "green_score_formula": {"formula": "5 × ln(U ÷ CO₂) ÷ ln(U ÷ L)", "co2e_kg": 260.2, "low": 60, "high": 1000,
+                         "score": 2.4, "clamp": [0, 5]}}   // null khi chưa có điểm xanh
 
 // GET /api/categories/{cat}/stats?product_id=123
 {"category": "laptop", "n": 412, "median_kg": 300.1, "p25": 250, "p75": 360, "min": 80, "max": 900,

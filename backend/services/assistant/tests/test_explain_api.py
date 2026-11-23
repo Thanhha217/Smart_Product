@@ -108,3 +108,24 @@ def test_french_page_and_compare():
     import page_spec as ps
     assert ps.fmt_kg(1234.5, "fr") == "1\u202f234,5"
     assert ps.fmt_price(18990000, "fr") == "18\u202f990\u202f000 ₫"
+
+
+def test_insight_encourages_a_low_co2_pick_with_real_numbers():
+    body = client.post("/api/explain", json={"product_id": "2", "topic": "insight", "lang": "en"}).json()
+    assert body["topic"] == "insight" and body["title"] == "Why this is a good pick"
+    assert "92%" in body["answer"] and "300" in body["answer"]
+    assert any("recycl" in b or "collection point" in b for b in body["bullets"])
+
+
+def test_insight_is_honest_above_the_median(monkeypatch):
+    monkeypatch.setattr(data_client, "stats", lambda cat, pid=None: {**STATS, "greener_than_pct": 20.0})
+    body = client.post("/api/explain", json={"product_id": "2", "topic": "insight", "lang": "vi"}).json()
+    assert body["title"] == "Cân nhắc trước khi mua"
+    assert any("xanh hơn" in b for b in body["bullets"])
+
+
+def test_co2_endpoint_shows_green_score_terms(monkeypatch):
+    item = {**BY_ID["2"], "product": {**BY_ID["2"]["product"], "green_score_bounds": [60, 1000]}}
+    monkeypatch.setattr(data_client, "product", lambda pid: item)
+    g = client.get("/api/products/2/co2").json()["green_score_formula"]
+    assert g["low"] == 60 and g["high"] == 1000 and g["score"] == item["product"]["green_score"]

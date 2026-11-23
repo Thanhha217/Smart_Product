@@ -41,8 +41,13 @@ def product_co2(item: dict) -> dict[str, Any]:
     c = data_client.card(item)
     row = data_client.row(item)
     out = explain(row)
+    bounds = row.get("green_score_bounds")
+    score = None
+    if c.get("green_score") is not None and isinstance(bounds, (list, tuple)) and len(bounds) == 2:
+        score = {"formula": "5 × ln(U ÷ CO₂) ÷ ln(U ÷ L)", "co2e_kg": c.get("co2e_kg"), "low": bounds[0],
+                 "high": bounds[1], "score": c.get("green_score"), "clamp": [0, 5]}
     return {"product": c, "explanation_vi": row.get("co2e_explanation_vi"), "explanation_en": row.get("co2e_explanation"),
-            "references": with_urls(row.get("co2e_references")), **out}
+            "references": with_urls(row.get("co2e_references")), **out, "green_score_formula": score}
 
 
 def _appliance_savings(card: dict, row: dict, horizons: tuple[int, ...]) -> list[dict] | None:
