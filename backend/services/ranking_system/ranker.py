@@ -81,13 +81,19 @@ def _rrf_fuse(relevance_scores, co2e_values):
     """Fuse a relevance ranking with a carbon ranking via Reciprocal Rank Fusion.
 
     Relevance stays dominant, while the carbon signal is applied as a softer
-    penalty. Lower co2e ranks better; products with no estimate (NaN) sort last.
+    penalty. Lower co2e ranks better. Products with no estimate (NaN) get the
+    middle carbon rank of the products that have one, so a missing number is
+    neither rewarded nor punished.
     Returns candidate indices ordered best-to-worst.
     """
     relevance_ranks = _ranks_from_scores(relevance_scores, higher_is_better=True)
-   
-    carbon = np.where(np.isnan(co2e_values), np.inf, co2e_values)
-    carbon_ranks = _ranks_from_scores(carbon, higher_is_better=False)
+
+    co2e_values = np.asarray(co2e_values, dtype=float)
+    known = ~np.isnan(co2e_values)
+    carbon_ranks = np.ones(len(co2e_values), dtype=float)
+    if known.any():
+        carbon_ranks[known] = _ranks_from_scores(co2e_values[known], higher_is_better=False)
+        carbon_ranks[~known] = (known.sum() + 1) / 2.0
 
     rrf_scores = 1.0 / (RRF_K + relevance_ranks) + CARBON_RRF_WEIGHT / (RRF_K + carbon_ranks)
     return np.argsort(-rrf_scores, kind="stable")
@@ -169,13 +175,13 @@ def query_ranking_system(query, limit, image_base64=None):
     # Sort items by ranking score (highest first)
     # ranked_indices = np.argsort(-new_predictions)  # Negative for descending order
 
-    # Carbon footprint per candidate (NaN when not yet estimated -> ranked last).
+    # Carbon footprint per candidate (NaN when not estimated -> middle carbon rank).
     co2e_values = np.array(
         [p.co2e_kg if p.co2e_kg is not None else np.nan for p in product_list],
         dtype=float,
     )
 
-    # Fuse relevance + carbon rankings with RRF (equal weights).
+    # Fuse relevance + carbon rankings with RRF (carbon weight CARBON_RRF_WEIGHT).
     fused_order = _rrf_fuse(new_predictions, co2e_values)
 
     product_ids = [product_list[i].product_id for i in fused_order]

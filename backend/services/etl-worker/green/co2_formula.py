@@ -33,10 +33,11 @@ from dataclasses import asdict, dataclass, field
 
 from green.spec_parser import ProductSpecs
 
-# Vietnam grid emission factor (kg CO2e / kWh). Default = 2023 factor published
-# by the Ministry of Natural Resources and Environment (0.6592 tCO2/MWh) --
-# verify against the latest official announcement before publishing.
-EF_GRID = float(os.environ.get("CO2_GRID_EF", "0.6592"))
+# Vietnam grid emission factor (kg CO2e / kWh). Default = 2024 factor (0.681),
+# Hanoi University of Science and Technology with the Ministry of Agriculture and
+# Environment (vietnamnews.vn/environment/1716087). The earlier default was the
+# 2023 MONRE factor 0.6592; override with CO2_GRID_EF.
+EF_GRID = float(os.environ.get("CO2_GRID_EF", "0.681"))
 # Average household electricity price (VND/kWh), EVN tiered tariff -- assumption.
 ELECTRICITY_PRICE_VND = float(os.environ.get("ELECTRICITY_PRICE_VND", "2700"))
 # CO2 absorbed by one mature tree per year (kg) -- used only for a friendly equivalent.

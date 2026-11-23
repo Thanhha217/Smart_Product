@@ -1,19 +1,23 @@
 # Product Carbon Footprint (CO2e) Estimation — Setup
 
-> **Lưu ý (nhánh `new-research`)**: mục 2 bên dưới (chọn LLM) là của bản cũ; LLM không còn sinh số CO₂. Các bước dự phòng khi không có sản phẩm giống: [research/co2-fallback.md](research/co2-fallback.md). Công thức CO₂ vòng đời mới và lượng CO₂ giảm thải sau 6/12 tháng được mô tả ở [research/co2-formula.md](research/co2-formula.md); tổng quan 4 yêu cầu của giáo viên ở [research/advisor-requirements.md](research/advisor-requirements.md).
+> **Lưu ý**: mục 2 bên dưới (chọn LLM) chỉ cần khi chạy lại thí nghiệm có Qwen; LLM không còn sinh số CO₂. Tóm tắt dễ đọc: [research/co2-nhung-gi-moi.md](research/co2-nhung-gi-moi.md). Các bước dự phòng: [research/co2-fallback.md](research/co2-fallback.md). Công thức vòng đời: [research/co2-formula.md](research/co2-formula.md); 4 yêu cầu của giáo viên: [research/advisor-requirements.md](research/advisor-requirements.md).
 
 This feature estimates each product's cradle-to-grave carbon footprint (kg CO2e)
 inside `etl-worker` (`data/process/data_processing.py::process_message`, never
 blocks ingestion). Order of steps (details: [research/co2-fallback.md](research/co2-fallback.md)):
 
 1. Reuse the value already stored for the same `product_url`.
-2. Average of the reference products (manufacturer EPD/PCF, table `carbonreference`)
+2. A reference name (>= 3 words, brand prefix optional) appears word for word in the
+   product name → the manufacturer's figure, `co2e_source = manufacturer`.
+3. Average of the reference products (manufacturer EPD/PCF, table `carbonreference`)
    whose CLIP cosine is >= 0.66 → `co2e_source = neighbor_average`.
-3. No close reference → `green/fallback.py`: lifecycle formula for home appliances
+4. No close reference → `green/fallback.py`: lifecycle formula for home appliances
    (`lifecycle_formula`), brand/screen-size model of the reference catalogue
    (`category_model`), or price x US EPA supply-chain factor (`eeio_price`).
-4. Nothing applies → `co2e_kg` stays NULL.
+   Turn off with `CO2E_FALLBACK=0`.
+5. Nothing applies → `co2e_kg` stays NULL.
 
+The references used are stored in `co2e_references` (JSON: name, kg, cosine).
 The LLM (Qwen via Ollama) no longer produces the number. With `CO2E_USE_LLM=1`
 it may adjust the neighbour average when close references exist (paper experiments).
 
@@ -54,11 +58,11 @@ Selected with the `CO2E_LLM_PROVIDER` environment variable.
 
 | Variable           | Default                 | Purpose                                                        |
 | ------------------ | ----------------------- | -------------------------------------------------------------- |
-| `CO2E_FALLBACK`    | `0`                     | `1` = when no reference reaches cosine 0.66, use green.fallback (formula / category model / EEIO); `0` = leave empty (final method) |
+| `CO2E_FALLBACK`    | `1`                     | `1` = when no reference reaches cosine 0.66, use green.fallback (formula / category model / EEIO); `0` = leave empty |
 | `CO2E_USE_LLM`     | `0`                     | `1` = let Qwen adjust the neighbour average (never without neighbours) |
 | `CO2E_LLM_MODEL`   | `qwen3.5:0.8b`          | Ollama model, only used when `CO2E_USE_LLM=1`                  |
 | `OLLAMA_HOST`      | `http://ollama:11434`   | Ollama server URL                                              |
-| `CO2_GRID_EF`      | `0.6592`                | Vietnam grid factor (kg CO2e/kWh) for the lifecycle formula    |
+| `CO2_GRID_EF`      | `0.681`                 | Vietnam grid factor (kg CO2e/kWh, 2024) for the lifecycle formula |
 | `CO2_VND_PER_USD`  | `25900`                 | VND per USD for the price-based (EEIO) step                    |
 | `CO2_CPI_NOW`      | `336.940`               | Current US CPI-U, deflates prices to the 2022 USD of the factors |
 
@@ -66,19 +70,21 @@ Selected with the `CO2E_LLM_PROVIDER` environment variable.
 ## 4. Database
 
 The CO2e columns on `product` and the `carbonreference` table are created
-automatically on startup via `SQLModel.metadata.create_all`. Because that does
-**not** ALTER existing tables, if you already have an old DB volume you must
-recreate it so the new columns appear:
+automatically on startup via `SQLModel.metadata.create_all`. On an existing
+Postgres DB the newer columns (`co2e_explanation_vi`, `co2e_category`,
+`co2e_references`) are added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+(`data/__init__.py`), so the volume does not need to be recreated.
 
-```bash
-docker compose -f docker-compose.dev.yml down
-docker volume ls            # find the product DB volume name
-docker volume rm <project>_spf-postgres-db-volume
-docker compose -f docker-compose.dev.yml up --build
+Numbers already stored are reused by `product_url`. To recompute them with the
+current method, clear them first:
+
+```sql
+UPDATE product SET co2e_kg = NULL, co2e_source = NULL, co2e_confidence = NULL;
 ```
 
-The reference catalog (~121 products from manufacturer EPDs) is auto-seeded once
-from `backend/services/etl-worker/data/seed/carbon_reference_seed.json`.
+The reference catalog (1,450 products with manufacturer figures) is seeded from
+`backend/services/etl-worker/data/seed/carbon_reference_seed_expanded.json` and
+reloaded whenever the file's row count differs from the table.
 
 ## 5. Run & verify
 
@@ -95,7 +101,7 @@ As products are ingested, the worker logs lines such as:
 
 ```
 CO2e for 'Laptop XYZ': 312.0 kg (neighbor_average)
-CO2e for 'Máy lạnh Daikin Inverter 1.5 HP': 6118.4 kg (lifecycle_formula)
+CO2e for 'Máy lạnh Daikin Inverter 1.5 HP': 6297.2 kg (lifecycle_formula)
 ```
 
 ## 6. Validation (measure accuracy)
@@ -109,7 +115,7 @@ docker compose -f docker-compose.dev.yml exec \
   backend-etl-worker python validate_carbon_estimator.py
 ```
 
-- `VALIDATE_N` — number of products to test (default `30`; `0` = all 121).
+- `VALIDATE_N` — number of products to test (default `30`; `0` = all 1,450).
 - Run it without an LLM backend to measure the fallback (retrieval-only) quality.
 
 ## Notes / limitations
@@ -119,6 +125,6 @@ docker compose -f docker-compose.dev.yml exec \
   manufacturer's use-phase reflects **their** electricity grid, not Vietnam's.
   Treat the output as a **relative** environmental indicator — strongest for
   ranking/comparison, not as a certified absolute footprint.
-- `co2e_confidence`: 0.5 neighbour average, 0.35 category model / formula with energy label,
+- `co2e_confidence`: 0.9 manufacturer (exact model), 0.5 neighbour average, 0.35 category model / formula with energy label,
   0.25–0.3 formula with defaults or rated power, 0.15 price-based. Heuristic; calibrate from
   the validation error.

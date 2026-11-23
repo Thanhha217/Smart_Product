@@ -24,7 +24,7 @@ LLM **không tốt hơn** baseline ở bất kỳ chỉ số nào. Ngoài ra:
 |---|---|---|---|
 | $E_{emb}$ | Phát thải "ẩn" khi sản xuất: nguyên liệu + chế tạo + vận chuyển (A1–A4) | kg CO₂e | EPD nhà sản xuất → seed tham chiếu → mặc định theo danh mục |
 | $AEC$ | Điện năng tiêu thụ hằng năm của **chính sản phẩm** | kWh/năm | Nhãn năng lượng → công suất × giờ dùng → mặc định danh mục |
-| $EF_{grid}$ | Hệ số phát thải lưới điện Việt Nam | kg CO₂e/kWh | Mặc định 0,6592 (Bộ TN&MT, năm 2023), cấu hình qua `CO2_GRID_EF` |
+| $EF_{grid}$ | Hệ số phát thải lưới điện Việt Nam | kg CO₂e/kWh | Mặc định 0,681 (năm 2024, ĐH Bách khoa Hà Nội và Bộ NN&MT; trước đây 0,6592 của năm 2023), cấu hình qua `CO2_GRID_EF` |
 | $R_{leak}$ | Rò rỉ môi chất lạnh mỗi năm $= m_{ref}\cdot GWP \cdot r_{leak}$ | kg CO₂e/năm | Điều hoà, tủ lạnh |
 | $E_{eol}$ | Phát thải cuối vòng đời (thu gom, xử lý, môi chất thoát ra khi thải bỏ $m_{ref}\cdot GWP\cdot r_{eol}$) | kg CO₂e | Mặc định danh mục |
 | $L$ | Tuổi thọ sử dụng | năm | Mặc định danh mục |

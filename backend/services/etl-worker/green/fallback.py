@@ -20,7 +20,7 @@ The first step that applies wins:
 Leave-one-family-out test on the 1,450 products with manufacturer numbers (Nov 2026):
 the category model has a median error of 18.5 % (monitors 9 %, phones 14 %, laptops
 20 %, desktops 22 %) against 24 % for the plain category median; the formula gives
-1,925 kg for a 75" TV against 982-2,388 kg in Samsung's four 75" reports.
+1,972 kg for a 75" TV (grid 0.681) against 982-2,388 kg in Samsung's four 75" reports.
 Details: docs/research/co2-fallback.md.
 
 Pure Python, no database or network, so it is unit-tested in tests/test_fallback.py.
