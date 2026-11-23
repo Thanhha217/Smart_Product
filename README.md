@@ -8,8 +8,18 @@
 ## Setup
 Read the README files in both the `backend` and `frontend` directories for detailed setup instructions.
 
-Add a .env file in the root directory of the project containg the secrets variables.
-To inquire about the values of these variables, please contact the project maintainers.
+Create the `.env` file in the root directory from the template (docker compose fails without it):
+```bash
+cp .env.example .env        # PowerShell: Copy-Item .env.example .env
+```
+The defaults work for development. For other secret values, contact the project maintainers.
+
+CO2 estimation (reference catalogue, fallback steps, environment variables): see `docs/co2-setup.md`.
+CO2 tests (no Docker needed):
+```bash
+cd backend/services/etl-worker && python -m pytest tests/test_exact_match.py tests/test_fallback.py tests/test_green.py
+cd backend/services/ranking_system && python -m pytest test_rrf.py
+```
 
 ## Running the application
 As our application is fully dockerized, you can start every module with a single command. Make sure you have Docker installed and running on your machine.
