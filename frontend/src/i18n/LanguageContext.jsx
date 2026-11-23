@@ -9,7 +9,7 @@ const DICTS = { en, fr, vi };
 export const SUPPORTED_LANGS = ["en", "fr", "vi"];
 export const DEFAULT_LANG = "en";
 // v2: earlier versions saved the auto-detected language; only an explicit choice is kept now.
-const STORAGE_KEY = "spf.lang.v2";
+const STORAGE_KEY = "spf.lang.v3";   // v3: earlier versions stored the ?lang= of demo links
 
 // Full locales for Intl (numbers, money, dates)
 export const LOCALES = { en: "en-US", fr: "fr-FR", vi: "vi-VN" };
@@ -32,13 +32,11 @@ function store(lang) {
 }
 
 function detectInitialLang() {
-  // ?lang=fr in the URL wins (handy for demos and shared links) and is remembered.
+  // ?lang=fr in the URL wins for this visit (handy for demos and shared links) but is NOT
+  // remembered: English stays the site's language until the visitor picks another one.
   try {
     const fromUrl = new URLSearchParams(window.location.search).get("lang");
-    if (SUPPORTED_LANGS.includes(fromUrl)) {
-      store(fromUrl);
-      return fromUrl;
-    }
+    if (SUPPORTED_LANGS.includes(fromUrl)) return fromUrl;
   } catch {
     /* no window */
   }

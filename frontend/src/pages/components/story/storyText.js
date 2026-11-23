@@ -124,7 +124,11 @@ export function txt(lang) {
     refs: T("Mẫu đã dùng (bấm để mở báo cáo của hãng)", "References used (tap to open the report)", "Références utilisées (touchez pour ouvrir le rapport)"),
     compareTitle: T("So với sản phẩm cùng loại", "Compared with its category", "Face à sa catégorie"),
     compareBody: (st) => st && st.greener_than_pct !== null && st.greener_than_pct !== undefined
-      ? T(`Trong ${n(st.n)} sản phẩm cùng loại trên các sàn, sản phẩm này xanh hơn ${n(st.greener_than_pct)}%. Mức giữa của loại là ${k(st.median_kg)} kg.`,
+      ? st.greener_than_pct >= 99.5
+        ? T(`Trong ${n(st.n)} sản phẩm cùng loại đã có số CO₂, đây là mức thấp nhất. Mức giữa của loại là ${k(st.median_kg)} kg.`,
+            `Among the ${n(st.n)} products of its type with a CO₂ figure, this is the lowest. The category median is ${k(st.median_kg)} kg.`,
+            `Parmi les ${n(st.n)} produits du même type ayant un chiffre CO₂, c'est le plus bas. La médiane de la catégorie est de ${k(st.median_kg)} kg.`)
+        : T(`Trong ${n(st.n)} sản phẩm cùng loại trên các sàn, sản phẩm này xanh hơn ${n(st.greener_than_pct)}%. Mức giữa của loại là ${k(st.median_kg)} kg.`,
           `Among ${n(st.n)} products of the same type, this one is greener than ${n(st.greener_than_pct)}%. The category median is ${k(st.median_kg)} kg.`,
           `Parmi ${n(st.n)} produits du même type, celui-ci est plus vert que ${n(st.greener_than_pct)} % d'entre eux. La médiane de la catégorie est de ${k(st.median_kg)} kg.`)
       : T("Chưa đủ dữ liệu thống kê cho loại này.", "Not enough data for this category.", "Pas assez de données pour cette catégorie."),
