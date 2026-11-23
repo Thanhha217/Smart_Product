@@ -21,8 +21,10 @@ def create_worker_for_shop(server_address: str, topic_name: str):
     return consumer
 
 def start_worker(consumer: KafkaConsumer):
-    try:
-        for message in consumer:
+    """Consume forever. A bad message is logged and skipped: before, the first exception
+    ended the loop and the thread stopped consuming its topic until the next restart."""
+    for message in consumer:
+        try:
             process_message(message.value)
-    except Exception as e:
-        print(f"Error in Kafka consumer worker: {e}", flush=True)
+        except Exception as e:
+            print(f"Error in Kafka consumer worker (offset {message.offset}, skipped): {e}", flush=True)
