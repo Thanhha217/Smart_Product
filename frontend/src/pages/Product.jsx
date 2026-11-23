@@ -1,5 +1,10 @@
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { api, toProductCard } from "../api/client";
+import { addToCart } from "../lib/cart";
+import FormulaCard from "./components/co2/FormulaCard";
+import LifecycleDiagram from "./components/co2/LifecycleDiagram";
+import ProductCard from "./components/co2/ProductCard";
 import { GATEWAY_URL } from "./utils/consts";
 import { useI18n } from "../i18n/LanguageContext";
 import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey } from "./utils/helpers";
@@ -39,6 +44,21 @@ export default function Product() {
 
     const [productInfo, setProductInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [co2Info, setCo2Info] = useState(null);
+    const [related, setRelated] = useState(null);
+    const [added, setAdded] = useState(false);
+    const navigate = useNavigate();
+
+    // CO2 detail (formula with numbers, lifecycle) and greener alternative: optional extras.
+    useEffect(() => {
+        if (!params.productId) return;
+        let cancelled = false;
+        setCo2Info(null);
+        setRelated(null);
+        api.getProductCo2(params.productId).then((d) => !cancelled && setCo2Info(d)).catch(() => {});
+        api.getRelated(params.productId, 6).then((d) => !cancelled && setRelated(d)).catch(() => {});
+        return () => { cancelled = true; };
+    }, [params.productId]);
 
     useEffect(() => {
         const fetchProductInfo = async (productId) => {
@@ -174,6 +194,20 @@ export default function Product() {
                         )}
 
                     </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}
+                            className="bg-secondary-500 text-white rounded-2xl px-4 py-2 font-semibold hover:bg-secondary-700">
+                            ✨ {t("product.askAi")}
+                        </button>
+                        <Link to={`/compare?ids=${[params.productId, related?.greener_alternative?.product_id, ...(related?.items || []).slice(0, 2).map((x) => x.product_id)].filter((x, i, a) => x && a.indexOf(x) === i).slice(0, 4).join(",")}`}
+                            className="bg-white border border-primary-500 text-primary-500 rounded-2xl px-4 py-2 font-semibold hover:bg-primary-200">
+                            ⚖️ {t("action.compare")}
+                        </Link>
+                        <button type="button" onClick={() => { addToCart(co2Info?.product || toProductCard(productInfo), 1); setAdded(true); }}
+                            className="bg-white border border-primary-500 text-primary-500 rounded-2xl px-4 py-2 font-semibold hover:bg-primary-200">
+                            🛒 {added ? t("cart.added") : t("cart.addTest")}
+                        </button>
+                    </div>
                     <div className="py-2">
                         <a 
                             href={productInfo.product.product_url}
@@ -292,6 +326,21 @@ export default function Product() {
                     </div>
                 )}
             </div>
+
+            {/* How the number was computed + where the CO2 comes from (api /products/{id}/co2) */}
+            {co2Info && (
+                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                    <FormulaCard formula={co2Info.formula} />
+                    <LifecycleDiagram lifecycle={co2Info.lifecycle} />
+                </div>
+            )}
+
+            {related?.greener_alternative && (
+                <div className="w-full bg-green-50 border border-green-200 rounded-2xl p-4 mt-4 flex flex-col gap-2">
+                    <h2 className="font-bold text-green-900">🌱 {t("related.greenerTitle")}</h2>
+                    <div className="max-w-sm"><ProductCard product={related.greener_alternative} highlight /></div>
+                </div>
+            )}
 
             {/* <ProductCarousel query={productInfo.product.name}/> */}
 

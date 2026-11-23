@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { LanguageProvider } from './i18n/LanguageContext';
+import { initWebMCP } from './webmcp';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -18,3 +19,6 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// Expose search / CO2 / compare / test-cart tools to in-browser AI agents (no-op if unsupported).
+initWebMCP();

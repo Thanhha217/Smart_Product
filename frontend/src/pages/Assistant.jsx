@@ -1,31 +1,34 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useI18n } from "../i18n/LanguageContext";
-import { GATEWAY_URL } from "./utils/consts";
+import { api, MOCK_API } from "../api/client";
+import { addHistory, getHistory } from "../lib/storage";
 import VoiceInput from "./components/assistant/VoiceInput";
-import ChartView from "./components/assistant/ChartView";
-import Throbber from "./components/general/Throbber";
+import { PageSkeleton } from "./components/assistant/PageRenderer";
 
+export const SUGGESTED_KEYS = ["suggest.laptop", "suggest.monitor", "suggest.ac", "suggest.fridge", "suggest.phone", "suggest.buyAc"];
+
+// /assistant — ask by text or voice; the answer is a full page at /assistant/:id.
 export default function Assistant() {
-  const { t, lang, formatNumber } = useI18n();
-  const [message, setMessage] = useState("");
+  const { t, lang } = useI18n();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [message, setMessage] = useState(params.get("q") || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
+  const [history, setHistory] = useState(getHistory);
+  const autoSent = useRef(false);
 
-  const submit = async (e) => {
-    e?.preventDefault();
-    if (!message.trim() || loading) return;
+  const ask = async (text) => {
+    const q = (text ?? message).trim();
+    if (!q || loading) return;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${GATEWAY_URL}/assistant`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, lang }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setResult(await res.json());
+      const res = await api.askAssistant({ message: q, lang });
+      addHistory({ id: res.id, query: q });
+      setHistory(getHistory());
+      navigate(`/assistant/${res.id}`, { state: { page: res.page } });
     } catch (err) {
       console.error("Assistant request failed:", err);
       setError(t("assistant.error"));
@@ -34,24 +37,42 @@ export default function Assistant() {
     }
   };
 
-  const formatCell = (value) =>
-    typeof value === "number" ? formatNumber(value) : typeof value === "boolean" ? (value ? "✓" : "–") : value ?? "";
+  useEffect(() => {
+    if (params.get("go") === "1" && params.get("q") && !autoSent.current) {
+      autoSent.current = true;
+      ask(params.get("q"));
+    }
+  }, []); // run once on mount: auto-send a question passed as ?q=...&go=1
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-6">
       <section>
-        <h1 className="text-2xl font-bold text-primary-500">{t("assistant.title")}</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold text-primary-500">{t("assistant.title")}</h1>
+          {MOCK_API && <span className="text-xs bg-purple-100 text-purple-800 rounded-full px-2 py-0.5">{t("mock.badge")}</span>}
+        </div>
         <p className="text-gray-600">{t("assistant.subtitle")}</p>
       </section>
 
-      <form onSubmit={submit} className="flex flex-col gap-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask();
+        }}
+        className="flex flex-col gap-3"
+      >
+        <label htmlFor="ask" className="sr-only">{t("assistant.title")}</label>
         <textarea
-          className="bg-primary-200 rounded-2xl p-3 min-h-24 outline-secondary-500 focus:outline-2"
+          id="ask"
+          className="bg-primary-100 rounded-2xl p-3 min-h-24 outline-secondary-500 focus:outline-2"
           placeholder={t("assistant.placeholder")}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) submit(e);
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              ask();
+            }
           }}
         />
         <div className="flex gap-3 justify-end">
@@ -66,75 +87,56 @@ export default function Assistant() {
         </div>
       </form>
 
+      <section className="flex flex-col gap-2">
+        <h2 className="font-semibold text-sm text-gray-600">{t("assistant.suggested")}</h2>
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTED_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setMessage(t(key));
+                ask(t(key));
+              }}
+              className="bg-white rounded-full px-3 py-1 text-sm shadow-sm hover:bg-secondary-500 hover:text-white disabled:opacity-50"
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {loading && (
-        <div className="flex flex-col items-center gap-2">
-          <Throbber />
+        <div className="flex flex-col gap-2">
           <p className="text-gray-600">{t("assistant.loading")}</p>
+          <PageSkeleton />
         </div>
       )}
       {error && <p className="text-red-600">{error}</p>}
 
-      {result && !loading && (
-        <>
-          <section className="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <h2 className="font-semibold mb-2">{t("assistant.explanation")}</h2>
-            <p className="whitespace-pre-line">{result.explanation}</p>
-            <p className="text-xs text-gray-500 mt-2">{t("assistant.disclaimer")}</p>
-          </section>
-
-          {result.charts?.length > 0 && (
-            <section className="grid md:grid-cols-2 gap-4">
-              {result.charts.map((chart, i) => (
-                <ChartView key={i} title={chart.title} spec={chart.spec} />
-              ))}
-            </section>
-          )}
-
-          {result.table && (
-            <section className="overflow-x-auto bg-white rounded-2xl shadow-sm">
-              <table className="min-w-full text-sm">
-                <thead className="bg-primary-100">
-                  <tr>
-                    {result.table.columns.map((c) => (
-                      <th key={c} className="text-left px-3 py-2 whitespace-nowrap">{t(`assistant.col.${c}`) === `assistant.col.${c}` ? c : t(`assistant.col.${c}`)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.table.rows.map((row, i) => (
-                    <tr key={i} className="border-t">
-                      {row.map((cell, j) => (
-                        <td key={j} className="px-3 py-2">{formatCell(cell)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          <section className="grid md:grid-cols-3 gap-4">
-            {result.products?.map((p) => (
-              <article key={p.product_id} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                {p.image_url && <img src={p.image_url} alt={p.name} className="h-32 object-contain" />}
-                <Link to={`/product/${p.product_id}`} className="font-semibold hover:underline">{p.name}</Link>
-                <p>{formatNumber(p.price_vnd)} ₫ · {p.platform}</p>
-                {p.is_green && (
-                  <span className="self-start bg-green-600 text-white text-xs rounded-full px-2 py-0.5">
-                    {t("assistant.green")} · {p.green_score}/100
+      {history.length > 0 && !loading && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold text-sm text-gray-600">{t("assistant.history")}</h2>
+          <ul className="bg-white rounded-2xl shadow-sm divide-y divide-primary-100">
+            {history.map((h) => (
+              <li key={h.id}>
+                <Link to={`/assistant/${h.id}`} className="flex justify-between gap-2 px-4 py-2 hover:bg-primary-100">
+                  <span className="line-clamp-1">{h.query}</span>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">
+                    {(() => {
+                      try {
+                        return new Date(h.at).toLocaleString(lang === "vi" ? "vi-VN" : "en-US");
+                      } catch {
+                        return "";
+                      }
+                    })()}
                   </span>
-                )}
-                <p className="text-sm">
-                  {t("assistant.saved", {
-                    six: formatNumber(p.co2_saved_6m_kg ?? 0),
-                    twelve: formatNumber(p.co2_saved_12m_kg ?? 0),
-                  })}
-                </p>
-                {p.reason && <p className="text-sm text-gray-700">{p.reason}</p>}
-              </article>
+                </Link>
+              </li>
             ))}
-          </section>
-        </>
+          </ul>
+        </section>
       )}
     </main>
   );
