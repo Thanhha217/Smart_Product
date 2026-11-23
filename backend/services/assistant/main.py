@@ -288,3 +288,10 @@ def explain_endpoint(req: ExplainRequest):
     except requests.RequestException:
         return _error(502, "db_search_unavailable", "db-search unavailable")
     return explain_api.explain(co2, stats, related, req.topic, req.question, req.lang, req.scenario)
+
+
+@app.get("/api/llm")
+def llm_info():
+    """Which LLM answers (for the system status page)."""
+    import llm_provider
+    return {"model": llm_provider.model_label()}

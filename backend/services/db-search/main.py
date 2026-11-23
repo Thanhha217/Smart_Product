@@ -3,7 +3,10 @@ import requests
 from fastapi import FastAPI, HTTPException
 from typing import Optional
 
-from co2_queries import category_stats, related_product_ids
+import time
+from datetime import datetime, timezone
+
+from co2_queries import category_stats, overview, related_product_ids
 from db_search_functions import engine, get_product_data_from_id, get_products_data_from_ids
 from dto.QueryDTO import ProductsFromIdsDTO, QueryWithImageDTO
 app = FastAPI()
@@ -82,3 +85,22 @@ def related(product_id: int, limit: int = 6):
 @app.get("/categories/{category}/stats")
 def stats(category: str, product_id: Optional[int] = None):
     return category_stats(engine, category, product_id)
+
+
+_OVERVIEW_CACHE = {"at": 0.0, "body": None}
+OVERVIEW_TTL_S = 300
+
+
+@app.get("/stats/overview")
+def stats_overview(refresh: bool = False):
+    """Dashboard numbers (docs/demo/api-overview.md), cached for 5 minutes."""
+    if refresh or _OVERVIEW_CACHE["body"] is None or time.time() - _OVERVIEW_CACHE["at"] > OVERVIEW_TTL_S:
+        data = overview(engine)
+        items = {str(i["product"]["id"]): i for i in get_products_data_from_ids(
+            [g["id"] for g in data["greenest_ids"]] + [s[k] for s in data["suggestions"] for k in ("from_id", "to_id")])}
+        data["greenest"] = [{"category": g["category"], "item": items.get(str(g["id"]))} for g in data.pop("greenest_ids")]
+        data["suggestions"] = [{"category": s["category"], "from": items.get(str(s["from_id"])), "to": items.get(str(s["to_id"])),
+                                "saved_kg": s["saved_kg"]} for s in data["suggestions"]]
+        data["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        _OVERVIEW_CACHE.update(at=time.time(), body=data)
+    return _OVERVIEW_CACHE["body"]

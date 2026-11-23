@@ -133,6 +133,48 @@ def api_category_stats(category: str, request: Request):
     return _forward("GET", f"{DB_SEARCH_URL}/categories/{category}/stats", request)
 
 
+@app.get("/api/overview")
+def api_overview(request: Request):
+    return _forward("GET", f"{DB_SEARCH_URL}/stats/overview", request, timeout=120)
+
+
+HEALTH_TARGETS = [
+    ("db-search", "Cơ sở dữ liệu & tìm kiếm", lambda: f"{DB_SEARCH_URL}/docs"),
+    ("ranking", "Xếp hạng CatBoost + RRF", lambda: f"{RANKING_SYSTEM_URL}/"),
+    ("clip", "OpenCLIP (so độ giống)", lambda: f"{os.environ.get('OPEN_CLIP_PROVIDER_URL', 'http://smartproductfinder-backend-clip-provider:8067')}/"),
+    ("etl", "ETL + tính CO₂", lambda: os.environ.get("ETL_WORKER_URL", "http://smartproductfinder-backend-etl-worker:8001") + "/docs"),
+    ("assistant", "AI giải thích & trang AI", lambda: f"{(ASSISTANT_URL or '').rstrip('/')}/api/llm" if ASSISTANT_URL else None),
+    ("mcp", "MCP cho ChatGPT", lambda: os.environ.get("MCP_URL", "http://smartproductfinder-mcp-server:8100") + "/healthz"),
+]
+
+
+def _probe(key, name, url_fn):
+    import time as _time
+    url = url_fn()
+    if not url:
+        return {"key": key, "name": name, "status": "offline", "latency_ms": None, "detail": "not configured"}
+    started = _time.monotonic()
+    try:
+        r = requests.get(url, timeout=2)
+        detail = None
+        if key == "assistant" and r.ok:
+            detail = r.json().get("model")
+        return {"key": key, "name": name, "status": "online" if r.status_code < 500 else "offline",
+                "latency_ms": int((_time.monotonic() - started) * 1000), "detail": detail}
+    except (requests.exceptions.RequestException, ValueError):
+        return {"key": key, "name": name, "status": "offline", "latency_ms": None, "detail": None}
+
+
+@app.get("/api/health")
+def api_health():
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import datetime, timezone
+    with ThreadPoolExecutor(max_workers=len(HEALTH_TARGETS)) as pool:
+        services = list(pool.map(lambda t: _probe(*t), HEALTH_TARGETS))
+    services.insert(0, {"key": "gateway", "name": "API gateway", "status": "online", "latency_ms": 0, "detail": None})
+    return {"services": services, "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
 @app.api_route("/api/{path:path}", methods=["GET", "POST"])
 async def api_assistant(path: str, request: Request):
     """Everything else under /api goes to the assistant service (pages, co2, compare, method, test orders)."""
