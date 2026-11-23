@@ -24,7 +24,7 @@ export default function Header() {
             <div className="flex gap-4 overflow-x-auto text-sm pb-1">
                 <NavLink to="/assistant" end className={link}>✨ {t("nav.assistant")}</NavLink>
                 <NavLink to="/compare" className={link}>⚖️ {t("nav.compare")}</NavLink>
-                <NavLink to="/story" className={link}>📖 {t("nav.story")}</NavLink>
+                <NavLink to="/world" className={link}>🌏 {t("nav.world")}</NavLink>
                 <NavLink to="/method" className={link}>🧮 {t("nav.method")}</NavLink>
                 <NavLink to="/cart" className={link}>🛒 {t("nav.cart")}{count > 0 ? ` (${count})` : ""}</NavLink>
             </div>

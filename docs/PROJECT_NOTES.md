@@ -75,6 +75,7 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+- **Thế giới CO₂** `/world`, `/world/:id` (trải nghiệm chính): bản đồ SVG kéo/phóng to, 5 chặng có xe/tàu/máy bay, bong bóng CO₂ theo kg, bấm vật thể bất kỳ → khung giải thích (`POST /api/explain`, câu soạn sẵn hoặc AI), nút "❓ hỏi bất kỳ chỗ nào", mô phỏng nếu-thì (nơi sản xuất, tàu/máy bay, lưới VN/điện mặt trời, số năm, máy tân trang; tính tương đối với số chính thức), tour "▶ Xem giải thích từng bước" kết thúc bằng phép tính hiện từng số. Deep link: `?focus=transport`, `?ask=factory`, `?origin=VN&mode=air&grid=solar&years=6&refurb=1&sim=1`, `?tour=1&step=6`. Code: `src/pages/World.jsx`, `components/world/`. Hình minh họa AI (tùy chọn): `python scripts/demo/generate_illustrations.py --yes` → `frontend/public/illustrations/` (chưa tạo; cần OPENAI_API_KEY).
 - **Sách lật CO₂** `/story` (tìm sản phẩm) và `/story/:id` (12 trang: bìa, con số nghĩa là gì, bản đồ 5 chặng bấm được, sản xuất, vận chuyển, sử dụng, thải bỏ, công thức thế số, so với cùng loại, WEFE/đô thị thông minh, hành động, nguồn). `?p=N` mở thẳng trang N, `?auto=1` tự lật. Code: `src/pages/Story.jsx`, `components/story/` (Flipbook, Illustrations = SVG động theo dữ liệu, storyText = lời kể vi/en). Ví dụ demo: `/story/55051` (màn hình MSI 27", 544,4 kg = 491,5 × 1,108).
 - API: `src/api/client.js`; **mock**: `VITE_MOCK_API=1` → `src/api/mock.js` (chạy demo không cần backend).
 - `src/webmcp.js`: WebMCP (`navigator.modelContext`), 5 tool, không hỗ trợ thì bỏ qua.
@@ -93,7 +94,7 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 | `etl-worker`: `pytest tests/test_exact_match.py tests/test_fallback.py tests/test_green.py tests/test_explain.py` | 52 |
 | Toàn hệ thống (Docker đang chạy): `python scripts/demo/smoke_e2e.py` | 18 bước |
 | `ranking_system`: `pytest test_rrf.py` | 6 |
-| `assistant`: `pytest` (fake db-search + fake LLM) | 21 |
+| `assistant`: `pytest` (fake db-search + fake LLM) | 42 |
 | `gateway`: `pytest tests` | 2 |
 | `mcp-server`: `pytest` | 17 |
 | `frontend`: `npm run build` | build OK |
@@ -108,7 +109,7 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 - `scripts/research/` — `eval_co2_methods.py`, `audit_db_dump.py data/backups/pre_category_migration.dump`, `demo_queries.txt` (12 câu).
 
 ## 11. Việc còn mở (ưu tiên)
-1. Đặt `ANTHROPIC_API_KEY` trong `.env` để trang AI có lời giải thích do AI viết (hiện chạy chế độ câu mẫu); đo `number_check_failures` trên 12 câu demo.
+1. Đặt `OPENAI_API_KEY` (hoặc `ANTHROPIC_API_KEY`) trong `.env` rồi `docker compose -f docker-compose.dev.yml up -d assistant`; chạy `scripts/demo/generate_illustrations.py --yes` để có hình AI. Chi phí: [demo/chi-phi.md](demo/chi-phi.md). Trước đây: đặt `ANTHROPIC_API_KEY` trong `.env` để trang AI có lời giải thích do AI viết (hiện chạy chế độ câu mẫu); đo `number_check_failures` trên 12 câu demo.
 2. A1: quét lại ngưỡng 0,66 với CLIP thật; A3: cào kWh/năm, công suất; A2: ≥5 số thật mỗi loại gia dụng.
 3. A5: dấu "-" trong so khớp (còn 2 khớp nhầm), bỏ qua dung lượng 128/256GB. A6: `stage_share` thật thay tỷ lệ điển hình.
 4. Thêm `assistant` + `mcp-server` vào `docker-compose.prod.*.yml` nếu demo trên máy chủ trường.

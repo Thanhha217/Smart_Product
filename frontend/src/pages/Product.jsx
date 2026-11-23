@@ -195,8 +195,12 @@ export default function Product() {
 
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={() => navigate(`/story/${params.productId}`)}
+                        <button type="button" onClick={() => navigate(`/world/${params.productId}`)}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl px-5 py-2.5 transition">
+                            🌏 {t("product.world")}
+                        </button>
+                        <button type="button" onClick={() => navigate(`/story/${params.productId}`)}
+                            className="border border-emerald-600 text-emerald-700 font-semibold rounded-2xl px-5 py-2.5 transition hover:bg-emerald-50">
                             📖 {t("product.story")}
                         </button>
                         <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}

@@ -28,6 +28,16 @@ export default function Home() {
 
         <SearchBar className="w-9/10 md:w-6/10"/>
 
+        <Link to="/world" className="w-9/10 md:w-6/10 mt-6 rounded-2xl p-4 shadow-lg text-white flex items-center gap-4 hover:scale-[1.01] transition"
+              style={{ background: "linear-gradient(120deg,#1d6fa5,#2e9e5b 60%,#f2b632)" }}>
+          <span className="text-4xl md:text-5xl">🌏</span>
+          <span className="flex-1">
+            <span className="block font-extrabold text-lg md:text-2xl">{t("home.worldTitle")}</span>
+            <span className="block text-sm md:text-base opacity-90">{t("home.worldLead")}</span>
+          </span>
+          <span className="text-2xl">→</span>
+        </Link>
+
         {/* Ask the AI: the answer is a full generated page */}
         <form
           onSubmit={(e) => {

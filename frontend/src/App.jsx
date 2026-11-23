@@ -9,6 +9,7 @@ import AssistantPage from './pages/AssistantPage';
 import Compare from './pages/Compare';
 import Method from './pages/Method';
 import Story from './pages/Story';
+import World from './pages/World';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Order from './pages/Order';
@@ -47,6 +48,8 @@ export default function App() {
             <Route path="/assistant/:id" element={<AssistantPage />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/method" element={<Method />} />
+            <Route path="/world" element={<World />} />
+            <Route path="/world/:productId" element={<World />} />
             <Route path="/story" element={<Story />} />
             <Route path="/story/:productId" element={<Story />} />
             <Route path="/cart" element={<Cart />} />

@@ -280,5 +280,9 @@
   "lifecycle.mode.sea+road": "sea + road",
   "savings.less": "less",
   "nav.story": "CO₂ journey",
-  "product.story": "See the CO₂ journey (flipbook)"
+  "product.story": "Read as a book",
+  "nav.world": "CO₂ world",
+  "product.world": "Explore the product's CO₂ world",
+  "home.worldTitle": "A product's CO₂ world",
+  "home.worldLead": "Drag, zoom and tap anything for an AI explanation of how it is made, shipped and used."
 }

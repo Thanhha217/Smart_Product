@@ -452,3 +452,26 @@ export async function getMethod() {
   await delay(100);
   return { url: "/method", steps: ["manufacturer", "neighbor_average", "lifecycle_formula", "category_model", "eeio_price", "none"] };
 }
+
+
+// ------------------------------------------------------------------ explain (mock)
+
+export async function explain({ product_id, topic, question, lang, scenario }) {
+  await delay(700);
+  const p = product(product_id);
+  const vi = lang === "vi";
+  const kg = new Intl.NumberFormat(vi ? "vi-VN" : "en-US", { maximumFractionDigits: 1 }).format(p.co2e_kg);
+  const total = scenario?.total_kg ? new Intl.NumberFormat(vi ? "vi-VN" : "en-US", { maximumFractionDigits: 1 }).format(scenario.total_kg) : null;
+  return {
+    topic, title: null,
+    answer: question
+      ? (vi ? `Về câu hỏi "${question}": ${p.name} có tổng khoảng ${kg} kg CO₂e; phần giải thích chi tiết dùng đúng các số trên màn hình.` : `About "${question}": ${p.name} totals about ${kg} kg CO₂e; the detailed explanation uses the figures on screen.`)
+      : topic === "what_if" && total
+        ? (vi ? `Theo kịch bản bạn chọn, tổng là ${total} kg CO₂e, còn số chính thức vẫn là ${kg} kg.` : `In your scenario the total is ${total} kg CO₂e; the official figure stays ${kg} kg.`)
+        : (vi ? `(Dữ liệu mẫu) ${p.name}: tổng ${kg} kg CO₂e. Bấm các chặng khác để xem từng phần.` : `(Sample data) ${p.name}: ${kg} kg CO₂e in total. Tap other stages to see each part.`),
+    bullets: [],
+    follow_ups: vi ? ["Phần nào lớn nhất?", "Làm sao giảm CO₂?"] : ["Which part is largest?", "How to reduce CO₂?"],
+    facts: { co2e_kg: p.co2e_kg },
+    model: "rule-based (mock)", cached: false, number_check_failures: 0,
+  };
+}

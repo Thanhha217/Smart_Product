@@ -280,5 +280,9 @@
   "lifecycle.mode.sea+road": "đường biển + đường bộ",
   "savings.less": "ít hơn",
   "nav.story": "Hành trình CO₂",
-  "product.story": "Xem hành trình CO₂ (sách lật)"
+  "product.story": "Đọc dạng sách",
+  "nav.world": "Thế giới CO₂",
+  "product.world": "Khám phá thế giới CO₂ của sản phẩm",
+  "home.worldTitle": "Thế giới CO₂ của sản phẩm",
+  "home.worldLead": "Kéo, phóng to, bấm vào bất cứ đâu để AI giải thích sản phẩm được làm, chở và dùng ra sao."
 }
