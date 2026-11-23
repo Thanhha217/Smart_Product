@@ -2,6 +2,8 @@
 
 > Cập nhật 23/11/2026, nhánh `feature/co2-submission-demo`. Ghi ngắn, đủ để định vị file. Chi tiết nằm ở link.
 >
+> **Không dùng Claude web / Artifact** cho dự án này: mọi sản phẩm (slide, báo cáo, trang) làm thành file cục bộ.
+>
 > **Quy tắc GitHub:** không để tên AI trong commit/PR/issue (không `Co-Authored-By: Claude`, không "Generated with Claude Code"); commit bằng danh tính git của người dùng.
 >
 > **Chạy toàn bộ trên máy:** [demo/run-local.md](demo/run-local.md) (khôi phục dump → backfill CO₂ + FAISS → Airflow cào thật → `scripts/demo/smoke_e2e.py`).
@@ -73,6 +75,7 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+- **Sách lật CO₂** `/story` (tìm sản phẩm) và `/story/:id` (12 trang: bìa, con số nghĩa là gì, bản đồ 5 chặng bấm được, sản xuất, vận chuyển, sử dụng, thải bỏ, công thức thế số, so với cùng loại, WEFE/đô thị thông minh, hành động, nguồn). `?p=N` mở thẳng trang N, `?auto=1` tự lật. Code: `src/pages/Story.jsx`, `components/story/` (Flipbook, Illustrations = SVG động theo dữ liệu, storyText = lời kể vi/en). Ví dụ demo: `/story/55051` (màn hình MSI 27", 544,4 kg = 491,5 × 1,108).
 - API: `src/api/client.js`; **mock**: `VITE_MOCK_API=1` → `src/api/mock.js` (chạy demo không cần backend).
 - `src/webmcp.js`: WebMCP (`navigator.modelContext`), 5 tool, không hỗ trợ thì bỏ qua.
 - Chữ: `src/i18n/vi.json`, `en.json` (+178 key). Định dạng/màu điểm xanh: `src/lib/format.js`.
