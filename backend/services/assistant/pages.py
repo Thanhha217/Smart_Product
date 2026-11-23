@@ -50,7 +50,8 @@ def _appliance_savings(card: dict, row: dict, horizons: tuple[int, ...]) -> list
     if key not in CATEGORY_PARAMS:
         return None
     specs = parse_specs(row.get("name"), row.get("description"))
-    return [{"months": s.months, "kwh_saved": s.kwh_saved, "money_saved_vnd": s.money_saved_vnd}
+    return [{"months": s.months, "kwh_saved": s.kwh_saved, "money_saved_vnd": s.money_saved_vnd,
+             "co2_use_saved_kg": s.co2_use_saved_kg}
             for s in estimate_savings(key, specs, horizons)]
 
 

@@ -202,26 +202,29 @@ def shortlist(cards: list[dict], size: int = 6) -> list[dict]:
 
 def compute_savings(best: dict, stats: dict | None, horizons_months: Iterable[int] = (6, 12),
                     appliance_savings: list[dict] | None = None) -> dict | None:
-    """Best product vs. the category median (lifecycle CO2, spread over the service life).
+    """Best product vs. the category median, on the whole-life (cradle-to-grave) scope.
 
-    ``appliance_savings`` (from green.estimate_savings, same capacity standard unit)
-    adds kWh and VND for appliances, where the use phase is known.
+    The lifecycle difference is NOT spread over months: emissions are not produced evenly
+    during use. Monthly figures only appear for appliances, where green.estimate_savings
+    compares the electricity of this product with a standard unit of the same capacity
+    (``appliance_savings``: kWh, VND and the use-phase CO2 of that electricity).
     """
     kg = best.get("co2e_kg")
     median = (stats or {}).get("median_kg")
     if kg is None or median is None or median <= kg:
         return None
-    life = LIFETIME_YEARS.get(best.get("category") or "", DEFAULT_LIFETIME)
     saved = median - kg
-    by_month = {s["months"]: s for s in appliance_savings or []}
     horizons = []
-    for m in horizons_months:
-        extra = by_month.get(m) or {}
-        horizons.append({"months": m, "kg": round(saved * m / (12 * life), 2),
-                         "kwh": extra.get("kwh_saved"), "vnd": extra.get("money_saved_vnd")})
+    for s in appliance_savings or []:
+        if s.get("months") in tuple(horizons_months) and s.get("kwh_saved") is not None:
+            horizons.append({"months": s["months"], "kg": s.get("co2_use_saved_kg"), "kwh": s["kwh_saved"],
+                             "vnd": s.get("money_saved_vnd")})
     return {"best_id": best["product_id"], "baseline": "category_median", "baseline_kg": round(median, 2),
-            "lifecycle_kg_saved": round(saved, 2), "lifetime_years": life, "horizons": horizons,
-            "trees_year": round(saved / life / TREE_KG_PER_YEAR, 2)}
+            "scope": "cradle_to_grave", "lifecycle_kg_saved": round(saved, 2),
+            "horizons": horizons,
+            "horizon_basis": "standard_unit_same_capacity" if horizons else None,
+            # trees needed to absorb the whole lifecycle difference within one year
+            "trees_year": round(saved / TREE_KG_PER_YEAR, 1)}
 
 
 # ------------------------------------------------------------------ charts (server-built Vega-Lite)

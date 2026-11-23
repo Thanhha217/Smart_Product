@@ -158,6 +158,9 @@ HEALTH_TARGETS = [
 ]
 
 
+DEGRADED_MS = int(os.environ.get("HEALTH_DEGRADED_MS", "1500"))
+
+
 def _probe(key, name, url_fn):
     import time as _time
     url = url_fn()
@@ -169,8 +172,12 @@ def _probe(key, name, url_fn):
         detail = None
         if key == "assistant" and r.ok:
             detail = r.json().get("model")
-        return {"key": key, "name": name, "status": "online" if r.status_code < 500 else "offline",
-                "latency_ms": int((_time.monotonic() - started) * 1000), "detail": detail}
+        latency = int((_time.monotonic() - started) * 1000)
+        # online: answered quickly; degraded: answered but slowly (> DEGRADED_MS) or with a server error
+        # page; offline: no answer at all (connection refused or 2 s timeout)
+        status = "online" if r.status_code < 500 and latency <= DEGRADED_MS else "degraded"
+        return {"key": key, "name": name, "status": status, "latency_ms": latency, "detail": detail,
+                "http_status": r.status_code}
     except (requests.exceptions.RequestException, ValueError):
         return {"key": key, "name": name, "status": "offline", "latency_ms": None, "detail": None}
 

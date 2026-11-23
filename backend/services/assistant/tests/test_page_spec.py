@@ -49,8 +49,13 @@ def test_shortlist_greenest_first_missing_in_middle():
 def test_savings_vs_category_median():
     best = {"product_id": "2", "co2e_kg": 135.0, "category": "laptop"}
     s = ps.compute_savings(best, {"median_kg": 300.0}, (6, 12))
-    assert s["lifecycle_kg_saved"] == 165.0
-    assert s["horizons"][1]["kg"] == round(165 * 12 / 48, 2)
+    assert s["lifecycle_kg_saved"] == 165.0 and s["scope"] == "cradle_to_grave"
+    assert s["horizons"] == [] and s["horizon_basis"] is None     # no use-phase basis: no monthly figure
+    assert s["trees_year"] == round(165 / 21.8, 1)
+    a = ps.compute_savings(best, {"median_kg": 300.0}, (6, 12),
+                           [{"months": 12, "kwh_saved": 400.0, "money_saved_vnd": 1080000, "co2_use_saved_kg": 272.4}])
+    assert a["horizons"] == [{"months": 12, "kg": 272.4, "kwh": 400.0, "vnd": 1080000}]
+    assert a["horizon_basis"] == "standard_unit_same_capacity"
     assert ps.compute_savings({**best, "co2e_kg": 400}, {"median_kg": 300.0}) is None
 
 

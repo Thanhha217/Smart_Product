@@ -18,6 +18,7 @@ calls = []
 class FakeResponse:
     def __init__(self, status, body):
         self.status_code, self._body, self.text = status, body, ""
+        self.ok = status < 400
 
     def json(self):
         return self._body
@@ -47,3 +48,20 @@ def test_confirm_header_is_forwarded_and_status_passed_through():
     assert client.post("/api/orders/test/abc/confirm").status_code == 403
     ok = client.post("/api/orders/test/abc/confirm", headers={"X-Confirm-Source": "web-ui"})
     assert ok.status_code == 200
+
+
+def test_health_statuses(monkeypatch):
+    import time as _t
+
+    def fake_get(url, timeout=None):
+        if "mcp" in url:
+            raise main.requests.exceptions.ConnectionError("refused")
+        if "ranking" in url:
+            _t.sleep(0.05)
+        return FakeResponse(200 if "ranking" not in url else 503, {"model": "rule-based"})
+    monkeypatch.setattr(main.requests, "get", fake_get)
+    services = {s["key"]: s for s in client.get("/api/health").json()["services"]}
+    assert services["mcp"]["status"] == "offline"
+    assert services["ranking"]["status"] == "degraded"
+    assert services["db-search"]["status"] == "online"
+    assert services["assistant"]["detail"] == "rule-based"
