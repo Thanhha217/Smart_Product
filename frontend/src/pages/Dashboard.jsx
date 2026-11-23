@@ -6,6 +6,7 @@ import { explore } from "../i18n/explore";
 import { api } from "../api/client";
 import { formatKg, formatNum } from "../lib/format";
 import Icon from "./components/ui/Icon";
+import FormulaSteps from "./components/dashboard/FormulaSteps";
 import {
   Bar, Card, CardLink, ChartTabs, GreenCard, IconTile, MiniWorld, RangeBars, Ring, SourceStack, StatCard,
 } from "./components/dashboard/DashBits";
@@ -130,6 +131,8 @@ export default function Dashboard() {
     const list = (o?.greenest || []).filter((g) => g.product);
     return list.find((g) => g.category === "laptop")?.product?.product_id || list[0]?.product?.product_id;
   }, [o]);
+  // worked example on the formula steps: the greenest product of each category (real rows)
+  const exampleIds = useMemo(() => (o?.greenest || []).map((g) => g.product?.product_id).filter(Boolean), [o]);
   const today = new Date().toLocaleDateString(LOCALES[lang], { day: "numeric", month: "short", year: "numeric" });
 
   return (
@@ -198,18 +201,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          <div className="mt-5 rounded-2xl border border-[#EFEBDF] p-4">
-            <p className="text-[16.5px] font-bold mb-3">{D.chainTitle}</p>
-            <ol className="space-y-3">
-              {[["manufacturer", "0,9"], ["neighbor_average", "0,5"], ["category_model", "0,35"], ["none", "—"]].map(([key, conf], i) => (
-                <li key={key} className="flex items-start gap-3">
-                  <span className="grid place-items-center w-7 h-7 shrink-0 rounded-full bg-[#1F5D3A] text-white text-[13.5px] font-bold">{i + 1}</span>
-                  <p className="flex-1 text-[16px] leading-snug"><b>{D.sourceLabels[key]}</b> <span className="text-[#6B7468]">· {D.chainDesc[key]}</span></p>
-                  {conf !== "—" && <span className="pill bg-[#E4F1E6] text-[#1F5D3A] shrink-0">{D.confidence} {conf}</span>}
-                </li>
-              ))}
-            </ol>
-          </div>
+          <FormulaSteps lang={lang} exampleIds={exampleIds} />
         </Card>
 
         <Card title={D.alertsTitle} right={<CardLink to="/compare">{D.viewAll}</CardLink>}>

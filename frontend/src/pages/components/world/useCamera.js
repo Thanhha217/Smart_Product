@@ -21,7 +21,8 @@ export function useCamera({ width, height, minW = 420, margin = 600, onChange })
     const r = el.getBoundingClientRect();
     return r.width > 0 ? r.height / r.width : height / width;
   };
-  const maxW = () => Math.max(width, height / aspect());
+  // a little wider than the world, so the loop can be framed between the side cards
+  const maxW = () => Math.max(width, height / aspect()) * 1.7;
 
   const clamp = useCallback(() => {
     const c = cam.current;
@@ -31,7 +32,7 @@ export function useCamera({ width, height, minW = 420, margin = 600, onChange })
     // the scenery extends `margin` world units past each edge, so a stage near the edge
     // can still be centred beside an open side panel
     c.cx = c.w >= width + 2 * margin ? width / 2 : Math.max(halfW - margin, Math.min(width + margin - halfW, c.cx));
-    c.cy = h >= height ? height / 2 : Math.max(halfH, Math.min(height - halfH, c.cy));
+    c.cy = h >= height + 2 * margin ? height / 2 : Math.max(halfH - margin, Math.min(height + margin - halfH, c.cy));
   }, [width, height, minW, margin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = useCallback(() => {

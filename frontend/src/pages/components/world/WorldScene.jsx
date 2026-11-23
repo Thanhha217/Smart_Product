@@ -15,7 +15,7 @@ export function stageTarget(stage, sc) {
       if (local) return { cx: 1180, cy: 1040, w: 1800 };
       return sc?.mode === "air" ? { cx: 1190, cy: 560, w: 1500 } : { cx: 1200, cy: 720, w: 1350 };
     case "use": return { cx: 2010, cy: 960, w: 1050 };
-    case "end_of_life": return { cx: 1500, cy: 1190, w: 950 };
+    case "end_of_life": return { cx: 1300, cy: 1180, w: 1000 };
     default: return null;
   }
 }
@@ -23,14 +23,17 @@ export function stageTarget(stage, sc) {
 const SEA_ROUTE = "M720 800 Q1170 560 1650 800";
 const AIR_ROUTE = "M690 740 Q1180 230 1690 760";
 const VN_PORT_ROAD = "M1770 830 C1830 860 1850 930 1900 975";
-const LOCAL_ROAD = "M470 720 L470 1150 Q470 1195 520 1195 L1760 1195 Q1880 1195 1900 1060";
-const TO_RECYCLE = "M1880 1030 Q1700 1120 1520 1210";
+const LOCAL_ROAD = "M470 720 L470 1060 Q470 1100 520 1100 L1760 1100 Q1880 1100 1900 1060";
+const TO_RECYCLE = "M1850 1060 Q1660 1215 1335 1222";
+// back to the start: recovered materials feed new products (closes the loop)
+const BACK_TO_MINE = "M1075 1236 C700 1300 250 1230 232 800";
 
 function flowPath(sc) {
   const start = "M220 700 L455 650 L470 720";
-  if (sc.origin === "VN") return `${start} L470 1150 Q470 1195 520 1195 L1760 1195 Q1880 1195 1900 1060 Q1700 1120 1520 1210`;
+  const back = " L1850 1060 Q1660 1215 1335 1222 L1075 1236 C700 1300 250 1230 232 800 L220 700";
+  if (sc.origin === "VN") return `${start} L470 1060 Q470 1100 520 1100 L1760 1100 Q1880 1100 1900 1060${back}`;
   const middle = sc.mode === "air" ? " L690 740 Q1180 230 1690 760" : " L720 800 Q1170 560 1650 800";
-  return `${start}${middle} L1770 830 C1830 860 1850 930 1900 975 Q1700 1120 1520 1210`;
+  return `${start}${middle} L1770 830 C1830 860 1850 930 1900 975${back}`;
 }
 
 // Where a painted scene (frontend/public/illustrations/manifest.json) is placed: x, y, w, h.
@@ -38,7 +41,7 @@ export const ART_SLOTS = {
   mine: [40, 540, 360, 250], factory: [380, 430, 320, 290], port_origin: [600, 690, 230, 160],
   ship: [930, 560, 480, 300], plane: [930, 250, 480, 300], port_vn: [1630, 680, 230, 160],
   truck: [1700, 840, 170, 120], home: [1780, 800, 270, 270], coal_plant: [2120, 960, 270, 280],
-  solar: [2120, 960, 270, 280], recycle: [1360, 1100, 300, 210], city_wefe: [1980, 440, 410, 330],
+  solar: [2120, 960, 270, 280], recycle: [1050, 1110, 300, 210], city_wefe: [1980, 440, 410, 330],
 };
 
 /** One painted vignette: rounded, shadowed, with a white frame. */
@@ -67,7 +70,7 @@ export function legPath(stage, sc) {
     case "materials_production": return "M455 650 L470 720 L720 800";
     case "transport": return sc.origin === "VN" ? LOCAL_ROAD : sc.mode === "air" ? AIR_ROUTE : SEA_ROUTE;
     case "use": return "M1770 830 C1830 860 1850 930 1900 975 M2160 1110 Q2090 1070 2005 1035";
-    case "end_of_life": return TO_RECYCLE;
+    case "end_of_life": return `${TO_RECYCLE} M1075 1236 C700 1300 250 1230 232 800`;
     default: return null;
   }
 }
@@ -114,6 +117,9 @@ const Defs = memo(function Defs() {
       <radialGradient id="wx-bubble" cx=".35" cy=".3" r=".8"><stop offset="0" stopColor="#ffffff" /><stop offset=".55" stopColor="#eef3f1" /><stop offset="1" stopColor="#bcc9c4" /></radialGradient>
       <radialGradient id="wx-sun" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#fff3b0" /><stop offset=".6" stopColor="#ffd54a" /><stop offset="1" stopColor="#ffd54a" stopOpacity="0" /></radialGradient>
       <filter id="wx-shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#16324a" floodOpacity=".25" /></filter>
+      <marker id="wx-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#ffffff" />
+      </marker>
       <filter id="wx-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" /></filter>
     </defs>
   );
@@ -122,7 +128,8 @@ const Defs = memo(function Defs() {
 const Background = memo(function Background() {
   return (
     <g>
-      <rect x="-700" width={WORLD_W + 1400} height={520} fill="url(#wx-sky)" />
+      <rect x="-1400" y="-700" width={WORLD_W + 2800} height={1220} fill="#9fd8ff" />
+      <rect x="-1400" width={WORLD_W + 2800} height={520} fill="url(#wx-sky)" />
       <circle cx="2150" cy="150" r="170" fill="url(#wx-sun)" />
       <circle cx="2150" cy="150" r="62" fill="#ffd54a" />
       {[[200, 120, 1], [900, 80, 1.3], [1600, 170, 0.9]].map(([x, y, s], i) => (
@@ -132,8 +139,8 @@ const Background = memo(function Background() {
           </g>
         </g>
       ))}
-      <path d="M-700 500 L-400 400 L-200 470 L0 500 L180 380 L330 470 L520 330 L700 470 L900 400 L1100 480 L1300 380 L1500 470 L1700 360 L1900 460 L2100 390 L2400 480 L2700 400 L3100 490 L3100 520 L-700 520 Z" fill="url(#wx-mount)" opacity=".8" />
-      <rect x="-700" y="480" width={WORLD_W + 1400} height={WORLD_H - 480 + 300} fill="url(#wx-sea)" />
+      <path d="M-1400 500 L-700 420 L-400 400 L-200 470 L0 500 L180 380 L330 470 L520 330 L700 470 L900 400 L1100 480 L1300 380 L1500 470 L1700 360 L1900 460 L2100 390 L2400 480 L2700 400 L3100 490 L3800 470 L3800 520 L-1400 520 Z" fill="url(#wx-mount)" opacity=".8" />
+      <rect x="-1400" y="480" width={WORLD_W + 2800} height={WORLD_H - 480 + 800} fill="url(#wx-sea)" />
       {[560, 660, 760, 880, 980].map((y, i) => (
         <g key={y} className="wx-wave" style={{ animationDuration: `${5 + i}s` }} opacity=".35">
           <path d={`M600 ${y} ${Array.from({ length: 14 }).map((_, j) => `q40 -14 80 0 t80 0`).join(" ")}`} fill="none" stroke="#e6f6ff" strokeWidth="4" strokeLinecap="round" />
@@ -147,11 +154,11 @@ const Lands = memo(function Lands() {
   return (
     <g filter="url(#wx-shadow)">
       {/* origin landmass */}
-      <path d="M-700 500 L560 488 Q690 500 740 590 Q790 700 730 830 Q670 930 560 990 L540 1090 L-700 1090 Z" fill="url(#wx-land)" stroke="#6faa4f" strokeWidth="4" />
+      <path d="M-1400 500 L560 488 Q690 500 740 590 Q790 700 730 830 Q670 930 560 990 L540 1090 L-1400 1090 Z" fill="url(#wx-land)" stroke="#6faa4f" strokeWidth="4" />
       {/* land bridge along the bottom (mainland Asia) */}
-      <path d="M-700 1060 Q500 1030 900 1085 Q1250 1130 1600 1070 Q2000 1010 2400 1060 L3100 1060 L3100 1700 L-700 1700 Z" fill="url(#wx-land2)" stroke="#6faa4f" strokeWidth="4" />
+      <path d="M-1400 1060 Q500 1030 900 1085 Q1250 1130 1600 1070 Q2000 1010 2400 1060 L3800 1060 L3800 2200 L-1400 2200 Z" fill="url(#wx-land2)" stroke="#6faa4f" strokeWidth="4" />
       {/* Vietnam */}
-      <path d="M1700 488 L3100 488 L3100 1080 L1660 1080 Q1600 1000 1660 930 Q1730 850 1680 770 Q1620 680 1680 600 Q1720 540 1700 488 Z" fill="url(#wx-land)" stroke="#6faa4f" strokeWidth="4" />
+      <path d="M1700 488 L3800 488 L3800 1080 L1660 1080 Q1600 1000 1660 930 Q1730 850 1680 770 Q1620 680 1680 600 Q1720 540 1700 488 Z" fill="url(#wx-land)" stroke="#6faa4f" strokeWidth="4" />
     </g>
   );
 });
@@ -166,7 +173,7 @@ function Tree({ x, y, s = 1 }) {
 }
 
 const Trees = memo(function Trees() {
-  const spots = [[60, 900, 1.2], [140, 980, 1], [300, 960, 1.1], [620, 560, 0.9], [90, 600, 0.9], [2330, 900, 1.1], [2260, 980, 0.9], [1750, 1010, 0.9], [980, 1200, 1.1], [1060, 1260, 0.9], [760, 1240, 1], [300, 1280, 1.2], [1250, 1300, 1], [2380, 1330, 1]];
+  const spots = [[60, 900, 1.2], [140, 980, 1], [300, 960, 1.1], [620, 560, 0.9], [90, 600, 0.9], [2330, 900, 1.1], [2260, 980, 0.9], [1750, 1010, 0.9], [900, 1150, 1], [1500, 1310, 0.9], [760, 1350, 1], [120, 1350, 1.1], [1700, 1330, 1], [2380, 1330, 1]];
   return <g>{spots.map(([x, y, s], i) => <Tree key={i} x={x} y={y} s={s} />)}</g>;
 });
 
@@ -279,24 +286,6 @@ function Truck({ road, duration = 9 }) {
   );
 }
 
-function City({ solar }) {
-  const b = [[2000, 210, 70], [2080, 260, 80], [2170, 190, 70], [2250, 290, 90], [2350, 220, 60]];
-  return (
-    <g data-explain="wefe">
-      {b.map(([x, h, w], i) => (
-        <g key={i}>
-          <rect x={x} y={770 - h} width={w} height={h} fill={i % 2 ? "#8fa9c0" : "#a9bfd2"} />
-          {Array.from({ length: Math.floor(h / 40) }).map((_, r) => (
-            <g key={r}>{[0, 1].map((c) => <rect key={c} x={x + 12 + c * (w / 2 - 6)} y={770 - h + 16 + r * 40} width={w / 2 - 24} height="18" fill="#fff1b8" className="wx-blink" style={{ animationDelay: `${(i + r + c) * 0.4}s` }} />)}</g>
-          ))}
-          <rect x={x + 6} y={770 - h - 12} width={w - 12} height="12" fill="#1f3f63" className="wx-fade" style={{ opacity: solar ? 1 : 0 }} />
-        </g>
-      ))}
-      <text x="2190" y="455" textAnchor="middle" fontSize="24" fontWeight="800" fill="#16324a">🏙️ Smart city</text>
-    </g>
-  );
-}
-
 function DeviceIcon({ category }) {
   const c = category || "";
   if (c.includes("phone") || c === "smartwatch") return <g><rect x="-16" y="-30" width="32" height="58" rx="7" fill="#1d3b53" /><rect x="-12" y="-24" width="24" height="44" rx="2" fill="#6ec6f0" /></g>;
@@ -345,11 +334,45 @@ function PowerPlant({ solar, labels }) {
 
 function Recycle() {
   return (
-    <g data-explain="end_of_life">
+    <g data-explain="end_of_life" transform="translate(-310 0)">
       <rect x="1400" y="1170" width="220" height="110" rx="8" fill="#5e9e45" />
       <rect x="1400" y="1150" width="220" height="26" rx="6" fill="#4c8738" />
       <g transform="translate(1510 1225)"><g className="wx-spin">{[0, 120, 240].map((a) => <path key={a} d="M0 -38 A38 38 0 0 1 33 -19" fill="none" stroke="#f4f7f9" strokeWidth="10" strokeLinecap="round" transform={`rotate(${a})`} />)}</g></g>
       {[[1420, "#3a8fd8"], [1580, "#f2b632"]].map(([x, c]) => <rect key={x} x={x} y="1250" width="26" height="30" rx="3" fill={c} />)}
+    </g>
+  );
+}
+
+/** Thick white arrow of the closed loop (use -> recycle -> back to materials). */
+function LoopArrow({ d, topic }) {
+  return (
+    <g data-explain={topic}>
+      <path d={d} fill="none" stroke="#2f7d4f" strokeOpacity=".25" strokeWidth="40" strokeLinecap="round" />
+      <path d={d} fill="none" stroke="#ffffff" strokeWidth="22" strokeLinecap="round" markerEnd="url(#wx-arrow)" />
+      <path d={d} fill="none" stroke="#57b77a" strokeWidth="6" strokeLinecap="round" className="wx-dash" />
+    </g>
+  );
+}
+
+function Pill({ x, y, text, topic }) {
+  const w = Math.max(200, text.length * 13.5 + 48);
+  return (
+    <g data-explain={topic} transform={`translate(${x} ${y})`}>
+      <rect x={-w / 2} y="-30" width={w} height="60" rx="30" fill="#ffffff" stroke="#bfe3c9" strokeWidth="3" filter="url(#wx-shadow)" />
+      <text textAnchor="middle" y="9" fontSize="25" fontWeight="700" fill="#1F5D3A">{text}</text>
+    </g>
+  );
+}
+
+/** Numbered stage of the loop: (1) Manufacture, (2) Transport, (3) Use, (4) Return & Recycle. */
+function StageBadge({ x, y, n, label, topic }) {
+  const w = label.length * 15 + 96;
+  return (
+    <g data-explain={topic} transform={`translate(${x} ${y})`}>
+      <rect x={-w / 2} y="-30" width={w} height="60" rx="30" fill="#1F5D3A" filter="url(#wx-shadow)" />
+      <circle cx={-w / 2 + 32} cy="0" r="21" fill="#ffffff" />
+      <text x={-w / 2 + 32} y="9" textAnchor="middle" fontSize="25" fontWeight="800" fill="#1F5D3A">{n}</text>
+      <text x={-w / 2 + 64} y="9" fontSize="27" fontWeight="700" fill="#ffffff">{label}</text>
     </g>
   );
 }
@@ -373,7 +396,7 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
   const local = sc.origin === "VN";
   const air = !local && sc.mode === "air";
   const flow = flowPath(sc);
-  const r = (kg) => (kg ? 50 + 95 * Math.sqrt(Math.max(0, kg) / (maxStage || 1)) : 50);
+  const r = (kg) => (kg ? 46 + 80 * Math.sqrt(Math.max(0, kg) / (maxStage || 1)) : 46);
   const tBubble = local ? [1150, 1110] : air ? [1180, 330] : [1180, 590];
   const st = sim?.stages || {};
   return (
@@ -384,7 +407,7 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Background />
       <Lands />
       <Trees />
-      <text x="40" y="1050" fontSize="30" fontWeight="800" fill="#2d5a3a" opacity=".6">{labels.originLand}</text>
+      <text x="60" y="560" fontSize="30" fontWeight="800" fill="#2d5a3a" opacity=".6">{labels.originLand}</text>
       <text x="1745" y="560" fontSize="34" fontWeight="800" fill="#2d5a3a" opacity=".7">{labels.vietnam || "Vietnam"}</text>
 
       {/* glowing flow of emissions */}
@@ -409,14 +432,15 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Ship route={SEA_ROUTE} show={!local && !air} />
       <Plane route={AIR_ROUTE} show={air} />
       {local ? <Truck road={LOCAL_ROAD} duration={16} /> : <Truck road={VN_PORT_ROAD} duration={6} />}
-      <Art art={art} name="city_wefe" topic="wefe"><City solar={sc.grid === "solar"} /></Art>
       <Art art={art} name="home" topic="use"><House category={category} /></Art>
       {art?.coal_plant || art?.solar ? (<>
         <Art art={art} name="coal_plant" topic="grid" opacity={sc.grid === "solar" ? 0 : 1}><g /></Art>
         <Art art={art} name="solar" topic="grid" opacity={sc.grid === "solar" ? 1 : 0}><g /></Art>
       </>) : <PowerPlant solar={sc.grid === "solar"} labels={labels} />}
-      <path d={TO_RECYCLE} fill="none" stroke="#6b6f73" strokeWidth="14" strokeLinecap="round" opacity=".55" />
+      <LoopArrow d={TO_RECYCLE} topic="end_of_life" />
+      <LoopArrow d={BACK_TO_MINE} topic="end_of_life" />
       <Art art={art} name="recycle" topic="end_of_life"><Recycle /></Art>
+      <Pill x={600} y={1205} topic="end_of_life" text={`♻ ${labels.loop?.recovered || "Recovered materials for new products"}`} />
 
       {leg && (
         <g pointerEvents="none">
@@ -429,10 +453,15 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
         </g>
       )}
 
-      <Bubble x={400} y={905} kg={st.materials_production} r={r(st.materials_production)} label={labels.stages.materials_production} topic="factory" focused={focus === "materials_production" || focus === "materials"} lang={lang} />
+      <Bubble x={500} y={915} kg={st.materials_production} r={r(st.materials_production)} label={labels.stages.materials_production} topic="factory" focused={focus === "materials_production" || focus === "materials"} lang={lang} />
       <Bubble x={tBubble[0]} y={tBubble[1]} kg={st.transport} r={r(st.transport)} label={labels.stages.transport} topic="transport" focused={focus === "transport"} lang={lang} />
       <Bubble x={2150} y={880} kg={st.use} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} lang={lang} />
-      <Bubble x={1500} y={1060} kg={st.end_of_life} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} lang={lang} />
+      <Bubble x={1450} y={1120} kg={st.end_of_life} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} lang={lang} />
+
+      <StageBadge x={330} y={445} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" />
+      <StageBadge x={tBubble[0]} y={tBubble[1] - r(st.transport) - 46} n={2} label={labels.loop?.move || "Transport"} topic="transport" />
+      <StageBadge x={1910} y={775} n={3} label={labels.loop?.use || "Use"} topic="use" />
+      <StageBadge x={1200} y={1110} n={4} label={labels.loop?.back || "Return & Recycle"} topic="end_of_life" />
     </svg>
   );
 }
