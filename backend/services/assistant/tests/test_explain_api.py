@@ -129,3 +129,10 @@ def test_co2_endpoint_shows_green_score_terms(monkeypatch):
     monkeypatch.setattr(data_client, "product", lambda pid: item)
     g = client.get("/api/products/2/co2").json()["green_score_formula"]
     assert g["low"] == 60 and g["high"] == 1000 and g["score"] == item["product"]["green_score"]
+
+
+def test_insight_says_lowest_instead_of_lower_than_everything(monkeypatch):
+    monkeypatch.setattr(data_client, "stats", lambda cat, pid=None: {**STATS, "greener_than_pct": 100.0, "n": 4880})
+    body = client.post("/api/explain", json={"product_id": "2", "topic": "insight", "lang": "en"}).json()
+    assert body["title"] == "The lowest CO₂ in its category"
+    assert "100%" not in body["answer"] and "4,880" in body["answer"]

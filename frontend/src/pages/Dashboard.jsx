@@ -12,6 +12,7 @@ import HowCalculated from "./components/dashboard/HowCalculated";
 import WhyConsider from "./components/co2/WhyConsider";
 import ProductCard from "./components/common/ProductCard";
 import { normalizeList } from "../lib/data";
+import { byCategoryOrder } from "../lib/categories";
 import {
   Bar, Card, CardLink, ChartTabs, GreenCard, IconTile, MiniWorld, RangeBars, Ring, SourceStack, StatCard,
 } from "./components/dashboard/DashBits";
@@ -135,8 +136,9 @@ export default function Dashboard() {
     return [...new Set(ids.filter(Boolean))];
   }, [o]);
   // the picks shown with a reason: the lowest-CO2 priced product of each category
+  // in the site's own category order, so the picks never shuffle between visits
   const picks = useMemo(
-    () => normalizeList((o?.greenest || []).map((g) => g.product)).slice(0, 3), [o]);
+    () => normalizeList(byCategoryOrder(o?.greenest || []).map((g) => g.product)).slice(0, 3), [o]);
   const coverage = catalogue?.listed ? (100 * catalogue.withCo2) / catalogue.listed : null;
   const catStatus = catalogue === null ? "loading" : catalogue === false ? "error" : "ok";
 

@@ -229,7 +229,13 @@ def rule_based(topic: str, f: dict, lang: str, scenario: dict | None = None) -> 
                       "transport": T("vận chuyển", "transport", "le transport"),
                       "use": T("lúc sử dụng", "use", "l’usage"),
                       "end_of_life": T("thải bỏ", "end of life", "la fin de vie")}
-        if pct is not None and st.get("median_kg") is not None and pct >= 50:
+        if pct is not None and st.get("median_kg") is not None and pct >= 99.5:
+            # nothing in the category is lower: say that, instead of "lower than 100 % of them"
+            title = T("Ít CO₂ nhất trong loại này", "The lowest CO₂ in its category", "Le CO₂ le plus bas de sa catégorie")
+            answer = T(f"Trong {n(st.get('n') or 0, 0)} sản phẩm cùng loại đã có số CO₂, đây là mức thấp nhất: {k(kg)} kg so với mức giữa {k(st['median_kg'])} kg.",
+                       f"Among the {n(st.get('n') or 0, 0)} products of its category that have a CO₂ figure, this is the lowest: {k(kg)} kg against a median of {k(st['median_kg'])} kg.",
+                       f"Parmi les {n(st.get('n') or 0, 0)} produits de sa catégorie ayant un chiffre CO₂, c’est le plus bas : {k(kg)} kg contre une médiane de {k(st['median_kg'])} kg.")
+        elif pct is not None and st.get("median_kg") is not None and pct >= 50:
             title = T("Vì sao nên chọn sản phẩm này", "Why this is a good pick", "Pourquoi c’est un bon choix")
             answer = T(f"Sản phẩm này ít CO₂ hơn {n(pct, 0)}% sản phẩm cùng loại: {k(kg)} kg so với mức giữa {k(st['median_kg'])} kg. Chọn nó là bạn đã giảm phát thải ngay từ lúc mua.",
                        f"It emits less CO₂ than {n(pct, 0)}% of its category: {k(kg)} kg against a median of {k(st['median_kg'])} kg. Choosing it cuts emissions from the moment you buy.",
