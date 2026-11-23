@@ -93,3 +93,18 @@ def test_provider_selection(monkeypatch):
 def test_bad_input():
     assert client.post("/api/explain", json={"product_id": "abc", "topic": "x"}).status_code == 400
     assert client.post("/api/explain", json={"product_id": "999", "topic": "use"}).status_code == 404
+
+
+def test_french_rule_based_and_formatting():
+    body = client.post("/api/explain", json={"product_id": "1", "topic": "co2e_total", "lang": "fr"}).json()
+    assert body["model"] == "rule-based"
+    assert body["answer"].startswith("Sur tout son cycle de vie") and "332,6 kg" in body["answer"]
+    assert body["follow_ups"][0].startswith("Pourquoi")
+    for topic in explain_api.TOPICS:
+        assert client.post("/api/explain", json={"product_id": "3", "topic": topic, "lang": "fr"}).json()["answer"]
+
+
+def test_french_page_and_compare():
+    import page_spec as ps
+    assert ps.fmt_kg(1234.5, "fr") == "1\u202f234,5"
+    assert ps.fmt_price(18990000, "fr") == "18\u202f990\u202f000 ₫"

@@ -168,7 +168,7 @@ class OrderRequest(BaseModel):
 def create_page(req: PageRequest):
     if not req.message.strip():
         return _error(400, "empty_message", "Empty message")
-    lang = "en" if req.lang == "en" else "vi"
+    lang = req.lang if req.lang in ("en", "fr", "vi") else "en"
     try:
         page = pages.build_page(req.message.strip(), lang, store, req.parent_id)
     except requests.RequestException:
@@ -199,12 +199,12 @@ def product_co2(product_id: str):
 
 
 @app.get("/api/compare")
-def compare(ids: str = Query(..., description="2-4 comma-separated product ids")):
+def compare(ids: str = Query(..., description="2-4 comma-separated product ids"), lang: str = "en"):
     id_list = [i.strip() for i in ids.split(",") if i.strip()]
     if not 1 <= len(id_list) <= 4 or not all(i.isdigit() for i in id_list):
         return _error(400, "invalid_ids", "Give 1 to 4 numeric product ids")
     try:
-        return pages.compare(id_list)
+        return pages.compare(id_list, lang if lang in ("en", "fr", "vi") else "en")
     except requests.RequestException:
         return _error(502, "db_search_unavailable", "db-search unavailable")
 

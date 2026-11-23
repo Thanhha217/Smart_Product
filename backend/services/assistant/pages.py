@@ -96,7 +96,7 @@ def build_page(message: str, lang: str, store: Store, parent_id: str | None = No
             "plan": {"search_query": plan.search_query, "category_slug": plan.category_slug,
                      "budget_max_vnd": plan.budget_max_vnd}}
     if not cards:
-        page = {**base, "summary": "Không tìm thấy sản phẩm phù hợp." if lang == "vi" else "No matching product found.",
+        page = {**base, "summary": {"vi": "Không tìm thấy sản phẩm phù hợp.", "fr": "Aucun produit correspondant."}.get(lang, "No matching product found."),
                 "products": {}, "sections": [], "warnings": warnings,
                 "meta": {"model": plan_model, "latency_ms": int((time.monotonic() - started) * 1000),
                          "number_check_failures": 0}}
@@ -203,7 +203,7 @@ def build_page(message: str, lang: str, store: Store, parent_id: str | None = No
     return page
 
 
-def compare(ids: list[str]) -> dict[str, Any]:
+def compare(ids: list[str], lang: str = "vi") -> dict[str, Any]:
     """Body of GET /api/compare."""
     from green.co2_formula import ELECTRICITY_PRICE_VND
 
@@ -230,10 +230,15 @@ def compare(ids: list[str]) -> dict[str, Any]:
     known = [p for p in products if p.get("co2e_kg") is not None]
     if len(known) >= 2:
         lo, hi = min(known, key=lambda p: p["co2e_kg"]), max(known, key=lambda p: p["co2e_kg"])
-        conclusion = (f"{lo['name']} có CO₂ thấp nhất ({ps.fmt_kg(lo['co2e_kg'])} kg), ít hơn "
-                      f"{ps.fmt_kg(hi['co2e_kg'] - lo['co2e_kg'])} kg so với {hi['name']}.")
+        k = lambda x: ps.fmt_kg(x, lang)  # noqa: E731
+        diff = hi["co2e_kg"] - lo["co2e_kg"]
+        conclusion = {
+            "vi": f"{lo['name']} có CO₂ thấp nhất ({k(lo['co2e_kg'])} kg), ít hơn {k(diff)} kg so với {hi['name']}.",
+            "fr": f"{lo['name']} a le CO₂ le plus bas ({k(lo['co2e_kg'])} kg), soit {k(diff)} kg de moins que {hi['name']}.",
+        }.get(lang, f"{lo['name']} has the lowest CO₂ ({k(lo['co2e_kg'])} kg), {k(diff)} kg less than {hi['name']}.")
         if best.get("price_vnd") == lo["product_id"]:
-            conclusion += " Đây cũng là sản phẩm rẻ nhất trong bảng."
+            conclusion += {"vi": " Đây cũng là sản phẩm rẻ nhất trong bảng.",
+                           "fr": " C’est aussi le moins cher du tableau."}.get(lang, " It is also the cheapest in the table.")
     return {"products": products, "rows": rows, "best": best, "conclusion": conclusion}
 
 

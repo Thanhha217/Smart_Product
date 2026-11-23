@@ -61,7 +61,11 @@ def fmt_number(x: float | None, lang: str = "vi", digits: int = 1) -> str:
     s = f"{x:,.{digits}f}"
     if digits:
         s = s.rstrip("0").rstrip(".")
-    return s.replace(",", " ").replace(".", ",").replace(" ", ".") if lang == "vi" else s
+    if lang == "vi":
+        return s.replace(",", " ").replace(".", ",").replace(" ", ".")
+    if lang == "fr":   # 1 234,5 (narrow no-break space for thousands)
+        return s.replace(",", " ").replace(".", ",")
+    return s
 
 
 def fmt_kg(x: float | None, lang: str = "vi") -> str:
@@ -74,7 +78,7 @@ def fmt_kg(x: float | None, lang: str = "vi") -> str:
 def fmt_price(x: float | None, lang: str = "vi") -> str:
     if x is None:
         return "—"
-    return f"{fmt_number(x, lang, 0)} đ" if lang == "vi" else f"{fmt_number(x, lang, 0)} VND"
+    return f"{fmt_number(x, lang, 0)} đ" if lang == "vi" else f"{fmt_number(x, lang, 0)} ₫" if lang == "fr" else f"{fmt_number(x, lang, 0)} VND"
 
 
 # ------------------------------------------------------------------ placeholders
@@ -283,25 +287,31 @@ def build_chart(kind: str, cards: list[dict], lifecycles: dict[str, dict], lang:
 
 def default_texts(alias_map: dict[str, str], cards: dict[str, dict], savings: dict | None, stats: dict | None,
                   lang: str = "vi") -> tuple[str, list[str]]:
-    """Summary + bullets with placeholders only, used when the model is unavailable or invalid."""
-    vi = lang == "vi"
+    """Summary + bullets with placeholders only, used when the model is unavailable or invalid (vi, en, fr)."""
+    def T(vi, en, fr):
+        return {"vi": vi, "fr": fr}.get(lang, en)
     has_kg = cards.get(alias_map.get("p1", ""), {}).get("co2e_kg") is not None
-    if vi:
-        summary = ("Gợi ý {{p1.name}} giá {{p1.price}}, phát thải khoảng {{p1.co2e_kg}} kg CO₂e trong cả vòng đời."
-                   if has_kg else "Gợi ý {{p1.name}} giá {{p1.price}}; sản phẩm này chưa có số CO₂.")
-    else:
-        summary = ("We suggest {{p1.name}} at {{p1.price}}, about {{p1.co2e_kg}} kg CO₂e over its lifecycle."
-                   if has_kg else "We suggest {{p1.name}} at {{p1.price}}; it has no CO₂ figure yet.")
+    summary = (T("Gợi ý {{p1.name}} giá {{p1.price}}, phát thải khoảng {{p1.co2e_kg}} kg CO₂e trong cả vòng đời.",
+                 "We suggest {{p1.name}} at {{p1.price}}, about {{p1.co2e_kg}} kg CO₂e over its lifecycle.",
+                 "Nous suggérons {{p1.name}} à {{p1.price}}, environ {{p1.co2e_kg}} kg CO₂e sur tout son cycle de vie.")
+               if has_kg else
+               T("Gợi ý {{p1.name}} giá {{p1.price}}; sản phẩm này chưa có số CO₂.",
+                 "We suggest {{p1.name}} at {{p1.price}}; it has no CO₂ figure yet.",
+                 "Nous suggérons {{p1.name}} à {{p1.price}} ; ce produit n’a pas encore de chiffre CO₂."))
     bullets = []
     if stats and stats.get("greener_than_pct") is not None:
-        bullets.append("Xanh hơn {{stats.greener_than_pct}} sản phẩm cùng loại (trung vị của loại là {{stats.median_kg}} kg)."
-                       if vi else "Greener than {{stats.greener_than_pct}} of its category (median {{stats.median_kg}} kg).")
+        bullets.append(T("Xanh hơn {{stats.greener_than_pct}} sản phẩm cùng loại (trung vị của loại là {{stats.median_kg}} kg).",
+                         "Greener than {{stats.greener_than_pct}} of its category (median {{stats.median_kg}} kg).",
+                         "Plus sobre que {{stats.greener_than_pct}} des produits de sa catégorie (médiane {{stats.median_kg}} kg)."))
     if savings:
-        bullets.append("So với món trung bình của loại, chọn món này giảm {{savings.lifecycle_kg}} kg CO₂e trong vòng đời."
-                       if vi else "Compared with a typical product, it avoids {{savings.lifecycle_kg}} kg CO₂e over its life.")
-        bullets.append("Tương đương lượng CO₂ mà {{savings.trees}} cây xanh hấp thụ mỗi năm."
-                       if vi else "That is what {{savings.trees}} trees absorb in a year.")
+        bullets.append(T("So với món trung bình của loại, chọn món này giảm {{savings.lifecycle_kg}} kg CO₂e trong vòng đời.",
+                         "Compared with a typical product, it avoids {{savings.lifecycle_kg}} kg CO₂e over its life.",
+                         "Par rapport à un produit typique, il évite {{savings.lifecycle_kg}} kg CO₂e sur sa durée de vie."))
+        bullets.append(T("Tương đương lượng CO₂ mà {{savings.trees}} cây xanh hấp thụ mỗi năm.",
+                         "That is what {{savings.trees}} trees absorb in a year.",
+                         "C’est ce qu’absorbent {{savings.trees}} arbres en un an."))
     if "p2" in alias_map and cards.get(alias_map["p2"], {}).get("co2e_kg") is not None and has_kg:
-        bullets.append("{{p1.name}}: {{p1.co2e_kg}} kg so với {{p2.name}}: {{p2.co2e_kg}} kg."
-                       if vi else "{{p1.name}}: {{p1.co2e_kg}} kg vs {{p2.name}}: {{p2.co2e_kg}} kg.")
+        bullets.append(T("{{p1.name}}: {{p1.co2e_kg}} kg so với {{p2.name}}: {{p2.co2e_kg}} kg.",
+                         "{{p1.name}}: {{p1.co2e_kg}} kg vs {{p2.name}}: {{p2.co2e_kg}} kg.",
+                         "{{p1.name}} : {{p1.co2e_kg}} kg contre {{p2.name}} : {{p2.co2e_kg}} kg."))
     return summary, bullets

@@ -41,7 +41,7 @@ SCHEMA = {
 
 SYSTEM = """You explain the carbon footprint of ONE product to an ordinary shopper in Vietnam, on an interactive
 "CO2 world" web page where the user clicked something they did not understand. Be warm, concrete and short.
-Write in the requested language (vi = natural Vietnamese, en = English).
+Write in the requested language (en = English, fr = natural French, vi = natural Vietnamese).
 
 Return JSON: title (max 8 words), answer (2-4 short sentences answering the click or the question),
 bullets (0-4 short facts or tips), follow_ups (2-3 short questions the user may want to ask next, same language).
@@ -99,102 +99,134 @@ def build_facts(co2: dict, stats: dict | None, related: dict | None, lang: str) 
 
 # ------------------------------------------------------------------ rule-based answers
 
-def _stage_line(f: dict, key: str, vi: bool) -> str | None:
+def _stage_line(f: dict, key: str, lang: str) -> str | None:
     s = (f.get("stages_kg_and_percent") or {}).get(key)
     if not s:
         return None
-    return (f"Chặng này chiếm {fmt_kg(s['kg'])} kg CO₂e, tức {fmt_number(s['pct'])}% cả vòng đời." if vi
-            else f"This stage is {fmt_kg(s['kg'], 'en')} kg CO₂e, {fmt_number(s['pct'], 'en')}% of the lifecycle.")
+    kg, pct = fmt_kg(s["kg"], lang), fmt_number(s["pct"], lang)
+    return {"vi": f"Chặng này chiếm {kg} kg CO₂e, tức {pct}% cả vòng đời.",
+            "fr": f"Cette étape représente {kg} kg CO₂e, soit {pct} % du cycle de vie."}.get(
+        lang, f"This stage is {kg} kg CO₂e, {pct}% of the lifecycle.")
 
 
 def rule_based(topic: str, f: dict, lang: str, scenario: dict | None = None) -> dict:
-    vi = lang == "vi"
-    L = "vi" if vi else "en"
+    """A plain-language answer for every topic in English, French and Vietnamese, from the facts only."""
+    L = lang if lang in ("vi", "fr") else "en"
+
+    def T(vi: str, en: str, fr: str) -> str:
+        return {"vi": vi, "fr": fr}.get(L, en)
+
     kg = f.get("co2e_kg")
     k = lambda x: fmt_kg(x, L)  # noqa: E731
+    n = lambda x, d=1: fmt_number(x, L, d)  # noqa: E731
+    method = f.get("method", "")
     title, answer, bullets = "", "", []
     if kg is None:
-        return {"title": "Chưa có số CO₂" if vi else "No CO₂ figure",
-                "answer": ("Hệ thống chưa đủ căn cứ để tính CO₂ cho sản phẩm này nên để trống, không đoán."
-                           if vi else "The system lacks reliable data for this product, so it leaves the number empty instead of guessing."),
+        return {"title": T("Chưa có số CO₂", "No CO₂ figure", "Pas encore de chiffre CO₂"),
+                "answer": T("Hệ thống chưa đủ căn cứ để tính CO₂ cho sản phẩm này nên để trống, không đoán.",
+                            "The system lacks reliable data for this product, so it leaves the number empty instead of guessing.",
+                            "Le système n’a pas assez de données fiables pour ce produit : il laisse le chiffre vide plutôt que de deviner."),
                 "bullets": [], "follow_ups": []}
     if topic in ("co2e_total", "free"):
-        title = "Tổng CO₂ của sản phẩm" if vi else "The product's total CO₂"
-        answer = (f"Trong cả vòng đời, từ khai thác nguyên liệu đến thải bỏ, sản phẩm này gây ra khoảng {k(kg)} kg CO₂e. "
-                  f"Con số có được bằng cách: {f.get('method', '')}." if vi else
-                  f"Over its whole life, from mining to disposal, this product causes about {k(kg)} kg CO₂e. Method: {f.get('method', '')}.")
+        title = T("Tổng CO₂ của sản phẩm", "The product's total CO₂", "Le CO₂ total du produit")
+        answer = T(f"Trong cả vòng đời, từ khai thác nguyên liệu đến thải bỏ, sản phẩm này gây ra khoảng {k(kg)} kg CO₂e. Cách tính: {method}.",
+                   f"Over its whole life, from mining to disposal, this product causes about {k(kg)} kg CO₂e. Method: {method}.",
+                   f"Sur tout son cycle de vie, de l’extraction au recyclage, ce produit émet environ {k(kg)} kg CO₂e. Méthode : {method}.")
         if f.get("trees_for_one_year"):
-            bullets.append(f"Bằng lượng CO₂ {fmt_number(f['trees_for_one_year'], L)} cây xanh hấp thụ trong 1 năm." if vi
-                           else f"What {fmt_number(f['trees_for_one_year'], L)} trees absorb in a year.")
+            t = n(f["trees_for_one_year"])
+            bullets.append(T(f"Bằng lượng CO₂ {t} cây xanh hấp thụ trong 1 năm.", f"What {t} trees absorb in a year.",
+                             f"Ce qu’absorbent {t} arbres en un an."))
         if f.get("car_km_equivalent"):
-            bullets.append(f"Tương đương chạy ô tô xăng {fmt_number(f['car_km_equivalent'], L, 0)} km." if vi
-                           else f"Like driving a petrol car {fmt_number(f['car_km_equivalent'], L, 0)} km.")
+            c = n(f["car_km_equivalent"], 0)
+            bullets.append(T(f"Tương đương chạy ô tô xăng {c} km.", f"Like driving a petrol car {c} km.",
+                             f"Comme rouler {c} km en voiture à essence."))
     elif topic == "green_score":
-        g = f.get("green_score_0_5")
-        title = "Điểm xanh 0–5" if vi else "Green score 0–5"
-        answer = (f"Điểm xanh so sản phẩm với các sản phẩm cùng loại: 5 là xanh nhất, 0 là phát thải nhiều nhất. Sản phẩm này được {fmt_number(g, L)}/5."
-                  if vi else f"The green score compares the product with its category: 5 is greenest, 0 emits most. This one scores {fmt_number(g, L)}/5.")
+        g = n(f.get("green_score_0_5"))
+        title = T("Điểm xanh 0–5", "Green score 0–5", "Score vert 0–5")
+        answer = T(f"Điểm xanh so sản phẩm với các sản phẩm cùng loại: 5 là xanh nhất, 0 là phát thải nhiều nhất. Sản phẩm này được {g}/5.",
+                   f"The green score compares the product with its category: 5 is greenest, 0 emits most. This one scores {g}/5.",
+                   f"Le score vert compare le produit à sa catégorie : 5 est le plus sobre, 0 le plus émetteur. Celui-ci obtient {g}/5.")
     elif topic == "confidence":
-        c = f.get("confidence")
-        title = "Độ tin cậy của con số" if vi else "How reliable the number is"
-        answer = (f"Độ tin cậy {fmt_number((c or 0) * 100, L, 0)}% phản ánh cách tính: số của hãng cho đúng mẫu tin cậy nhất, rồi đến trung bình sản phẩm giống, mức điển hình của loại, và cuối cùng là ước tính theo giá."
-                  if vi else f"A confidence of {fmt_number((c or 0) * 100, L, 0)}% reflects the method: the manufacturer's own figure is most reliable, then similar products, the category level, and finally the price estimate.")
+        c = n((f.get("confidence") or 0) * 100, 0)
+        title = T("Độ tin cậy của con số", "How reliable the number is", "Fiabilité du chiffre")
+        answer = T(f"Độ tin cậy {c}% phản ánh cách tính: số của hãng cho đúng mẫu tin cậy nhất, rồi đến trung bình sản phẩm giống, mức điển hình của loại, và cuối cùng là ước tính theo giá.",
+                   f"A confidence of {c}% reflects the method: the manufacturer's own figure is most reliable, then similar products, the category level, and finally the price estimate.",
+                   f"Une confiance de {c} % reflète la méthode : le chiffre du fabricant est le plus fiable, puis la moyenne de produits similaires, le niveau typique de la catégorie, et enfin l’estimation par le prix.")
     elif topic in ("materials", "factory"):
-        title = "Khai thác và sản xuất" if vi else "Mining and manufacturing"
-        answer = ("Khai thác kim loại, làm chip, màn hình, pin và lắp ráp tiêu tốn rất nhiều năng lượng. Với đồ điện tử đây thường là phần phát thải lớn nhất."
-                  if vi else "Mining metals and making chips, screens and batteries take a lot of energy. For electronics this is usually the largest part.")
-        line = _stage_line(f, "materials_production", vi)
-        bullets = [x for x in (line, "Dùng lâu hơn hoặc mua máy tân trang giúp giảm phần này nhiều nhất." if vi else
-                               "Keeping it longer or buying refurbished cuts this part most.") if x]
+        title = T("Khai thác và sản xuất", "Mining and manufacturing", "Extraction et fabrication")
+        answer = T("Khai thác kim loại, làm chip, màn hình, pin và lắp ráp tiêu tốn rất nhiều năng lượng. Với đồ điện tử đây thường là phần phát thải lớn nhất.",
+                   "Mining metals and making chips, screens and batteries take a lot of energy. For electronics this is usually the largest part.",
+                   "Extraire les métaux et fabriquer puces, écrans et batteries demande beaucoup d’énergie. Pour l’électronique, c’est généralement la plus grosse part.")
+        bullets = [x for x in (_stage_line(f, "materials_production", L),
+                               T("Dùng lâu hơn hoặc mua máy tân trang giúp giảm phần này nhiều nhất.",
+                                 "Keeping it longer or buying refurbished cuts this part most.",
+                                 "Le garder plus longtemps ou acheter reconditionné réduit le plus cette part.")) if x]
     elif topic == "transport":
         sh = f.get("shipping") or {}
-        title = "Vận chuyển về Việt Nam" if vi else "Shipping to Vietnam"
-        answer = (f"Sản phẩm được giả định sản xuất tại {f.get('assumed_origin', 'nước ngoài')}, đi {fmt_number(sh.get('sea_km'), L, 0)} km đường biển và {fmt_number(sh.get('road_km'), L, 0)} km đường bộ. Tàu biển phát thải rất ít trên mỗi kg hàng, máy bay thì gấp hàng chục lần."
-                  if vi else f"Assumed made in {f.get('assumed_origin', 'abroad')}, it travels {fmt_number(sh.get('sea_km'), L, 0)} km by sea and {fmt_number(sh.get('road_km'), L, 0)} km by road. Ships emit very little per kg; planes dozens of times more.")
-        bullets = [x for x in (_stage_line(f, "transport", vi),) if x]
+        origin, sea, road = f.get("assumed_origin") or T("nước ngoài", "abroad", "l’étranger"), n(sh.get("sea_km"), 0), n(sh.get("road_km"), 0)
+        title = T("Vận chuyển về Việt Nam", "Shipping to Vietnam", "Transport jusqu’au Vietnam")
+        answer = T(f"Sản phẩm được giả định sản xuất tại {origin}, đi {sea} km đường biển và {road} km đường bộ. Tàu biển phát thải rất ít trên mỗi kg hàng, máy bay thì gấp hàng chục lần.",
+                   f"Assumed made in {origin}, it travels {sea} km by sea and {road} km by road. Ships emit very little per kg; planes dozens of times more.",
+                   f"Supposé fabriqué en/au {origin}, il parcourt {sea} km par mer et {road} km par route. Le bateau émet très peu par kg ; l’avion des dizaines de fois plus.")
+        bullets = [x for x in (_stage_line(f, "transport", L),) if x]
     elif topic in ("use", "grid"):
-        title = "Dùng điện tại Việt Nam" if vi else "Using power in Vietnam"
-        answer = (f"Mỗi kWh điện ở Việt Nam phát thải khoảng {fmt_number(GRID_EF, L, 3)} kg CO₂e vì lưới điện còn nhiều nhiệt điện than. Điện dùng càng nhiều, phát thải càng lớn."
-                  if vi else f"Each kWh in Vietnam emits about {fmt_number(GRID_EF, L, 3)} kg CO₂e because the grid still uses a lot of coal.")
+        ef = n(GRID_EF, 3)
+        title = T("Dùng điện tại Việt Nam", "Using power in Vietnam", "L’électricité au Vietnam")
+        answer = T(f"Mỗi kWh điện ở Việt Nam phát thải khoảng {ef} kg CO₂e vì lưới điện còn nhiều nhiệt điện than. Điện dùng càng nhiều, phát thải càng lớn.",
+                   f"Each kWh in Vietnam emits about {ef} kg CO₂e because the grid still uses a lot of coal. The more power, the more emissions.",
+                   f"Chaque kWh au Vietnam émet environ {ef} kg CO₂e, car le réseau dépend encore beaucoup du charbon. Plus on consomme, plus on émet.")
         if f.get("electricity_kwh_over_life"):
-            bullets.append(f"Cả vòng đời dùng khoảng {fmt_number(f['electricity_kwh_over_life'], L, 0)} kWh." if vi
-                           else f"About {fmt_number(f['electricity_kwh_over_life'], L, 0)} kWh over its life.")
-        line = _stage_line(f, "use", vi)
+            e = n(f["electricity_kwh_over_life"], 0)
+            bullets.append(T(f"Cả vòng đời dùng khoảng {e} kWh.", f"About {e} kWh over its life.", f"Environ {e} kWh sur sa durée de vie."))
+        line = _stage_line(f, "use", L)
         if line:
             bullets.append(line)
     elif topic == "end_of_life":
-        title = "Thải bỏ và tái chế" if vi else "End of life"
-        answer = ("Thu gom và tái chế phát thải ít, nhưng rác điện tử vứt sai chỗ làm kim loại nặng ngấm vào đất và nước. Hãy mang tới điểm thu gom rác điện tử."
-                  if vi else "Recycling emits little, but dumped e-waste leaks heavy metals into soil and water. Bring it to an e-waste point.")
-        bullets = [x for x in (_stage_line(f, "end_of_life", vi),) if x]
+        title = T("Thải bỏ và tái chế", "End of life", "Fin de vie")
+        answer = T("Thu gom và tái chế phát thải ít, nhưng rác điện tử vứt sai chỗ làm kim loại nặng ngấm vào đất và nước. Hãy mang tới điểm thu gom rác điện tử.",
+                   "Recycling emits little, but dumped e-waste leaks heavy metals into soil and water. Bring it to an e-waste point.",
+                   "Le recyclage émet peu, mais les déchets électroniques abandonnés libèrent des métaux lourds dans le sol et l’eau. Déposez-les en point de collecte.")
+        bullets = [x for x in (_stage_line(f, "end_of_life", L),) if x]
     elif topic == "formula":
-        title = "Công thức đã dùng" if vi else "The formula used"
-        answer = (f"Hệ thống thử 4 cách theo thứ tự và dừng ở cách đầu tiên ra số. Sản phẩm này dùng: {f.get('method', '')}. AI chỉ tìm sản phẩm giống, không tự bịa ra số."
-                  if vi else f"The system tries four methods in order and stops at the first that works. This one: {f.get('method', '')}. AI only finds similar products; it never invents the number.")
+        title = T("Công thức đã dùng", "The formula used", "La formule utilisée")
+        answer = T(f"Hệ thống thử 4 cách theo thứ tự và dừng ở cách đầu tiên ra số. Sản phẩm này dùng: {method}. AI chỉ tìm sản phẩm giống, không tự bịa ra số.",
+                   f"The system tries four methods in order and stops at the first that works. This one: {method}. AI only finds similar products; it never invents the number.",
+                   f"Le système essaie quatre méthodes dans l’ordre et s’arrête à la première qui donne un chiffre. Ici : {method}. L’IA ne fait que trouver des produits similaires, elle n’invente jamais le chiffre.")
         bullets = list(f.get("formula_steps") or [])[-3:]
     elif topic in ("category", "greener_alternative"):
         st = f.get("category_stats") or {}
-        title = "So với sản phẩm cùng loại" if vi else "Compared with its category"
-        answer = (f"Trong {fmt_number(st.get('n'), L, 0)} sản phẩm cùng loại, mức giữa là {k(st.get('median_kg'))} kg; sản phẩm này xanh hơn {fmt_number(st.get('greener_than_pct'), L, 0)}% số còn lại."
-                  if vi and st else f"Among {fmt_number(st.get('n'), L, 0)} similar products the median is {k(st.get('median_kg'))} kg; this one is greener than {fmt_number(st.get('greener_than_pct'), L, 0)}%."
-                  if st else ("Chưa đủ dữ liệu thống kê cho loại này." if vi else "Not enough category data."))
+        title = T("So với sản phẩm cùng loại", "Compared with its category", "Comparé à sa catégorie")
+        if st:
+            cnt, med, pct = n(st.get("n"), 0), k(st.get("median_kg")), n(st.get("greener_than_pct"), 0)
+            answer = T(f"Trong {cnt} sản phẩm cùng loại, mức giữa là {med} kg; sản phẩm này xanh hơn {pct}% số còn lại.",
+                       f"Among {cnt} similar products the median is {med} kg; this one is greener than {pct}%.",
+                       f"Parmi {cnt} produits similaires, la médiane est de {med} kg ; celui-ci est plus sobre que {pct} % d’entre eux.")
+        else:
+            answer = T("Chưa đủ dữ liệu thống kê cho loại này.", "Not enough category data.", "Pas assez de données pour cette catégorie.")
         alt = f.get("greener_alternative")
         if alt:
-            bullets.append(f"Món xanh hơn giá tương đương: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e." if vi
-                           else f"Greener choice at a similar price: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e.")
+            bullets.append(T(f"Món xanh hơn giá tương đương: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e.",
+                             f"Greener choice at a similar price: {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e.",
+                             f"Option plus sobre à prix similaire : {alt['name']}, {k(alt['co2e_kg'])} kg CO₂e."))
     elif topic == "wefe":
-        title = "Nước – Năng lượng – Lương thực – Hệ sinh thái" if vi else "Water – Energy – Food – Ecosystems"
-        answer = ("Một lựa chọn mua sắm chạm tới cả bốn: điện than cần nhiều nước làm mát, rác điện tử ảnh hưởng đất canh tác, và CO₂ làm nóng khí hậu. Chọn món ít CO₂ hơn là giảm áp lực lên cả hệ thống đô thị."
-                  if vi else "One purchase touches all four: coal power needs cooling water, e-waste harms farmland, CO₂ warms the climate. A lower-CO₂ choice eases the whole city system.")
+        title = T("Nước – Năng lượng – Lương thực – Hệ sinh thái", "Water – Energy – Food – Ecosystems",
+                  "Eau – Énergie – Alimentation – Écosystèmes")
+        answer = T("Một lựa chọn mua sắm chạm tới cả bốn: điện than cần nhiều nước làm mát, rác điện tử ảnh hưởng đất canh tác, và CO₂ làm nóng khí hậu. Chọn món ít CO₂ hơn là giảm áp lực lên cả hệ thống đô thị.",
+                   "One purchase touches all four: coal power needs cooling water, e-waste harms farmland, CO₂ warms the climate. A lower-CO₂ choice eases the whole city system.",
+                   "Un achat touche les quatre : l’électricité au charbon consomme de l’eau de refroidissement, les déchets électroniques abîment les terres agricoles, le CO₂ réchauffe le climat. Choisir plus sobre allège tout le système urbain.")
     elif topic == "what_if":
-        title = "Kịch bản mô phỏng" if vi else "What-if scenario"
+        title = T("Kịch bản mô phỏng", "What-if scenario", "Scénario de simulation")
         total = (scenario or {}).get("total_kg")
-        answer = (f"Đây là mô phỏng: với các lựa chọn bạn đặt, tổng phát thải khoảng {k(total)} kg CO₂e, so với số chính thức {k(kg)} kg. Số chính thức không đổi."
-                  if vi and total is not None else
-                  f"This is a simulation: with your choices the total is about {k(total)} kg CO₂e versus the official {k(kg)} kg."
-                  if total is not None else ("Thay đổi các nút gạt để xem phát thải thay đổi ra sao." if vi else "Change the toggles to see how emissions move."))
-    follow = (["Vì sao sản xuất chiếm nhiều CO₂?", "Làm sao giảm CO₂ khi dùng?", "Có món nào xanh hơn không?"] if vi
-              else ["Why is manufacturing so large?", "How can I cut CO₂ while using it?", "Is there a greener option?"])
+        if total is not None:
+            answer = T(f"Đây là mô phỏng: với các lựa chọn bạn đặt, tổng phát thải khoảng {k(total)} kg CO₂e, so với số chính thức {k(kg)} kg. Số chính thức không đổi.",
+                       f"This is a simulation: with your choices the total is about {k(total)} kg CO₂e versus the official {k(kg)} kg.",
+                       f"Ceci est une simulation : avec vos choix, le total est d’environ {k(total)} kg CO₂e contre {k(kg)} kg officiellement.")
+        else:
+            answer = T("Thay đổi các nút gạt để xem phát thải thay đổi ra sao.", "Change the toggles to see how emissions move.",
+                       "Modifiez les réglages pour voir comment les émissions évoluent.")
+    follow = {"vi": ["Vì sao sản xuất chiếm nhiều CO₂?", "Làm sao giảm CO₂ khi dùng?", "Có món nào xanh hơn không?"],
+              "fr": ["Pourquoi la fabrication pèse-t-elle autant ?", "Comment réduire le CO₂ à l’usage ?", "Existe-t-il une option plus sobre ?"]
+              }.get(L, ["Why is manufacturing so large?", "How can I cut CO₂ while using it?", "Is there a greener option?"])
     return {"title": title, "answer": answer, "bullets": bullets, "follow_ups": follow}
 
 
@@ -266,7 +298,7 @@ def check_numbers(text: str, allowed: list[float]) -> tuple[str, int]:
 def explain(co2: dict, stats: dict | None, related: dict | None, topic: str, question: str | None,
             lang: str, scenario: dict | None, call=llm_provider.structured_call) -> dict:
     topic = topic if topic in TOPICS else "free"
-    lang = "en" if lang == "en" else "vi"
+    lang = lang if lang in ("en", "fr", "vi") else "en"
     facts = build_facts(co2, stats, related, lang)
     pid = str((co2.get("product") or {}).get("product_id"))
     key = json.dumps([pid, topic, (question or "").strip().lower(), scenario, lang], sort_keys=True, ensure_ascii=False)
