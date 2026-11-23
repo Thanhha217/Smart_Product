@@ -133,3 +133,25 @@ def test_checkout_mode_must_be_test(monkeypatch):
 def test_method_summary():
     body = client.get("/api/method").json()
     assert body["chain"][0]["method"] == "manufacturer" and body["url"] == "/method"
+
+
+def test_order_co2_total_only_adds_whole_life_figures(monkeypatch):
+    import orders
+    from store import MemoryStore
+    cards = {"1": {"name": "A", "price_vnd": 100, "co2e_kg": 50.0, "category": "laptop", "co2e_source": "manufacturer"},
+             "2": {"name": "B", "price_vnd": 100, "co2e_kg": 2.0, "category": "laptop", "co2e_source": "eeio_price"},
+             "3": {"name": "C", "price_vnd": 100, "co2e_kg": None, "category": "laptop", "co2e_source": None}}
+    o = orders.create_order(MemoryStore(), [{"product_id": k, "quantity": 1} for k in cards], "user",
+                            lambda pid: cards.get(pid), lambda cat: 80.0)
+    assert o["total_co2e_kg"] == 50.0 and o["co2_other_scope_items"] == 1 and o["co2_missing_items"] == 1
+    assert o["saved_co2e_kg"] == 30.0
+
+
+def test_order_rejects_products_without_price():
+    import orders
+    from store import MemoryStore
+    import pytest as _pytest
+    with _pytest.raises(orders.OrderError) as err:
+        orders.create_order(MemoryStore(), [{"product_id": "9", "quantity": 1}], "mcp",
+                            lambda pid: {"name": "X", "price_vnd": None, "co2e_kg": 1.0}, lambda cat: None)
+    assert err.value.code == "missing_price" and err.value.status == 409

@@ -52,13 +52,20 @@ def create_order(store: Store, items: list[dict], created_by: str, get_card: Cal
         card = get_card(pid)
         if card is None:
             raise OrderError("product_not_found", f"Product {pid} not found", 404)
+        if not card.get("price_vnd") or card["price_vnd"] <= 0:
+            # a missing price is not 0 VND: such a product cannot be ordered, even in test mode
+            raise OrderError("missing_price", f"Product {pid} has no price yet", 409)
         lines.append({"product_id": pid, "name": card["name"], "quantity": qty,
-                      "unit_price_vnd": card.get("price_vnd") or 0, "co2e_kg": card.get("co2e_kg"),
+                      "unit_price_vnd": card["price_vnd"], "co2e_kg": card.get("co2e_kg"),
                       "category": card.get("category"), "image_url": card.get("image_url"),
                       "co2e_source": card.get("co2e_source")})
 
     total_vnd = sum(line["unit_price_vnd"] * line["quantity"] for line in lines)
-    known = [line for line in lines if line["co2e_kg"] is not None]
+    # only whole-life figures are added up; the price-based estimate (production + delivery only)
+    # has another scope and is reported apart, like products without any figure
+    known = [line for line in lines if line["co2e_kg"] is not None and line.get("co2e_source") != "eeio_price"]
+    co2_missing = sum(1 for line in lines if line["co2e_kg"] is None)
+    co2_other_scope = sum(1 for line in lines if line["co2e_kg"] is not None and line.get("co2e_source") == "eeio_price")
     total_co2 = round(sum(line["co2e_kg"] * line["quantity"] for line in known), 2) if known else None
     baseline = saved = None
     medians = {line["category"]: get_median(line["category"]) for line in known}
@@ -69,7 +76,8 @@ def create_order(store: Store, items: list[dict], created_by: str, get_card: Cal
     order_id = str(uuid.uuid4())
     order = {"id": order_id, "mode": "test", "status": "draft", "created_by": created_by, "created_at": now_iso(),
              "confirmed_at": None, "items": lines, "total_vnd": total_vnd, "total_co2e_kg": total_co2,
-             "baseline_co2e_kg": baseline, "saved_co2e_kg": saved, "note": (note or "")[:300],
+             "baseline_co2e_kg": baseline, "saved_co2e_kg": saved, "co2_scope": "cradle_to_grave",
+             "co2_missing_items": co2_missing, "co2_other_scope_items": co2_other_scope, "note": (note or "")[:300],
              "confirm_url": f"/orders/{order_id}", "events": []}
     _event(order, created_by, "created", f"{len(lines)} item(s)")
     order["status"] = "awaiting_confirmation"

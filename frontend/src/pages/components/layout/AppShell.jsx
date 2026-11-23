@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useI18n } from "../../../i18n/LanguageContext";
 import { useCart } from "../../../lib/cart";
+import { useCompare } from "../../../lib/compare";
+import { useHealthSummary } from "../../../lib/health";
+import { useShopText } from "../../../i18n/shop";
 import LanguageSwitcher from "../header/LanguageSwitcher";
 import Icon from "../ui/Icon";
 
@@ -44,23 +47,9 @@ export function Logo({ light = false, compact = false, size = "md" }) {
   );
 }
 
-function SproutArt() {
-  return (
-    <svg viewBox="0 0 200 120" className="w-full h-auto" aria-hidden="true">
-      <defs>
-        <linearGradient id="soil" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6b4a2e" /><stop offset="1" stopColor="#3f2a19" /></linearGradient>
-        <linearGradient id="glow" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#cfe9b8" /><stop offset="1" stopColor="#7fb35a" /></linearGradient>
-      </defs>
-      <rect width="200" height="120" fill="url(#glow)" opacity=".35" />
-      <path d="M0 92 Q50 80 100 90 T200 88 V120 H0Z" fill="url(#soil)" />
-      <path d="M100 92 C100 70 98 58 100 44" stroke="#3f8a3a" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M100 62 C82 58 70 46 72 32 C88 34 98 46 100 62Z" fill="#5fb24a" />
-      <path d="M100 52 C116 46 128 32 126 18 C110 22 100 36 100 52Z" fill="#7cc95d" />
-    </svg>
-  );
-}
-
 function Sidebar({ t, onNavigate, drawer = false }) {
+  const st = useShopText();
+  const compare = useCompare();
   return (
     <div className="flex h-full flex-col gap-6 px-4 py-6 text-white" style={{ background: "linear-gradient(180deg,#1F5D3A 0%,#173F28 100%)" }}>
       <div className="px-1"><Logo light /></div>
@@ -70,52 +59,73 @@ function Sidebar({ t, onNavigate, drawer = false }) {
           <NavLink key={n.to} to={n.to} onClick={onNavigate}
                    className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[16px] font-medium transition ${isActive ? "bg-[#3B8C55] text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>
             <Icon name={n.icon} size={19} />
-            {t(n.key)}
+            <span className="flex-1">{t(n.key)}</span>
+            {n.to === "/compare" && compare.length > 0 && (
+              <span className="min-w-6 h-6 px-1.5 rounded-full bg-white/90 text-[#1F5D3A] text-[13.5px] font-bold grid place-items-center" aria-label={st("shell.compareBadge", { n: compare.length })}>{compare.length}</span>
+            )}
           </NavLink>
         ))}
       </nav>
-      <Link to="/world" onClick={onNavigate} className="mt-auto block overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15 transition">
-        <SproutArt />
-        <div className="p-3.5">
-          <p className="font-display text-lg leading-snug">{t("shell.promo")}</p>
-          <span className="mt-2 inline-grid place-items-center w-8 h-8 rounded-full bg-white text-[#1F5D3A]"><Icon name="arrowRight" size={16} /></span>
-        </div>
+      <Link to="/world" onClick={onNavigate}
+            className="mt-auto flex items-center gap-3 rounded-2xl bg-white/10 ring-1 ring-white/10 px-3.5 py-3 hover:bg-white/15 transition [@media(max-height:720px)]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+        <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/15 text-[#bde8a5] shrink-0"><Icon name="globe" size={19} /></span>
+        <span className="flex-1 text-[15px] font-semibold leading-snug">{st("shell.promoShort")}</span>
+        <Icon name="arrowRight" size={16} className="text-white/70" />
       </Link>
     </div>
   );
 }
 
 function TopBar({ t, onMenu, count }) {
+  const st = useShopText();
   const navigate = useNavigate();
-  const [q, setQ] = useState("");
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const compare = useCompare();
+  const health = useHealthSummary();
+  const urlQ = location.pathname === "/search" ? (params.get("q") ?? params.get("query") ?? "") : "";
+  const [q, setQ] = useState(urlQ);
+  useEffect(() => setQ(urlQ), [urlQ]);
+  const submit = (e) => {
+    e.preventDefault();
+    const value = q.replace(/\s+/g, " ").trim();
+    navigate(value ? `/search?q=${encodeURIComponent(value)}` : "/search");
+  };
+  const statusLabel = health.state === "unknown" ? st("shell.statusUnknown")
+    : health.state === "ok" ? st("shell.statusOk") : st("shell.statusIssues", { n: health.issues });
+  const iconBtn = "relative place-items-center w-10 h-10 rounded-full bg-white border border-[#E7E2D4] text-[#1F5D3A] hover:border-[#2E7D4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]";
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#E7E2D4] bg-[#F6F4EC]/90 backdrop-blur px-4 min-[900px]:px-8 h-[68px]">
-      <button type="button" onClick={onMenu} className="min-[900px]:hidden grid place-items-center w-10 h-10 rounded-xl bg-white border border-[#E7E2D4]" aria-label="menu">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#E7E2D4] bg-[#F6F4EC]/95 backdrop-blur px-4 min-[900px]:px-8 h-[68px]">
+      <button type="button" onClick={onMenu} className="min-[900px]:hidden grid place-items-center w-10 h-10 rounded-xl bg-white border border-[#E7E2D4] shrink-0" aria-label={st("shell.menu")}>
         <Icon name="menu" />
       </button>
-      <div className="min-[900px]:hidden"><Logo compact /></div>
-      <form className="flex-1 max-w-[520px]" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/search?query=${encodeURIComponent(q.trim())}`); }}>
-        <label className="flex items-center gap-2 rounded-full bg-white border border-[#E7E2D4] px-4 h-11 focus-within:ring-2 focus-within:ring-[#6FB04A]/50">
-          <Icon name="search" size={18} className="text-[#6B7468]" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("shell.searchPh")}
-                 className="flex-1 bg-transparent outline-none text-sm placeholder:text-[#9aa196] min-w-0" />
+      <form role="search" className="flex-1 min-w-0 max-w-[560px]" onSubmit={submit}>
+        <label className="flex items-center gap-2 rounded-full bg-white border border-[#E7E2D4] px-4 h-11 focus-within:ring-2 focus-within:ring-[#2E7D4F]/50">
+          <span className="sr-only">{st("shell.searchLabel")}</span>
+          <Icon name="search" size={18} className="text-[#6B7468] shrink-0" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("shell.searchPh")}
+                 enterKeyHint="search" className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-[#7c8578] min-w-0" />
         </label>
       </form>
       <div className="ml-auto flex items-center gap-2 min-[900px]:gap-3">
         <div className="hidden sm:block"><LanguageSwitcher /></div>
-        <Link to="/cart" className="relative grid place-items-center w-10 h-10 rounded-full bg-white border border-[#E7E2D4] text-[#1F5D3A]" aria-label="cart">
+        <Link to="/compare" className={`${iconBtn} hidden sm:grid`} aria-label={st("shell.compareBadge", { n: compare.length })} title={st("shell.compareBadge", { n: compare.length })}>
+          <Icon name="scale" size={19} />
+          {compare.length > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#1F5D3A] text-white text-[12.5px] font-bold grid place-items-center">{compare.length}</span>}
+        </Link>
+        <Link to="/cart" className={`${iconBtn} grid`} aria-label={st("shell.cartLabel", { n: count })} title={st("shell.cartLabel", { n: count })}>
           <Icon name="cart" size={19} />
-          {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#D9534F] text-white text-[13.5px] font-bold grid place-items-center">{count}</span>}
+          {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#b42318] text-white text-[12.5px] font-bold grid place-items-center">{count}</span>}
         </Link>
-        <Link to="/system" className="relative hidden sm:grid place-items-center w-10 h-10 rounded-full bg-white border border-[#E7E2D4] text-[#1F5D3A]" aria-label="system">
+        <Link to="/system" className={`${iconBtn} hidden sm:grid`} aria-label={statusLabel} title={statusLabel}>
           <Icon name="bell" size={19} />
-          <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-[#D9534F]" />
+          {health.state === "issues" && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#b45309] text-white text-[12.5px] font-bold grid place-items-center">{health.issues}</span>}
         </Link>
-        <div className="hidden md:flex items-center gap-2.5 pl-2">
-          <span className="grid place-items-center w-10 h-10 rounded-full text-white font-bold" style={{ background: "linear-gradient(135deg,#6FB04A,#2E7D4F)" }}>K</span>
+        <div className="hidden xl:flex items-center gap-2.5 pl-1" title={st("shell.guestNote")}>
+          <span className="grid place-items-center w-10 h-10 rounded-full bg-[#E4F1E6] text-[#1F5D3A]"><Icon name="user" size={19} /></span>
           <span className="leading-tight">
-            <span className="block text-sm font-bold">{t("shell.guest")}</span>
-            <span className="block text-xs text-[#6B7468]">{t("shell.role")}</span>
+            <span className="block text-[15px] font-semibold">{st("shell.guestName")}</span>
+            <span className="block text-[13.5px] text-[#5E6B60]">{st("shell.guestNote")}</span>
           </span>
         </div>
       </div>
@@ -139,6 +149,11 @@ function BottomTabs({ t }) {
   );
 }
 
+function CloseButton({ onClose }) {
+  const st = useShopText();
+  return <button type="button" onClick={onClose} className="absolute right-3 top-5 z-10 text-white/80 hover:text-white" aria-label={st("shell.closeMenu")}><Icon name="close" /></button>;
+}
+
 export default function AppShell() {
   const { t } = useI18n();
   const cart = useCart();
@@ -146,6 +161,12 @@ export default function AppShell() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <div className="min-h-screen bg-[#F6F4EC]">
@@ -153,10 +174,10 @@ export default function AppShell() {
         <Sidebar t={t} />
       </aside>
       {open && (
-        <div className="min-[900px]:hidden fixed inset-0 z-50">
+        <div className="min-[900px]:hidden fixed inset-0 z-50" role="dialog" aria-modal="true">
           <button type="button" aria-label="close menu" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-[288px] shadow-2xl">
-            <button type="button" onClick={() => setOpen(false)} className="absolute right-3 top-5 z-10 text-white/80" aria-label="close"><Icon name="close" /></button>
+            <CloseButton onClose={() => setOpen(false)} />
             <Sidebar t={t} drawer onNavigate={() => setOpen(false)} />
           </div>
         </div>

@@ -108,6 +108,9 @@ export const api = {
           "GET",
           `/api/categories/${encodeURIComponent(cat)}/stats${productId ? `?product_id=${encodeURIComponent(productId)}` : ""}`
         ),
+  /** Comparison table in the page language (GET /api/compare?ids=&lang=). */
+  compareTable: (list, lang = "en") => (MOCK_API ? mock.compare(list)
+    : request("GET", `/api/compare?ids=${encodeURIComponent(ids(list))}&lang=${encodeURIComponent(lang)}`, { timeoutMs: 30000 })),
   compare: (list) => (MOCK_API ? mock.compare(list) : request("GET", `/api/compare?ids=${encodeURIComponent(ids(list))}`)),
   askAssistant: ({ message, lang, parent_id = null }) =>
     MOCK_API

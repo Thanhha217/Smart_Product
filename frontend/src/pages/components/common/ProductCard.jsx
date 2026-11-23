@@ -89,19 +89,19 @@ export default function ProductCard({ product: raw, reason, onAdded, showActions
       )}
       {product.accessory && <p className="mt-1 text-[13.5px] text-[#92400e]">{t("common.accessoryCo2")}</p>}
       {reason && <p className="mt-2 text-[14px] text-[#374151] bg-[#f6f3ea] rounded-lg px-2.5 py-1.5">{reason}</p>}
-      <div className="mt-3 flex items-baseline gap-2">
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2">
         {priceText
-          ? <span className="text-xl font-bold text-[#1E2B22]">{priceText}</span>
+          ? <span className="text-xl font-bold text-[#1E2B22] whitespace-nowrap">{priceText}</span>
           : <span className="text-[15px] font-medium text-[#6b7280]">{t("common.noPrice")}</span>}
-        {product.original_price_vnd && <s className="text-[14px] text-[#9ca3af]">{formatPrice(product.original_price_vnd, lang)}</s>}
+        {product.original_price_vnd && <s className="text-[14px] text-[#9ca3af] whitespace-nowrap">{formatPrice(product.original_price_vnd, lang)}</s>}
       </div>
       <div className="mt-2"><Co2Badge product={product} /></div>
       {showActions && (
         <div className="mt-auto pt-4 flex flex-wrap gap-2">
-          <Link to={`/product/${product.product_id}`} className="btn-primary flex-1 text-center">{t("common.details")}</Link>
+          <Link to={`/product/${product.product_id}`} className="btn-primary flex-1 text-center whitespace-nowrap">{t("common.details")}</Link>
           <button type="button" onClick={toggleCompare} aria-pressed={inCompare} className={inCompare ? "btn-secondary-active" : "btn-secondary"}
                   title={inCompare ? t("compare.remove") : t("compare.add")}>
-            <Icon name="scale" size={17} /><span className="sr-only sm:not-sr-only sm:ml-1">{inCompare ? t("compare.added") : t("compare.add")}</span>
+            <Icon name="scale" size={17} /><span className="sr-only 2xl:not-sr-only 2xl:ml-1">{inCompare ? t("compare.added") : t("compare.add")}</span>
           </button>
           <button type="button" className="btn-secondary" aria-label={t("common.addToCart")} title={t("common.addToCart")}
                   onClick={() => { addToCart(product); setNote(t("common.addedToCart")); onAdded?.(product); }}>
