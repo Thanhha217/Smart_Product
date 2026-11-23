@@ -143,7 +143,7 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
   const local = sc.origin === "VN";
   const o = ORIGINS[sc.origin] || ORIGINS.CN;
   const c = {
-    kg: k(kg), pct: formatNum(pct, lang, 0), prodKg: k(stages.materials_production), origin: o[lang] ?? o.en,
+    measured: d.lifecycle?.basis === "formula", kg: k(kg), pct: formatNum(pct, lang, 0), prodKg: k(stages.materials_production), origin: o[lang] ?? o.en,
     sea: formatNum(o.sea, lang, 0), road: formatNum(o.road, lang, 0), local, years: sc.years,
     kwh: formatNum(stages.use ? stages.use / GRIDS[sc.grid] : null, lang, 0), ef: formatNum(GRIDS.vn, lang, 3),
     shipKg: base?.ok ? k(simulate(base, { ...sc, mode: "sea" }).stages.transport) : "—",

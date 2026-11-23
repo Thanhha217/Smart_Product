@@ -79,6 +79,18 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### CO₂ là trọng tâm (2026-11-23)
+
+- **Overview** mở bằng `components/dashboard/Co2Spotlight.jsx` (cuốn sách CO₂ mở sẵn của một sản phẩm thật),
+  rồi `HowCalculated` (công thức), sau đó mới tới tìm sản phẩm.
+- **Sách CO₂** `/story/:id` (flipbook) có lại lối vào: menu bên trái, Overview, trang sản phẩm, khung đầu CO₂ world,
+  trang Phương pháp. Các trang chặng trong sách theo cùng nguyên tắc: chỉ in kg từng chặng khi `basis = "formula"`.
+- **CO₂ world**: vòng ⊕ có nhãn trên mỏ, nhà máy, tàu, nhà, nhà máy điện, trạm tái chế (`Door` trong `WorldScene.jsx`)
+  → bấm là phóng vào cảnh; ‹ › / vuốt / ←→ để nhảy qua lại; Esc để lùi. Lời trong cảnh cũng theo tỷ lệ điển hình.
+- **Phương pháp CO₂**: `components/co2/MethodFlow.jsx` — sơ đồ quyết định 3 câu hỏi → 3 cách tính → kết quả, đường
+  của sản phẩm được tô sáng (mũi tên SVG có marker). `MethodExplorer.jsx` bọc sơ đồ bằng chính bộ cảnh của CO₂ world
+  (`SceneNavigator` + `SceneView`, `?scene=`), nên bấm ô nào cũng bước vào cảnh tương ứng.
+
 ### Giải thích CO₂ dùng chung (2026-11-23)
 
 - `frontend/src/lib/co2Formula.js` — `co2Explanation(co2, lang)` trả về: phương pháp, công thức

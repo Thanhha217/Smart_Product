@@ -377,6 +377,23 @@ function StageBadge({ x, y, n, label, topic }) {
   );
 }
 
+/** A door into a scene: a pulsing ring with a "+", drawn over the place it opens. */
+function Door({ x, y, topic, label }) {
+  return (
+    <g data-explain={topic} transform={`translate(${x} ${y})`}>
+      <circle r="44" fill="#ffd25a" opacity=".35" className="wx-pulse" />
+      <circle r="25" fill="#ffffff" stroke="#1F5D3A" strokeWidth="5" />
+      <path d="M-10 0 H10 M0 -10 V10" stroke="#1F5D3A" strokeWidth="5" strokeLinecap="round" />
+      {label && (
+        <g transform="translate(0 54)">
+          <rect x={-(label.length * 7.4 + 18)} y="-18" width={label.length * 14.8 + 36} height="34" rx="17" fill="#1F5D3A" opacity=".92" />
+          <text textAnchor="middle" y="6" fontSize="19" fontWeight="700" fill="#fff">{label}</text>
+        </g>
+      )}
+    </g>
+  );
+}
+
 /**
  * A stage bubble. `value` is already worded by the caller: this product's own kilograms when
  * the backend really split them, otherwise the share a product of this category typically has.
@@ -462,6 +479,17 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Bubble x={2150} y={880} value={stageValue("use")} note={stageNote} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} />
       <Bubble x={1450} y={1120} value={stageValue("end_of_life")} note={stageNote} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} />
 
+      {/* every place is a door into its own scene: tap it, then ‹ › to move to the next one */}
+      {!ask && (
+        <g>
+          <Door x={250} y={640} topic="materials" label={labels.doors?.materials} />
+          <Door x={610} y={640} topic="factory" label={labels.doors?.factory} />
+          <Door x={1180} y={760} topic="transport" label={labels.doors?.transport} />
+          <Door x={1990} y={930} topic="use" label={labels.doors?.use} />
+          <Door x={2290} y={1080} topic="grid" label={labels.doors?.grid} />
+          <Door x={1200} y={1300} topic="end_of_life" label={labels.doors?.end_of_life} />
+        </g>
+      )}
       <StageBadge x={330} y={445} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" />
       <StageBadge x={tBubble[0]} y={tBubble[1] - r(st.transport) - 46} n={2} label={labels.loop?.move || "Transport"} topic="transport" />
       <StageBadge x={1910} y={775} n={3} label={labels.loop?.use || "Use"} topic="use" />

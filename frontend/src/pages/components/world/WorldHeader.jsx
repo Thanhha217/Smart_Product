@@ -93,6 +93,11 @@ export default function WorldHeader({ d, onTopic, onChangeProduct, compact = fal
         </div>
       )}
 
+      <p className="mt-2 rounded-xl bg-[#FFF4DA] px-3 py-1.5 text-[13.5px] font-semibold text-[#8A4B00]">
+        👆 {L3("Bấm ⊕ trên bản đồ để bước vào · ‹ › để nhảy qua lại", "Tap ⊕ on the map to step in · ‹ › to jump between places",
+               "Touchez ⊕ pour entrer · ‹ › pour passer d'un lieu à l'autre")}
+      </p>
+
       {ex && (
         <details className="mt-3 rounded-2xl bg-[#F7FBF6] border border-[#DCEBD9] px-3 py-2" open={!compact}>
           <summary className="cursor-pointer list-none text-[13px] font-bold uppercase tracking-wide text-[#2E7D4F]">
@@ -109,6 +114,9 @@ export default function WorldHeader({ d, onTopic, onChangeProduct, compact = fal
               <button type="button" data-explain="formula" onClick={() => onTopic("formula")} className="text-[#1E5A96] underline">
                 {L3("Xem cách tính", "See how it is calculated", "Voir le calcul")}
               </button>
+              <Link to={`/story/${product.product_id}`} className="text-[#1E5A96] underline">
+                📖 {L3("Sách CO₂", "CO₂ book", "Livre CO₂")}
+              </Link>
               <Link to={`/product/${product.product_id}#co2`} className="text-[#1E5A96] underline">
                 {L3("Trang sản phẩm", "Product page", "Fiche produit")}
               </Link>

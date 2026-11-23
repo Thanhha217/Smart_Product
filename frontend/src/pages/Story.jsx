@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { stageShareLine, stageText } from "../lib/lifecycleText";
+import { Co2FormulaLine } from "./components/co2/Co2Explainer";
 import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { addToCart } from "../lib/cart";
@@ -34,12 +36,23 @@ function Tip({ children }) {
   return <p className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-900">💡 {children}</p>;
 }
 
-function StagePill({ stage, lang }) {
+/** A stage's size: its own kilograms when the backend really split them, otherwise the share a
+ * product of this category typically has — never presented as this product's measurement. */
+function StagePill({ stage, lang, measured }) {
   if (!stage) return null;
   return (
     <div className="flex items-center gap-3 my-2">
-      <span className="text-3xl font-black text-[#1f3b4d]">{formatKg(stage.kg, lang)} kg</span>
-      <span className="text-sm text-gray-600">· {formatNum(stage.pct, lang, 1)}%</span>
+      {measured ? (
+        <>
+          <span className="text-3xl font-black text-[#1f3b4d]">{formatKg(stage.kg, lang)} kg</span>
+          <span className="text-sm text-gray-600">· {formatNum(stage.pct, lang, 1)}%</span>
+        </>
+      ) : (
+        <>
+          <span className="text-3xl font-black text-[#1f3b4d]">{formatNum(stage.pct, lang, 0)}%</span>
+          <span className="text-sm text-amber-700">{tri(lang)("điển hình của loại", "typical for the category", "typique de la catégorie")}</span>
+        </>
+      )}
       <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
         <div className="h-full bg-emerald-600" style={{ width: `${Math.min(100, stage.pct)}%`, transition: "width .8s" }} />
       </div>
@@ -104,16 +117,25 @@ function buildPages({ d, T, lang, go, navigate }) {
   const origin = x.route ? (lang === "vi" ? x.route.origin_vi : x.route.origin_en) : null;
   const st = x.stages;
   const prodStage = st.materials_production;
+  // the catalogue stores one total; only basis "formula" is a real per-stage split
+  const measured = d.lifecycle?.basis === "formula";
+  const size = (s) => (!s ? null : measured ? `${formatKg(s.kg, lang)} kg` : `${formatNum(s.pct, lang, 0)}%`);
+  /** stage wording shared with the CO2 world when the split is only typical */
+  const shared = (key, s, fallback) => {
+    if (measured || !s) return fallback;
+    const txt = stageText(key, lang, x.route);
+    const share = stageShareLine(key, { measured: false, pctText: `${formatNum(s.pct, lang, 0)}%` }, lang);
+    return `${txt.what} ${txt.why} ${share ? share.charAt(0).toUpperCase() + share.slice(1) + "." : ""}`.trim();
+  };
   const stations = [
     { key: "materials", label: T.stages[0], value: null },
-    { key: "materials_production", label: T.stages[1], value: prodStage ? `${formatKg(prodStage.kg, lang)} kg` : null },
-    { key: "transport", label: T.stages[2], value: st.transport ? `${formatKg(st.transport.kg, lang)} kg` : null },
-    { key: "use", label: T.stages[3], value: st.use ? `${formatKg(st.use.kg, lang)} kg` : null },
-    { key: "end_of_life", label: T.stages[4], value: st.end_of_life ? `${formatKg(st.end_of_life.kg, lang)} kg` : null },
+    { key: "materials_production", label: T.stages[1], value: size(prodStage) },
+    { key: "transport", label: T.stages[2], value: size(st.transport) },
+    { key: "use", label: T.stages[3], value: size(st.use) },
+    { key: "end_of_life", label: T.stages[4], value: size(st.end_of_life) },
   ];
   const stagePage = [3, 3, 4, 5, 6];
   const intensity = prodStage ? Math.min(1, prodStage.kg / 400) : 0.4;
-  const steps = d.formula?.steps || [];
   const chainIdx = { manufacturer: 0, neighbor_average: 1, llm_estimate: 1, lifecycle_formula: 2, category_model: 2, eeio_price: 2 }[d.formula?.method] ?? 3;
   const alt = d.related?.greener_alternative;
 
@@ -165,8 +187,8 @@ function buildPages({ d, T, lang, go, navigate }) {
     <div key="prod">
       <H kicker={T.stages[0] + " · " + T.stages[1]}>{T.prodTitle}</H>
       <FactoryScene intensity={intensity} />
-      <StagePill stage={prodStage} lang={lang} />
-      <p className="text-gray-700">{T.prodBody(prodStage, origin)}</p>
+      <StagePill stage={prodStage} lang={lang} measured={measured} />
+      <p className="text-gray-700">{shared("materials_production", prodStage, T.prodBody(prodStage, origin))}</p>
       <Tip>{T.prodTip}</Tip>
     </div>,
 
@@ -174,8 +196,8 @@ function buildPages({ d, T, lang, go, navigate }) {
     <div key="trans">
       <H kicker={T.stages[2]}>{T.transTitle}</H>
       <ShipScene originCode={x.route?.origin_code} distanceKm={x.route?.distance_km} mode={x.route?.mode} />
-      <StagePill stage={st.transport} lang={lang} />
-      <p className="text-gray-700">{T.transBody(st.transport, x.route)}</p>
+      <StagePill stage={st.transport} lang={lang} measured={measured} />
+      <p className="text-gray-700">{shared("transport", st.transport, T.transBody(st.transport, x.route))}</p>
       {x.route?.assumed && <p className="text-[13.5px] text-amber-700 mt-2">⚠ {T.assumedRoute}</p>}
     </div>,
 
@@ -183,8 +205,8 @@ function buildPages({ d, T, lang, go, navigate }) {
     <div key="use">
       <H kicker={T.stages[3]}>{T.useTitle}</H>
       <GridScene category={p.category} />
-      <StagePill stage={st.use} lang={lang} />
-      <p className="text-gray-700">{T.useBody(st.use, x.kwhLife, x.usePhase)}</p>
+      <StagePill stage={st.use} lang={lang} measured={measured} />
+      <p className="text-gray-700">{shared("use", st.use, T.useBody(st.use, x.kwhLife, x.usePhase))}</p>
       <Tip>{T.useTip}</Tip>
     </div>,
 
@@ -192,8 +214,8 @@ function buildPages({ d, T, lang, go, navigate }) {
     <div key="eol">
       <H kicker={T.stages[4]}>{T.eolTitle}</H>
       <RecycleScene />
-      <StagePill stage={st.end_of_life} lang={lang} />
-      <p className="text-gray-700">{T.eolBody(st.end_of_life)}</p>
+      <StagePill stage={st.end_of_life} lang={lang} measured={measured} />
+      <p className="text-gray-700">{shared("end_of_life", st.end_of_life, T.eolBody(st.end_of_life))}</p>
       <Tip>{T.eolTip}</Tip>
     </div>,
 
@@ -208,16 +230,7 @@ function buildPages({ d, T, lang, go, navigate }) {
           </li>
         ))}
       </ol>
-      {d.formula?.expression && d.formula.expression !== "—" && (
-        <p className="font-mono text-[13.5px] bg-[#1f3b4d] text-emerald-100 rounded-lg px-3 py-2">{d.formula.expression}</p>
-      )}
-      <ul className="mt-2 space-y-1 text-[13.5px]">
-        {steps.slice(-4).map((s, i) => (
-          <li key={i} className="flex justify-between gap-2 border-b border-dashed border-gray-200 py-1">
-            <span className="text-gray-600">{lang === "vi" ? s.label_vi : s.label_en}</span><span className="font-mono font-semibold text-right">{s.expr}</span>
-          </li>
-        ))}
-      </ul>
+      <Co2FormulaLine co2={d} className="rounded-xl bg-[#F7FBF6] border border-[#DCEBD9] px-3 py-2" />
       <div className="mt-3 flex items-center gap-2 text-sm">
         <span className="text-gray-600">{T.confidence}</span>
         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-emerald-600" style={{ width: `${(d.formula?.confidence || 0) * 100}%` }} /></div>

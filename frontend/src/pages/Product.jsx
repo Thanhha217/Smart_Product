@@ -141,6 +141,8 @@ export default function Product() {
             <button type="button" className={inCompare ? "btn-secondary-active" : "btn-secondary"} onClick={toggleCompare} aria-pressed={inCompare}>
               <Icon name="scale" size={18} />{inCompare ? t("compare.added") : st("cmp.addThis")}
             </button>
+            <button type="button" className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2.5 font-bold text-white shadow hover:scale-[1.02] transition"
+                    onClick={() => navigate(`/story/${product.product_id}`)}><Icon name="book" size={18} />{t("product.story")}</button>
             <button type="button" className="btn-secondary" onClick={() => navigate(`/world/${product.product_id}`)}><Icon name="globe" size={18} />{st("prod.world")}</button>
             <button type="button" className="btn-secondary" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: product.name }))}`)}>
               <Icon name="sparkles" size={18} />{st("prod.askAi")}

@@ -125,8 +125,11 @@ export function sceneText(lang) {
       production: (c) => [
         T(`Ở nhà máy (giả định tại ${c.origin}), chip, màn hình, pin được làm ra rồi lắp ráp.`, `In the factory (assumed in ${c.origin}), chips, screens and batteries are made and assembled.`,
           `À l'usine (supposée en ${c.origin}), puces, écrans et batteries sont fabriqués puis assemblés.`),
-        T(`Chặng này thải ${c.kg} kg CO₂e, tức ${c.pct}% cả vòng đời — với đồ điện tử thường là phần lớn nhất.`, `This stage emits ${c.kg} kg CO₂e, ${c.pct}% of the lifecycle — for electronics usually the largest part.`,
-          `Cette étape émet ${c.kg} kg CO₂e, soit ${c.pct} % du cycle de vie — pour l'électronique, c'est souvent la plus grosse part.`),
+        c.measured
+          ? T(`Chặng này thải ${c.kg} kg CO₂e, tức ${c.pct}% cả vòng đời — với đồ điện tử thường là phần lớn nhất.`, `This stage emits ${c.kg} kg CO₂e, ${c.pct}% of the lifecycle — for electronics usually the largest part.`,
+              `Cette étape émet ${c.kg} kg CO₂e, soit ${c.pct} % du cycle de vie — pour l'électronique, c'est souvent la plus grosse part.`)
+          : T(`Với loại sản phẩm này, chặng này thường chiếm khoảng ${c.pct}% cả vòng đời — thường là phần lớn nhất.`, `For this kind of product this stage is usually about ${c.pct}% of the lifecycle — often the largest part.`,
+              `Pour ce type de produit, cette étape pèse en général environ ${c.pct} % du cycle de vie — souvent la plus grosse part.`),
         T("Dùng máy lâu hơn hoặc mua máy tân trang là cách giảm phần này hiệu quả nhất.", "Keeping a device longer or buying refurbished cuts this part most.",
           "Garder l'appareil plus longtemps ou l'acheter reconditionné réduit le plus cette part."),
       ],
@@ -134,22 +137,31 @@ export function sceneText(lang) {
         c.local ? T("Sản phẩm làm tại Việt Nam nên chỉ đi xe tải trong nước.", "Made in Vietnam, it only travels by truck.", "Fabriqué au Vietnam, il ne voyage qu'en camion.")
                 : T(`Từ ${c.origin}, hàng đi ${c.sea} km đường biển và ${c.road} km đường bộ tới cửa hàng.`, `From ${c.origin} it travels ${c.sea} km by sea and ${c.road} km by road to the shop.`,
                     `Depuis ${c.origin}, il parcourt ${c.sea} km par mer et ${c.road} km par route jusqu'au magasin.`),
-        T(`Chặng này chỉ ${c.kg} kg CO₂e (${c.pct}%): tàu biển chở rất nhiều hàng nên phần chia cho mỗi máy rất nhỏ.`, `Only ${c.kg} kg CO₂e (${c.pct}%): a ship carries so much that each unit's share is tiny.`,
-          `Seulement ${c.kg} kg CO₂e (${c.pct} %) : un navire transporte tant de marchandises que la part de chaque appareil est minuscule.`),
+        c.measured
+          ? T(`Chặng này chỉ ${c.kg} kg CO₂e (${c.pct}%): tàu biển chở rất nhiều hàng nên phần chia cho mỗi máy rất nhỏ.`, `Only ${c.kg} kg CO₂e (${c.pct}%): a ship carries so much that each unit's share is tiny.`,
+              `Seulement ${c.kg} kg CO₂e (${c.pct} %) : un navire transporte tant de marchandises que la part de chaque appareil est minuscule.`)
+          : T(`Chặng này thường chỉ khoảng ${c.pct}% với loại này: tàu biển chở rất nhiều hàng nên phần chia cho mỗi máy rất nhỏ.`, `Usually only about ${c.pct}% for this kind of product: a ship carries so much that each unit's share is tiny.`,
+              `En général seulement environ ${c.pct} % pour ce type de produit : un navire transporte tant que la part de chaque appareil est minuscule.`),
         T("Bấm vào con tàu để so sánh với đi máy bay.", "Tap the ship to compare it with flying.", "Touchez le navire pour comparer avec l'avion."),
       ],
       use: (c) => [
         T(`Bạn dùng sản phẩm khoảng ${c.years} năm, tốn khoảng ${c.kwh} kWh điện.`, `You use it about ${c.years} years, about ${c.kwh} kWh of electricity.`,
           `Vous l'utilisez environ ${c.years} ans, soit environ ${c.kwh} kWh d'électricité.`),
-        T(`Mỗi kWh ở Việt Nam thải ${c.ef} kg CO₂e vì lưới điện còn nhiều nhiệt điện than: tổng ${c.kg} kg (${c.pct}%).`, `Each kWh in Vietnam emits ${c.ef} kg CO₂e because of coal power: ${c.kg} kg in all (${c.pct}%).`,
-          `Chaque kWh au Vietnam émet ${c.ef} kg CO₂e à cause du charbon : ${c.kg} kg au total (${c.pct} %).`),
+        c.measured
+          ? T(`Mỗi kWh ở Việt Nam thải ${c.ef} kg CO₂e vì lưới điện còn nhiều nhiệt điện than: tổng ${c.kg} kg (${c.pct}%).`, `Each kWh in Vietnam emits ${c.ef} kg CO₂e because of coal power: ${c.kg} kg in all (${c.pct}%).`,
+              `Chaque kWh au Vietnam émet ${c.ef} kg CO₂e à cause du charbon : ${c.kg} kg au total (${c.pct} %).`)
+          : T(`Mỗi kWh ở Việt Nam thải ${c.ef} kg CO₂e vì lưới điện còn nhiều nhiệt điện than; với loại này, phần sử dụng thường chiếm khoảng ${c.pct}%.`, `Each kWh in Vietnam emits ${c.ef} kg CO₂e because of coal power; for this kind of product, use is usually about ${c.pct}%.`,
+              `Chaque kWh au Vietnam émet ${c.ef} kg CO₂e à cause du charbon ; pour ce type de produit, l'usage pèse en général environ ${c.pct} %.`),
         T("Tắt hẳn máy khi không dùng và chọn máy tiết kiệm điện giúp giảm phần này.", "Switch it fully off and pick efficient devices to cut this part.",
           "Éteignez complètement l'appareil et choisissez des modèles économes pour réduire cette part."),
       ],
       end_of_life: (c) => [
         T("Hết dùng, sản phẩm được thu gom, tháo rời và tái chế.", "At the end it is collected, taken apart and recycled.", "En fin de vie, il est collecté, démonté et recyclé."),
-        T(`Phần này nhỏ: ${c.kg} kg CO₂e (${c.pct}%), nhưng vứt sai chỗ làm kim loại nặng ngấm vào đất và nước.`, `It is small: ${c.kg} kg CO₂e (${c.pct}%), but dumping it leaks heavy metals into soil and water.`,
-          `C'est peu : ${c.kg} kg CO₂e (${c.pct} %), mais un abandon sauvage libère des métaux lourds dans le sol et l'eau.`),
+        c.measured
+          ? T(`Phần này nhỏ: ${c.kg} kg CO₂e (${c.pct}%), nhưng vứt sai chỗ làm kim loại nặng ngấm vào đất và nước.`, `It is small: ${c.kg} kg CO₂e (${c.pct}%), but dumping it leaks heavy metals into soil and water.`,
+              `C'est peu : ${c.kg} kg CO₂e (${c.pct} %), mais un abandon sauvage libère des métaux lourds dans le sol et l'eau.`)
+          : T(`Phần này thường nhỏ, khoảng ${c.pct}%, nhưng vứt sai chỗ làm kim loại nặng ngấm vào đất và nước.`, `It is usually small, about ${c.pct}%, but dumping it leaks heavy metals into soil and water.`,
+              `C'est en général peu, environ ${c.pct} %, mais un abandon sauvage libère des métaux lourds dans le sol et l'eau.`),
       ],
       formula: () => [
         T("Hệ thống thử 4 cách theo thứ tự và dừng ở cách đầu tiên ra số; AI chỉ tìm sản phẩm giống, không tự bịa số.", "The system tries four methods in order and stops at the first that works; AI only finds similar products, it never invents the number.",
@@ -227,7 +239,10 @@ export function sceneText(lang) {
           `Simulation : avec du solaire en toiture, l'étape d'utilisation serait d'environ ${c.solarUseKg} kg au lieu de ${c.vnUseKg} kg.`),
       ],
       "use/years": (c) => [
-        T(`Dùng ${c.years} năm: chặng sử dụng là ${c.kg} kg CO₂e.`, `Used ${c.years} years: the use stage is ${c.kg} kg CO₂e.`, `Utilisé ${c.years} ans : l'étape d'utilisation représente ${c.kg} kg CO₂e.`),
+        c.measured
+          ? T(`Dùng ${c.years} năm: chặng sử dụng là ${c.kg} kg CO₂e.`, `Used ${c.years} years: the use stage is ${c.kg} kg CO₂e.`, `Utilisé ${c.years} ans : l'étape d'utilisation représente ${c.kg} kg CO₂e.`)
+          : T(`Dùng ${c.years} năm: điện dùng càng lâu thì phần sử dụng càng lớn, còn phần sản xuất chia cho nhiều năm hơn.`, `Used ${c.years} years: the longer it runs, the bigger the use part, while manufacturing is spread over more years.`,
+              `Utilisé ${c.years} ans : plus il fonctionne longtemps, plus l'usage pèse, tandis que la fabrication se répartit sur plus d'années.`),
         T("Dùng lâu hơn thì tốn thêm điện, nhưng phần sản xuất được chia cho nhiều năm hơn — tính ra mỗi năm sử dụng ít CO₂ hơn.", "Using it longer adds electricity, but spreads manufacturing over more years — each year of use costs less CO₂.",
           "L'utiliser plus longtemps ajoute de l'électricité, mais répartit la fabrication sur plus d'années — chaque année d'utilisation coûte moins de CO₂."),
         T("Kéo thanh trượt để đổi số năm.", "Drag the slider to change the years.", "Faites glisser le curseur pour changer le nombre d'années."),

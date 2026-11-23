@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { formatKg, formatNum } from "../lib/format";
 import Icon from "./components/ui/Icon";
 import AskHero from "./components/dashboard/AskHero";
+import Co2Spotlight from "./components/dashboard/Co2Spotlight";
 import CategoryStrip from "./components/dashboard/CategoryStrip";
 import HowCalculated from "./components/dashboard/HowCalculated";
 import WhyConsider from "./components/co2/WhyConsider";
@@ -144,13 +145,15 @@ export default function Dashboard() {
 
   return (
     <main className="mx-auto max-w-[1180px] px-4 min-[900px]:px-8 py-7 space-y-9">
-      <AskHero />
+      <Co2Spotlight fallbackIds={exampleIds} />
 
       {error && <p className="rounded-2xl bg-[#FBE4E2] text-[#9B2F2A] px-4 py-3 text-[15.5px]">{D.unavailable}</p>}
 
-      <CategoryStrip rows={catalogue?.rows} status={catStatus} onRetry={() => window.location.reload()} lang={lang} />
-
       <HowCalculated fallbackIds={exampleIds} />
+
+      <AskHero />
+
+      <CategoryStrip rows={catalogue?.rows} status={catStatus} onRetry={() => window.location.reload()} lang={lang} />
 
       <section aria-labelledby="picks-title">
         <div className="flex flex-wrap items-end justify-between gap-2">

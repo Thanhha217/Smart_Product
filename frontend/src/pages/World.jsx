@@ -276,6 +276,14 @@ function WorldView({ productId }) {
     factory: `${T.factoryAt(originName)} ${sc.origin === base.origin ? T.assumed : ""}`.trim(),
     coal: L3("Nhiệt điện than", "Coal power", "Centrale à charbon"),
     vietnam: L3("Việt Nam", "Vietnam", "Vietnam"),
+    doors: {
+      materials: L3("Mỏ khoáng", "Mine", "Mine"),
+      factory: L3("Nhà máy", "Factory", "Usine"),
+      transport: L3("Con tàu", "Ship", "Navire"),
+      use: L3("Ngôi nhà", "Home", "Maison"),
+      grid: L3("Nhà máy điện", "Power plant", "Centrale"),
+      end_of_life: L3("Trạm tái chế", "Recycling", "Recyclage"),
+    },
     loop: {
       make: L3("Sản xuất", "Manufacture", "Fabrication"),
       move: L3("Vận chuyển", "Transport", "Transport"),
@@ -323,7 +331,7 @@ function WorldView({ productId }) {
       {/* HUD: product, total and the CO2 formula with this product's numbers */}
       {!scene && (
         <div ref={hudRef} className="absolute z-20 left-3 top-3 right-3 md:right-auto md:w-[440px] max-h-[calc(100%-96px)] overflow-y-auto rounded-3xl">
-          <WorldHeader d={d} compact={!xl} onTopic={open} onChangeProduct={() => navigate("/world")} />
+          <WorldHeader d={d} compact onTopic={open} onChangeProduct={() => navigate("/world")} />
           {!xl && !tour && (
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={() => { setTopic(null); setTour(true); }}
