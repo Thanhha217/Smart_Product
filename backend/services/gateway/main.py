@@ -133,6 +133,16 @@ def api_category_stats(category: str, request: Request):
     return _forward("GET", f"{DB_SEARCH_URL}/categories/{category}/stats", request)
 
 
+@app.get("/api/search")
+def api_search(request: Request):
+    return _forward("GET", f"{DB_SEARCH_URL}/search", request, timeout=30)
+
+
+@app.get("/api/categories")
+def api_categories(request: Request):
+    return _forward("GET", f"{DB_SEARCH_URL}/categories", request, timeout=30)
+
+
 @app.get("/api/overview")
 def api_overview(request: Request):
     return _forward("GET", f"{DB_SEARCH_URL}/stats/overview", request, timeout=120)

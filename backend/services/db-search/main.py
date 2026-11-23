@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timezone
 
 from co2_queries import category_stats, overview, related_product_ids
+import search_api
 from db_search_functions import engine, get_product_data_from_id, get_products_data_from_ids
 from dto.QueryDTO import ProductsFromIdsDTO, QueryWithImageDTO
 app = FastAPI()
@@ -104,3 +105,30 @@ def stats_overview(refresh: bool = False):
         data["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         _OVERVIEW_CACHE.update(at=time.time(), body=data)
     return _OVERVIEW_CACHE["body"]
+
+
+
+@app.on_event("startup")
+def _enable_unaccent():
+    """Accent-insensitive search (Điều hòa == dieu hoa). Idempotent."""
+    from sqlmodel import text as _text
+    try:
+        with engine.begin() as conn:
+            conn.execute(_text("CREATE EXTENSION IF NOT EXISTS unaccent"))
+    except Exception as error:  # the search endpoint reports the problem instead of crashing the service
+        print(f"unaccent extension unavailable: {error}", flush=True)
+
+
+@app.get("/search")
+def search_products(q: Optional[str] = None, category: Optional[str] = None, brand: Optional[str] = None,
+                    platform: Optional[str] = None, min_price: Optional[float] = None, max_price: Optional[float] = None,
+                    has_co2: bool = False, has_price: bool = False, co2_source: Optional[str] = None,
+                    sort: str = "relevance", page: int = 1, page_size: int = 24, include_accessories: bool = False):
+    """Filtered product search (see search_api.py)."""
+    return search_api.search(engine, q, category, brand, platform, min_price, max_price, has_co2, has_price,
+                             co2_source, sort, page, page_size, include_accessories)
+
+
+@app.get("/categories")
+def list_categories():
+    return {"categories": search_api.categories(engine)}
