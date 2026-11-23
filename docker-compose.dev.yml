@@ -490,6 +490,44 @@ services:
     depends_on:
       - smart-product-finder-database
   
+  # AI result pages (B1), CO2 formula/lifecycle API, compare, test orders (B3).
+  # Build context is backend/services so the shared `green` package is copied in.
+  assistant:
+    build:
+      context: ./backend/services
+      dockerfile: assistant/Dockerfile
+    container_name: smartproductfinder-assistant
+    ports:
+      - "8070:8070"
+    image: assistant
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      # Secret: export it in your shell or put it in the root .env (never commit it).
+      # Without it the pages are still built, with rule-based texts.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    restart: always
+    depends_on:
+      - db-search
+      - smart-product-finder-database
+
+  # MCP server for ChatGPT / other MCP clients (B2): http://localhost:8100/mcp
+  mcp-server:
+    build:
+      context: ./backend/services/mcp-server
+      dockerfile: Dockerfile
+    container_name: smartproductfinder-mcp-server
+    ports:
+      - "8100:8100"
+    image: mcp-server
+    environment:
+      GATEWAY_URL: http://smartproductfinder-backend-gateway:8000
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:5173}
+      MCP_RATE_LIMIT_PER_MIN: ${MCP_RATE_LIMIT_PER_MIN:-30}
+    restart: always
+    depends_on:
+      - backend-gateway
+
   smart-product-finder-database:
     image: postgres:17
     container_name: smart-product-finder-database
