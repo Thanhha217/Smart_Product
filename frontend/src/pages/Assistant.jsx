@@ -64,7 +64,7 @@ export default function Assistant() {
         <label htmlFor="ask" className="sr-only">{t("assistant.title")}</label>
         <textarea
           id="ask"
-          className="bg-primary-100 rounded-2xl p-3 min-h-24 outline-secondary-500 focus:outline-2"
+          className="bg-white border border-[#E7E2D4] shadow-sm rounded-2xl p-4 min-h-28 outline-secondary-500 focus:outline-2"
           placeholder={t("assistant.placeholder")}
           value={message}
           onChange={(e) => setMessage(e.target.value)}

@@ -284,5 +284,19 @@
   "nav.world": "Thế giới CO₂",
   "product.world": "Khám phá thế giới CO₂ của sản phẩm",
   "home.worldTitle": "Thế giới CO₂ của sản phẩm",
-  "home.worldLead": "Kéo, phóng to, bấm vào bất cứ đâu để AI giải thích sản phẩm được làm, chở và dùng ra sao."
+  "home.worldLead": "Kéo, phóng to, bấm vào bất cứ đâu để AI giải thích sản phẩm được làm, chở và dùng ra sao.",
+  "nav.dashboard": "Tổng quan",
+  "nav.search": "Tìm sản phẩm",
+  "nav.ask": "Hỏi AI",
+  "nav.cartShort": "Giỏ & đơn thử",
+  "nav.system": "Hệ thống",
+  "shell.promo": "Mua sắm xanh hơn với dữ liệu",
+  "shell.guest": "Khách",
+  "shell.role": "Người mua xanh",
+  "shell.searchPh": "Tìm sản phẩm, ví dụ: laptop Dell…",
+  "tab.home": "Tổng quan",
+  "tab.world": "Thế giới",
+  "tab.search": "Tìm",
+  "tab.ask": "Hỏi AI",
+  "tab.cart": "Giỏ"
 }

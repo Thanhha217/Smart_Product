@@ -34,7 +34,8 @@ function useFillHeight(ref) {
   useLayoutEffect(() => {
     const update = () => {
       const top = ref.current ? ref.current.getBoundingClientRect().top + window.scrollY : 120;
-      setH(Math.max(460, window.innerHeight - top));
+      const tabBar = window.innerWidth < 900 ? 72 : 0;   // AppShell bottom tab bar on phones
+      setH(Math.max(460, window.innerHeight - top - tabBar));
     };
     update();
     window.addEventListener("resize", update);

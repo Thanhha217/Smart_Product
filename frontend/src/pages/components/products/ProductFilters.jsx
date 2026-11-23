@@ -21,7 +21,7 @@ export default function ProductFilter({
 }) {
     const { t } = useI18n();
 
-    const titleCss = "text-primary-500 font-bold text-xl whitespace-nowrap"
+    const titleCss = "text-[15px] font-bold text-[#1E2B22] whitespace-nowrap"
 
     const handleMinChange = (e) => {
         const val = Number(e.target.value);
@@ -44,17 +44,17 @@ export default function ProductFilter({
 
 
     return (
-        <aside className={"bg-primary-100 rounded-2xl h-16 flex flex-col gap-x-4 gap-y-6 p-6 "+ className}>
+        <aside className={"flex flex-col gap-x-4 gap-y-5 "+ className}>
             {/* <p className="text-primary-900 font-bold text-xl whitespace-nowrap">Filters</p> */}
             <p className={titleCss}>{t("filter.priceRange")}</p>
 
 
             <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap w-full justify-center">
-                    <input type="number" className="bg-primary-200 text-right" min="0" max={priceLimit} value={minPriceValue} onChange={handleMinChange}/>
+                    <input type="number" className="bg-[#F6F4EC] border border-[#E7E2D4] rounded-lg px-2 py-1 w-24 text-right" min="0" max={priceLimit} value={minPriceValue} onChange={handleMinChange}/>
                     <label>.000₫</label>
                     <p className="px-2 text-center">~</p>
-                    <input type="number" className="bg-primary-200 text-right" min="0" max={priceLimit} value={maxPriceValue} onChange={handleMaxChange}/>
+                    <input type="number" className="bg-[#F6F4EC] border border-[#E7E2D4] rounded-lg px-2 py-1 w-24 text-right" min="0" max={priceLimit} value={maxPriceValue} onChange={handleMaxChange}/>
                     <label>.000₫</label>
                 </div>
                 
@@ -78,7 +78,7 @@ export default function ProductFilter({
                     setStarValue={setStarValue}
                 />
                 <div>
-                    <input type="number" className="bg-primary-200 text-right" min="0" max="5" value={starValue} onChange={handleStarChange}/>
+                    <input type="number" className="bg-[#F6F4EC] border border-[#E7E2D4] rounded-lg px-2 py-1 w-24 text-right" min="0" max="5" value={starValue} onChange={handleStarChange}/>
                     <label>{t("filter.stars")}</label>
                 </div>
                 

@@ -213,9 +213,9 @@ export default function SearchResults() {
 
 
   return (
-    <div className="min-h-full md:py-6 md:p-10 pb-12 flex gap-4 m-auto">
+    <div className="mx-auto max-w-[1320px] px-4 min-[900px]:px-8 py-6 pb-12 flex gap-6">
       <ProductFilter
-        className="hidden w-full md:flex md:w-3/12 h-full"
+        className="hidden card p-5 md:flex md:w-[270px] shrink-0 self-start sticky top-[88px]"
         priceLimit={priceLimit}
         minPriceValue={minPriceValue}
         setMinPriceValue={setMinPriceValue}
@@ -233,7 +233,7 @@ export default function SearchResults() {
       />
 
 
-      <div className="flex-1 md:px-6 flex flex-col gap-6">
+      <div className="flex-1 min-w-0 flex flex-col gap-5">
         <ProductMobileFilter
           priceLimit={priceLimit}
           minPriceValue={minPriceValue}
@@ -253,12 +253,15 @@ export default function SearchResults() {
           setSortValue={setSortValue}
         />
 
-        <div className="flex justify-between items-center">
-          <p>{t("results.for", { query })}</p>
+        <div className="flex flex-wrap justify-between items-end gap-3">
+          <div>
+            <p className="eyebrow">{t("nav.search")}</p>
+            <h1 className="text-[28px] font-bold leading-tight text-[#1E2B22]">{t("results.for", { query })}</h1>
+          </div>
 
           <div className="hidden md:flex gap-4 items-center">
-            <label htmlFor="sorting">{t("results.sortBy")}</label>
-            <select name="sorting" id="sorting" className="bg-primary-100 p-1" value={sortValue} onChange={handleSortChange}>
+            <label htmlFor="sorting" className="text-sm text-[#6B7468]">{t("results.sortBy")}</label>
+            <select name="sorting" id="sorting" className="bg-white border border-[#E7E2D4] rounded-full px-4 py-2 text-sm font-semibold" value={sortValue} onChange={handleSortChange}>
               <option value="">{t("sort.relevance")}</option>
               <option value="price-low">{t("sort.priceLow")}</option>
               <option value="price-high">{t("sort.priceHigh")}</option>

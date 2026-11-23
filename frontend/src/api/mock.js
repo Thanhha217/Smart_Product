@@ -475,3 +475,43 @@ export async function explain({ product_id, topic, question, lang, scenario }) {
     model: "rule-based (mock)", cached: false, number_check_failures: 0,
   };
 }
+
+
+// ------------------------------------------------------------------ dashboard (api-overview.md)
+const asItem = (p) => ({ platform_name: p.platform, image_url: p.image_url, product: {
+  id: Number(p.product_id), name: p.name, final_price: p.price_vnd, product_url: p.product_url, co2e_kg: p.co2e_kg,
+  co2e_source: p.co2e_source, co2e_confidence: p.co2e_confidence, co2e_category: p.category, green_score: p.green_score,
+  product_rating: (p.rating || 0) / 5, review_count: p.review_count } });
+
+export async function getOverview() {
+  await delay();
+  return {
+    total_products: 7515, with_co2: 7515, references: 1450, grid_ef: 0.681,
+    by_category: [
+      { category: "laptop", n: 4716, median_kg: 277.2, p25: 240, p75: 316.2, min_kg: 113, max_kg: 485 },
+      { category: "headphone", n: 1055, median_kg: 7.1, p25: 6.8, p75: 11, min_kg: 3.2, max_kg: 28 },
+      { category: "computer_monitor", n: 902, median_kg: 494.8, p25: 359.4, p75: 511.5, min_kg: 225.9, max_kg: 997.1 },
+      { category: "smartphone", n: 536, median_kg: 64.5, p25: 58, p75: 72, min_kg: 30.1, max_kg: 120 },
+      { category: "smartwatch", n: 124, median_kg: 24.5, p25: 11, p75: 24.5, min_kg: 8.1, max_kg: 40 },
+      { category: "tablet", n: 35, median_kg: 104.2, p25: 98.5, p75: 110, min_kg: 60, max_kg: 140 },
+    ],
+    by_source: [{ source: "neighbor_average", n: 4419 }, { source: "category_model", n: 2905 }, { source: "manufacturer", n: 191 }],
+    platforms: [{ name: "CellPhones", n: 6012 }, { name: "Điện Máy Xanh", n: 1121 }, { name: "Phong Vu", n: 236 }, { name: "FPT Shop", n: 146 }],
+    greenest: Object.values(PRODUCTS).filter((p) => p.product_id !== "103").map((p) => ({ category: p.category, item: asItem(p) })),
+    suggestions: [
+      { category: "computer_monitor", from: asItem(PRODUCTS[201]), to: asItem(PRODUCTS[202]), saved_kg: 134 },
+      { category: "laptop", from: asItem(PRODUCTS[103]), to: asItem(PRODUCTS[101]), saved_kg: 185.6 },
+    ],
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function getHealth() {
+  await delay();
+  const s = (key, name, latency, detail) => ({ key, name, status: "online", latency_ms: latency, detail });
+  return { services: [
+    s("db-search", "Cơ sở dữ liệu & tìm kiếm", 12, "7.515 sản phẩm"), s("ranking", "Xếp hạng CatBoost + RRF", 18),
+    s("clip", "OpenCLIP (so độ giống)", 9), s("assistant", "AI giải thích", 7, "rule-based"),
+    s("mcp", "MCP cho ChatGPT", 11), { key: "etl", name: "ETL + tính CO₂", status: "offline", detail: "mock" },
+  ], checked_at: new Date().toISOString() };
+}

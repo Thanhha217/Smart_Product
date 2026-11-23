@@ -284,5 +284,19 @@
   "nav.world": "CO₂ world",
   "product.world": "Explore the product's CO₂ world",
   "home.worldTitle": "A product's CO₂ world",
-  "home.worldLead": "Drag, zoom and tap anything for an AI explanation of how it is made, shipped and used."
+  "home.worldLead": "Drag, zoom and tap anything for an AI explanation of how it is made, shipped and used.",
+  "nav.dashboard": "Overview",
+  "nav.search": "Find products",
+  "nav.ask": "Ask AI",
+  "nav.cartShort": "Cart & test orders",
+  "nav.system": "System",
+  "shell.promo": "Shop greener with data",
+  "shell.guest": "Guest",
+  "shell.role": "Green shopper",
+  "shell.searchPh": "Search products, e.g. Dell laptop…",
+  "tab.home": "Overview",
+  "tab.world": "World",
+  "tab.search": "Search",
+  "tab.ask": "Ask AI",
+  "tab.cart": "Cart"
 }

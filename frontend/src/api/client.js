@@ -67,6 +67,19 @@ export function toProductCard(item) {
   };
 }
 
+// The overview may carry full db-search items or only ids; give the page ProductCards (or ids to fetch).
+function normaliseOverview(d) {
+  if (!d) return d;
+  const greenest = (d.greenest || []).map((g) => ({ category: g.category, product: toProductCard(g.item || g.product || g) }));
+  const greenestIds = (d.greenest_ids || []).map((g) => ({ category: g.category, id: String(g.id) }));
+  const suggestions = (d.suggestions || []).map((s) => ({
+    category: s.category, saved_kg: s.saved_kg,
+    from: s.from ? toProductCard(s.from) : null, to: s.to ? toProductCard(s.to) : null,
+    from_id: s.from_id != null ? String(s.from_id) : null, to_id: s.to_id != null ? String(s.to_id) : null,
+  }));
+  return { ...d, greenest, greenest_ids: greenestIds, suggestions };
+}
+
 const ids = (list) => list.map(String).filter(Boolean).join(",");
 
 export const api = {
@@ -114,6 +127,12 @@ export const api = {
     MOCK_API
       ? mock.explain({ product_id, topic, question, lang, scenario })
       : request("POST", "/api/explain", { body: { product_id: String(product_id), topic, question, lang, scenario }, timeoutMs: 45000 }),
+  // Dashboard numbers (docs/demo/api-overview.md). Items are normalised to ProductCard.
+  getOverview: async () => {
+    const data = MOCK_API ? await mock.getOverview() : await request("GET", "/api/overview", { timeoutMs: 45000 });
+    return normaliseOverview(data);
+  },
+  getHealth: () => (MOCK_API ? mock.getHealth() : request("GET", "/api/health", { timeoutMs: 15000 })),
   // Existing search endpoint (gateway wraps db-search's {"products": [...]} once more).
   searchProducts: async (q, limit = 12) => {
     if (MOCK_API) return mock.searchProducts(q, limit);

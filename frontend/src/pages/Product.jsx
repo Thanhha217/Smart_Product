@@ -1,3 +1,4 @@
+import { ProductImage } from "./components/products/ProductSlot";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { api, toProductCard } from "../api/client";
@@ -105,18 +106,18 @@ export default function Product() {
 
 
     return (
-        <div className="flex flex-col items-center gap-2 py-6 md:p-10 min-h-full">
+        <div className="mx-auto max-w-[1320px] px-4 min-[900px]:px-8 py-6 flex flex-col gap-4 min-h-full">
             <div className="flex justify-start w-full px-2">
-                <p className="text-primary-800 hover:underline cursor-pointer">{productInfo.category_name}</p>
+                <p className="eyebrow">{productInfo.category_name}</p>
             </div>
             
-            <div className="bg-primary-100 rounded-2xl max-w-full md:min-w-full md:min-h-5/12 flex md:items-normal flex-col md:flex-row p-6 gap-2">
-                <img className="w-full md:w-120 md:h-120 bg-white border-2 border-primary-200" src={productInfo.image_url} />
-                <div className="flex flex-col justify-between md:px-12 max-w-full items-center md:items-baseline gap-10">
+            <div className="card max-w-full md:min-w-full flex md:items-start flex-col md:flex-row p-5 md:p-7 gap-6">
+                <div className="w-full md:w-[380px] shrink-0"><ProductImage src={productInfo.image_url} alt={productInfo.product.name} className="h-72 md:h-[380px]" /></div>
+                <div className="flex flex-col justify-between max-w-full items-start gap-8 min-w-0">
                     <div className='flex flex-col gap-4'>
-                        <p className="font-bold text-2xl">{productInfo.platform_name}</p>
+                        <span className="pill bg-[#E4F1E6] text-[#1F5D3A] self-start">{productInfo.platform_name}</span>
                         
-                        <h1 className="text-4xl">{productInfo.product.name}</h1>
+                        <h1 className="text-[34px] leading-tight font-bold text-[#1E2B22]">{productInfo.product.name}</h1>
 
                         <div className="flex gap-4">
                             <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : t("product.noRating")}</p>
@@ -129,7 +130,7 @@ export default function Product() {
                             </p>
                         </div>
 
-                        <p className="text-orange-400 text-4xl font-bold">{formatNumber(productInfo.product.final_price)}₫</p>
+                        <p className="text-[#1F5D3A] text-4xl font-extrabold">{formatNumber(productInfo.product.final_price)}₫</p>
                         <div className={"flex gap-4 " + (productInfo.product.original_price != productInfo.product.final_price ? "" : "hidden")}>
                             <p className="text-primary-800 line-through">{formatNumber(productInfo.product.original_price)}₫</p>
                             <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{"-" + (100 - Math.floor((productInfo.product.final_price / productInfo.product.original_price) * 100)) + "%"}</p>
@@ -171,10 +172,10 @@ export default function Product() {
                         )}
                         {productInfo.product.co2e_kg !== null && productInfo.product.co2e_kg !== undefined ? (
                             <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 bg-green-500 rounded-2xl text-white p-3 w-fit">
+                                <div className="flex items-center gap-2 bg-[#E4F1E6] text-[#1F5D3A] border border-[#cfe5d2] rounded-2xl p-3 w-fit">
                                     <span>{t("product.estimatedGwp")}: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</span>
                                     <div className="group relative cursor-pointer ml-1 inline-block">
-                                        <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
+                                        <span className="bg-[#2E7D4F] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
                                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-10 shadow-lg">
                                             {t("product.co2ExplanationDisclaimer")}
                                         </div>
