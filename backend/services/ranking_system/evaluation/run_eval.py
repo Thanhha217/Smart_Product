@@ -8,7 +8,7 @@ Does not need FAISS / Postgres -- only the JSONL from export_candidates.py:
 Outputs (in --out):
     labels.jsonl        cached LLM judgements (re-runs are free)
     results.json        per-system metrics with 95 % bootstrap CI + p-values
-    results_table.tex   LaTeX table ready for research_paper.tex
+    results_table.tex   LaTeX table ready for paper/research_paper.tex
     fig_ndcg.png        NDCG@k per system (bar chart with CI)
     fig_agreement.png   LLM-vs-human confusion matrix (only with --human)
 

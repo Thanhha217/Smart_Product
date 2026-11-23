@@ -40,3 +40,13 @@ def parse_references(raw):
         return refs if isinstance(refs, list) else []
     except (TypeError, ValueError):
         return []
+
+
+def parse_json_object(raw):
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+        return value if isinstance(value, dict) else None
+    except (TypeError, ValueError):
+        return None

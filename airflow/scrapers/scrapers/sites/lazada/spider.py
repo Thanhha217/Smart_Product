@@ -7,7 +7,10 @@ import scrapy
 from scrapy.http import HtmlResponse
 from scrapers.base.spider import BaseProductSpider
 from scrapers.sites.lazada.loader import LazadaLoader
-from scrapy_playwright.page import PageMethod
+try:  # browser stack is optional (see settings.py); the spider only works with it installed
+    from scrapy_playwright.page import PageMethod
+except ImportError:
+    PageMethod = None
 
 MAX_PAGE_PER_CATEGORY = 1
 

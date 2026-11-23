@@ -1,0 +1,48 @@
+{
+  "_about": "Typical share of each lifecycle stage in a product's cradle-to-grave footprint, by reference category. ASSUMPTION used only to DRAW the lifecycle diagram when the stored number (manufacturer figure, neighbour average, category model) is a single total. Rough orders of magnitude from published manufacturer product environmental reports (Apple, Dell, HP, Lenovo, Samsung: production dominates phones/laptops/tablets; the use phase dominates always-on or large-screen devices). Replace with the per-product stage_share of the reference catalogue (task A6) as soon as it exists. The total CO2 shown is never changed by these shares.",
+  "shares": {
+    "smartphone":          {"materials_production": 0.80, "transport": 0.03, "use": 0.16, "end_of_life": 0.01},
+    "feature_phone":       {"materials_production": 0.80, "transport": 0.04, "use": 0.15, "end_of_life": 0.01},
+    "laptop":              {"materials_production": 0.75, "transport": 0.05, "use": 0.19, "end_of_life": 0.01},
+    "gaming_laptop":       {"materials_production": 0.65, "transport": 0.04, "use": 0.30, "end_of_life": 0.01},
+    "tablet":              {"materials_production": 0.80, "transport": 0.04, "use": 0.15, "end_of_life": 0.01},
+    "desktop":             {"materials_production": 0.45, "transport": 0.02, "use": 0.52, "end_of_life": 0.01},
+    "computer_monitor":    {"materials_production": 0.40, "transport": 0.02, "use": 0.57, "end_of_life": 0.01},
+    "computer_peripheral": {"materials_production": 0.85, "transport": 0.08, "use": 0.06, "end_of_life": 0.01},
+    "smartwatch":          {"materials_production": 0.85, "transport": 0.05, "use": 0.09, "end_of_life": 0.01},
+    "wearable":            {"materials_production": 0.85, "transport": 0.05, "use": 0.09, "end_of_life": 0.01},
+    "headphone":           {"materials_production": 0.85, "transport": 0.06, "use": 0.08, "end_of_life": 0.01},
+    "speaker":             {"materials_production": 0.60, "transport": 0.05, "use": 0.34, "end_of_life": 0.01},
+    "smart_home":          {"materials_production": 0.55, "transport": 0.04, "use": 0.40, "end_of_life": 0.01},
+    "networking":          {"materials_production": 0.30, "transport": 0.02, "use": 0.67, "end_of_life": 0.01},
+    "gaming_console":      {"materials_production": 0.35, "transport": 0.02, "use": 0.62, "end_of_life": 0.01},
+    "television":          {"materials_production": 0.25, "transport": 0.02, "use": 0.72, "end_of_life": 0.01},
+    "_default":            {"materials_production": 0.70, "transport": 0.04, "use": 0.25, "end_of_life": 0.01},
+    "_eeio":               {"materials_production": 0.92, "transport": 0.08, "use": 0.0,  "end_of_life": 0.0}
+  },
+  "_route_about": "Assumed origin of finished goods sold in Vietnam (brand -> country) and the freight leg to Vietnam. Factors are rough well-to-wheel defaults in kg CO2e per tonne-km (container ship ~0.016, truck ~0.105, air ~0.6), in line with GLEC-framework orders of magnitude. Indicative only; shown with an 'assumed' badge.",
+  "brand_origin": {
+    "samsung": "VN", "lg": "VN", "daikin": "VN", "panasonic": "VN", "toshiba": "VN", "sharp": "VN",
+    "canon": "VN", "kangaroo": "VN", "sunhouse": "VN", "vsmart": "VN", "bphone": "VN",
+    "apple": "CN", "xiaomi": "CN", "oppo": "CN", "vivo": "CN", "realme": "CN", "huawei": "CN", "honor": "CN",
+    "lenovo": "CN", "asus": "CN", "acer": "CN", "hp": "CN", "dell": "CN", "msi": "CN", "gigabyte": "CN",
+    "logitech": "CN", "tcl": "CN", "hisense": "CN", "midea": "CN", "casper": "TH", "electrolux": "TH",
+    "mitsubishi": "TH", "aqua": "VN", "sony": "MY"
+  },
+  "origins": {
+    "VN": {"name_vi": "Việt Nam", "name_en": "Vietnam", "sea_km": 0, "road_km": 500},
+    "CN": {"name_vi": "Trung Quốc", "name_en": "China", "sea_km": 1800, "road_km": 300},
+    "TH": {"name_vi": "Thái Lan", "name_en": "Thailand", "sea_km": 1100, "road_km": 300},
+    "MY": {"name_vi": "Malaysia", "name_en": "Malaysia", "sea_km": 1200, "road_km": 300}
+  },
+  "default_origin": "CN",
+  "freight_kg_per_tkm": {"sea": 0.016, "road": 0.105, "air": 0.6},
+  "default_mass_kg": {
+    "smartphone": 0.4, "feature_phone": 0.3, "laptop": 2.5, "gaming_laptop": 3.5, "tablet": 0.8, "desktop": 10,
+    "computer_monitor": 7, "computer_peripheral": 0.4, "smartwatch": 0.2, "wearable": 0.2, "headphone": 0.5,
+    "speaker": 2, "smart_home": 0.8, "networking": 1, "gaming_console": 5, "television": 25,
+    "air_conditioner": 45, "refrigerator": 70, "washing_machine": 70, "electric_fan": 6, "rice_cooker": 4,
+    "air_purifier": 8, "water_purifier": 15, "vacuum_cleaner": 6, "microwave_oven": 15, "stove": 10, "lighting": 0.3,
+    "_default": 2
+  }
+}

@@ -1,300 +1,223 @@
-import { useParams, useLocation } from "react-router-dom";
+// Product detail: one card with what the store says, what we know about its CO₂ (value, unit,
+// scope, source, published or estimated, reports used) and the next steps (compare, cart, world).
 import { useEffect, useState } from "react";
-import { GATEWAY_URL } from "./utils/consts";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { api } from "../api/client";
 import { useI18n } from "../i18n/LanguageContext";
-import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey } from "./utils/helpers";
+import { useShopText } from "../i18n/shop";
+import { addToCart } from "../lib/cart";
+import { addToCompare, removeFromCompare, useCompare } from "../lib/compare";
+import { co2Kind, co2Scope, formatCount, formatPrice, normalizeList, normalizeProduct, num, text } from "../lib/data";
+import { formatKg, formatNum } from "../lib/format";
+import { addRecent } from "../lib/recent";
 
+import { GATEWAY_URL } from "./utils/consts";
+import ProductCard, { ProductImage, specLabel } from "./components/common/ProductCard";
+import { EmptyState, ErrorState } from "./components/common/States";
+import Co2Explainer from "./components/co2/Co2Explainer";
+import WhyConsider from "./components/co2/WhyConsider";
+import LifecycleJourney from "./components/co2/LifecycleJourney";
+import Icon from "./components/ui/Icon";
+
+async function loadProduct(id) {
+  const res = await fetch(`${GATEWAY_URL}/product/${encodeURIComponent(id)}`);
+  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+  const data = await res.json();
+  const item = data?.product;
+  if (!item || item.error || !item.product) return null;
+  return item;
+}
 
 export default function Product() {
-    const params = useParams();
-    const location = useLocation();
-    const { lang, t, formatNumber } = useI18n();
+  const { productId } = useParams();
+  const { t, lang } = useI18n();
+  const st = useShopText();
+  const navigate = useNavigate();
+  const compare = useCompare();
+  const [state, setState] = useState({ status: "loading", item: null });
+  const [co2, setCo2] = useState(null);
+  const [related, setRelated] = useState(null);
+  const [retry, setRetry] = useState(0);
+  const [note, setNote] = useState(null);
 
-    // const productInfo = {
-    //     platform_name: "Shopee",
-    //     category_name: "Smartphone",
-    //     image_url: "/logo192.png",
-    //     seller: {
-    //         name: "Super seller",
-    //         seller_rating: 80
-    //     },
-    //     product: {
-    //         id: productId,
-    //         product_url: "https://youtu.be/dQw4w9WgXcQ",
-    //         name: "Test product",
-    //         original_price: 15636212,
-    //         final_price: 12010000,
-    //         product_rating: 4.6,
-    //         review_count: 123,
-    //         gwp: 12.3
-    //     },
-    //     return_policy: {
-    //         days_for_return: 30,
-    //         free_delivery: true,
-    //         warranty_duration: 12
-    //     }
+  useEffect(() => {
+    let alive = true;
+    setState({ status: "loading", item: null });
+    setCo2(null);
+    setRelated(null);
+    setNote(null);
+    loadProduct(productId)
+      .then((item) => { if (alive) setState({ status: item ? "success" : "notfound", item }); })
+      .catch(() => alive && setState({ status: "error", item: null }));
+    api.getProductCo2(productId).then((d) => alive && setCo2(d)).catch(() => alive && setCo2(false));
+    api.getRelated(productId, 8).then((d) => alive && setRelated(d)).catch(() => alive && setRelated(false));
+    return () => { alive = false; };
+  }, [productId, retry]);
 
-    // }
+  const item = state.item;
+  const product = normalizeProduct(item);
+  useEffect(() => { if (product) addRecent(product); }, [product?.product_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
-    const [productInfo, setProductInfo] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchProductInfo = async (productId) => {
-            try {
-                const res = await fetch(`${GATEWAY_URL}/product/${productId}`);
-                const data = await res.json();
-                let fetched = data.product;
-
-                const stateProduct = location.state?.product || location.state?.productInfo;
-                const stateReason = stateProduct?.recommendation_reason || stateProduct?.product?.recommendation_reason;
-                if (stateReason && fetched && fetched.product) {
-                    fetched.product.recommendation_reason = stateReason;
-                    fetched.recommendation_reason = stateReason;
-                }
-
-                setProductInfo(fetched);
-            } catch (error) {
-                console.error("Failed to fetch product details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (params.productId) {
-            fetchProductInfo(params.productId);
-        }
-    }, [params.productId, location.state]);
-
-    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-xs px-2 py-1 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
-
-    if (loading) {
-        return <div className="flex justify-center items-center p-10 min-h-full">{t("product.loading")}</div>;
-    }
-
-    if (!productInfo) {
-        return <div className="flex justify-center items-center p-10 min-h-full">{t("product.notFound")}</div>;
-    }
-
-    const highlights = getProductHighlights(productInfo);
-    const reason = getRecommendationReason(productInfo, productInfo.platform_name, t, true);
-    const co2Explanation = lang === "vi"
-        ? (productInfo.product.co2e_explanation_vi || productInfo.product.co2e_explanation)
-        : (productInfo.product.co2e_explanation || productInfo.product.co2e_explanation_vi);
-
-
+  if (state.status === "loading") {
     return (
-        <div className="flex flex-col items-center gap-2 py-6 md:p-10 min-h-full">
-            <div className="flex justify-start w-full px-2">
-                <p className="text-primary-800 hover:underline cursor-pointer">{productInfo.category_name}</p>
-            </div>
-            
-            <div className="bg-primary-100 rounded-2xl max-w-full md:min-w-full md:min-h-5/12 flex md:items-normal flex-col md:flex-row p-6 gap-2">
-                <img className="w-full md:w-120 md:h-120 bg-white border-2 border-primary-200" src={productInfo.image_url} />
-                <div className="flex flex-col justify-between md:px-12 max-w-full items-center md:items-baseline gap-10">
-                    <div className='flex flex-col gap-4'>
-                        <p className="font-bold text-2xl">{productInfo.platform_name}</p>
-                        
-                        <h1 className="text-4xl">{productInfo.product.name}</h1>
-
-                        <div className="flex gap-4">
-                            <p className="text-nowrap">★ {productInfo.product.review_count ? (`${productInfo.product.product_rating * 5.0} (${productInfo.product.review_count})`) : t("product.noRating")}</p>
-                            <p>
-                                {t("product.seller")}: {productInfo.seller.name} (
-                                {productInfo.seller.seller_rating <= 0
-                                    ? t("product.noSellerRating")
-                                    : t("product.goodRatings", { percent: productInfo.seller.seller_rating })}
-                                )
-                            </p>
-                        </div>
-
-                        <p className="text-orange-400 text-4xl font-bold">{formatNumber(productInfo.product.final_price)}₫</p>
-                        <div className={"flex gap-4 " + (productInfo.product.original_price != productInfo.product.final_price ? "" : "hidden")}>
-                            <p className="text-primary-800 line-through">{formatNumber(productInfo.product.original_price)}₫</p>
-                            <p className="bg-orange-100 text-orange-400 rounded-2xl text-nowrap px-1">{"-" + (100 - Math.floor((productInfo.product.final_price / productInfo.product.original_price) * 100)) + "%"}</p>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-x-4 gap-y-2 md:gap-6">
-                            <p className={(productInfo.return_policy.free_delivery ? "" : "hidden ") + tagStyle}>{t("product.freeDelivery")}</p>
-                            <p className={(productInfo.return_policy.days_for_return ? "" : "hidden ") + tagStyle}>{t("product.daysReturn", { days: productInfo.return_policy.days_for_return })}</p>
-                            <p className={(productInfo.return_policy.warranty_duration ? "" : "hidden ") + tagStyle}>{t("product.warranty", { months: productInfo.return_policy.warranty_duration })}</p>
-                        </div>
-
-                        {/* Why Recommended Callout (Explanation) */}
-                        {reason && (
-                            <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-4 my-2 w-full">
-                                <h3 className="font-bold text-orange-950 text-sm flex items-center gap-1.5 mb-1">
-                                    ✨ {t("product.whyRecommended")}
-                                </h3>
-                                <p className="text-gray-700 text-sm italic">
-                                    "{reason}"
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Product Highlights / Specs (Details) */}
-                        {highlights.length > 0 && (
-                            <div className="flex flex-col gap-2 my-2 w-full">
-                                <h3 className="font-bold text-primary-900 text-sm">
-                                    📋 {t("product.keyHighlights")}
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {highlights.map((hl, idx) => (
-                                        <div key={idx} className="bg-primary-50 rounded-lg p-2.5 border border-primary-150 flex items-start gap-2">
-                                            <span className="text-primary-500 font-bold text-xs">✔</span>
-                                            <span className="text-gray-700 text-xs">{hl}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {productInfo.product.co2e_kg !== null && productInfo.product.co2e_kg !== undefined ? (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 bg-green-500 rounded-2xl text-white p-3 w-fit">
-                                    <span>{t("product.estimatedGwp")}: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</span>
-                                    <div className="group relative cursor-pointer ml-1 inline-block">
-                                        <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
-                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-10 shadow-lg">
-                                            {t("product.co2ExplanationDisclaimer")}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 bg-gray-400 rounded-2xl text-white p-3 w-fit">
-                                <span>{t("product.estimatedGwp")}: <span className="font-bold">{t("product.co2Unavailable")}</span></span>
-                                <div className="group relative cursor-pointer ml-1 inline-block">
-                                    <span className="bg-gray-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-10 shadow-lg">
-                                        {productInfo.product.co2e_source === "unsupported" ? t("product.co2NotSupported") : t("product.co2UnavailableTooltip")}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-                    <div className="py-2">
-                        <a 
-                            href={productInfo.product.product_url}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-center w-full bg-primary-500 rounded-2xl text-2xl font-bold text-primary-100 px-4 py-2  p-100 cursor-pointer hover:bg-primary-800 transition duration-100 ease-in-out">
-                            {t("product.checkOnWebsite")}
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-
-            {/* Sustainability & Carbon Footprint Report */}
-            <div className="w-full bg-white border border-primary-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-sm mt-4">
-                <h2 className="text-2xl font-bold text-primary-900 border-b border-primary-100 pb-3 flex items-center gap-2">
-                    🍃 {t("product.sustainabilityReport")}
-                </h2>
-
-                {productInfo.product.co2e_kg !== null && productInfo.product.co2e_kg !== undefined ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Left Side: Score & Rating */}
-                        <div className="flex flex-col gap-4">
-                            <div className="bg-green-50 rounded-xl p-6 border border-green-200 flex flex-col items-center justify-center text-center gap-2">
-                                <span className="text-gray-600 text-sm font-semibold uppercase tracking-wider">{t("product.estimatedGwp")}</span>
-                                <span className="text-5xl font-black text-green-700">{productInfo.product.co2e_kg} <span className="text-2xl font-normal">kg CO₂e</span></span>
-                                
-                                {/* Green score 0-5 within the category */}
-                                {(() => {
-                                    const score = productInfo.product.green_score;
-                                    const level = getGreenLevel(score);
-                                    return (
-                                        <div className="w-full flex flex-col items-center gap-2 mt-2">
-                                            <span className={`text-3xl font-black ${level.text}`}>
-                                                {t("product.greenScore")}: {score ?? "–"}<span className="text-lg font-normal">/5</span>
-                                            </span>
-                                            {score !== null && score !== undefined && (
-                                                <div className="w-full max-w-xs h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div className={`h-full ${level.bg}`} style={{ width: `${(score / 5) * 100}%` }} />
-                                                </div>
-                                            )}
-                                            <span className={`px-3 py-1 rounded-full text-sm font-bold text-white ${level.bg}`}>
-                                                {t("product.carbonRating")}: {t(level.key)}
-                                            </span>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-
-                            {/* Where the number comes from */}
-                            <div className="bg-white rounded-xl p-4 border border-primary-100 flex flex-col gap-2">
-                                <h3 className="font-semibold text-primary-900 text-sm">{t("product.co2Source")}</h3>
-                                <p className="text-gray-700 text-sm">{t(getCo2SourceKey(productInfo.product.co2e_source))}</p>
-                                {productInfo.product.co2e_references?.length > 0 && (
-                                    <>
-                                        <h4 className="font-semibold text-primary-900 text-xs mt-1">{t("product.co2References")}</h4>
-                                        <ul className="text-xs text-gray-600 flex flex-col gap-1">
-                                            {productInfo.product.co2e_references.map((ref, i) => (
-                                                <li key={i} className="flex justify-between gap-2 border-b border-gray-100 pb-1">
-                                                    <span className="line-clamp-1">{ref.name}</span>
-                                                    <span className="text-nowrap font-semibold">
-                                                        {ref.co2e_kg} kg{ref.cosine < 1 ? ` · ${t("product.co2Similarity")} ${ref.cosine}` : ""}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Explanation Text */}
-                            <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
-                                <h3 className="font-semibold text-primary-900 text-sm mb-1">{t("product.aiExplanation")}</h3>
-                                <p className="text-gray-700 text-sm italic">
-                                    "{co2Explanation || (lang === "vi" ? "Được ước tính dựa trên vật liệu, thông số kỹ thuật và các sản phẩm tham chiếu đã xác minh." : "Estimated based on product materials, specs, and similar verified benchmarks.")}"
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Right Side: Equivalences & Lifecycle */}
-                        <div className="flex flex-col gap-6">
-                            {/* Environmental Equivalence */}
-                            <div className="flex flex-col gap-3">
-                                <h3 className="font-bold text-primary-900 text-base">{t("product.equivalence")}</h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
-                                        <span className="text-2xl">🚗</span>
-                                        <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 4.1)} km</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqDriving")}</span>
-                                    </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
-                                        <span className="text-2xl">📱</span>
-                                        <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 121)}</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqPhones")}</span>
-                                    </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
-                                        <span className="text-2xl">🌳</span>
-                                        <span className="text-lg font-bold text-gray-800">{Math.max(1, Math.round(productInfo.product.co2e_kg / 22))}</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqTrees")}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                ) : (
-                    /* Unsupported or missing data view */
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6">
-                        <div className="bg-gray-200 text-gray-500 text-4xl w-16 h-16 rounded-full flex items-center justify-center shrink-0">📭</div>
-                        <div className="flex flex-col gap-2 text-center md:text-left">
-                            <h3 className="text-lg font-bold text-gray-800">{t("product.notEvaluatedTitle")}</h3>
-                            <p className="text-gray-600 text-sm leading-relaxed">
-                                {t("product.notEvaluatedReason")}
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* <ProductCarousel query={productInfo.product.name}/> */}
-
+      <main className="page-wrap" aria-busy="true">
+        <div className="rounded-2xl bg-white border border-[#ebe6d8] p-6 grid md:grid-cols-[360px_1fr] gap-6 animate-pulse">
+          <div className="h-72 rounded-xl bg-[#efece2]" />
+          <div className="flex flex-col gap-3"><div className="h-8 w-3/4 rounded bg-[#efece2]" /><div className="h-6 w-1/3 rounded bg-[#efece2]" /><div className="h-24 rounded bg-[#efece2]" /></div>
         </div>
+        <span className="sr-only">{t("common.loading")}</span>
+      </main>
     );
+  }
+  if (state.status === "error") {
+    return <main className="page-wrap"><ErrorState title={st("prod.loadError")} onRetry={() => setRetry((n) => n + 1)} /></main>;
+  }
+  if (state.status === "notfound" || !product) {
+    return (
+      <main className="page-wrap">
+        <EmptyState icon="search" title={st("prod.notFound")} body={st("prod.notFoundBody")}>
+          <Link to="/search" className="btn-primary">{st("search.title")}</Link>
+        </EmptyState>
+      </main>
+    );
+  }
+
+  const inCompare = compare.some((c) => c.product_id === product.product_id);
+  const priceText = formatPrice(product.price_vnd, lang);
+  const kg = num(product.co2e_kg);
+  const scope = co2Scope(product);
+  const kind = co2Kind(product);
+  const explanation = text(lang === "vi" ? (item?.product?.co2e_explanation_vi || item?.product?.co2e_explanation) : item?.product?.co2e_explanation);
+  const warranty = num(item?.return_policy?.warranty_duration);
+  const returns = num(item?.return_policy?.days_for_return);
+  const description = text(item?.product?.description);
+  const relatedItems = related ? normalizeList(related.items).filter((p) => p.product_id !== product.product_id) : [];
+  const greener = related ? normalizeProduct(related.greener_alternative) : null;
+  const categoryLabel = product.category ? (st(`cat.${product.category}`) !== `cat.${product.category}` ? st(`cat.${product.category}`) : null) : null;
+
+  const toggleCompare = () => {
+    if (inCompare) { removeFromCompare(product.product_id); setNote(null); return; }
+    const r = addToCompare(product);
+    setNote(r === "full" ? t("compare.full") : r === "duplicate" ? t("compare.duplicate") : null);
+  };
+
+  return (
+    <main className="page-wrap flex flex-col gap-6">
+      <nav aria-label="breadcrumb" className="text-[14px] text-[#4b5563] flex flex-wrap gap-1.5">
+        <Link to="/search" className="underline hover:text-[#1F5D3A]">{st("search.title")}</Link>
+        {categoryLabel && (<><span aria-hidden="true">›</span><Link to={`/search?category=${product.category}`} className="underline hover:text-[#1F5D3A]">{categoryLabel}</Link></>)}
+      </nav>
+
+      <section className="rounded-2xl bg-white border border-[#ebe6d8] p-5 md:p-7 grid gap-6 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        <ProductImage product={product} className="h-64 md:h-[360px]" />
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="flex flex-wrap gap-2">
+            {product.platform && <span className="rounded-full bg-[#E4F1E6] text-[#1F5D3A] px-3 py-1 text-[14px] font-medium">{st("prod.store")}: {product.platform}</span>}
+            {product.condition === "used" && <span className="rounded-full bg-[#fff4e5] text-[#92400e] px-3 py-1 text-[14px]">{t("common.used")}</span>}
+          </div>
+          <h1 className="page-title !text-[28px] md:!text-[34px]">{product.name}</h1>
+          {(product.brand || product.specs.length > 0) && (
+            <p className="text-[16px] text-[#374151]">{[product.brand, ...product.specs.map((s) => specLabel(t, s))].filter(Boolean).join(" · ")}</p>
+          )}
+          <p className="text-[15px] text-[#4b5563]">
+            {product.rating !== null ? st("prod.rating", { r: formatNum(product.rating, lang, 1), n: formatCount(product.review_count || 0, lang) }) : st("prod.noRating")}
+          </p>
+          <div className="flex flex-wrap items-baseline gap-3">
+            {priceText ? <span className="text-3xl font-bold text-[#1E2B22]">{priceText}</span>
+              : <span className="text-xl font-medium text-[#6b7280]">{t("common.noPrice")}</span>}
+            {product.original_price_vnd && <s className="text-[16px] text-[#9ca3af]">{formatPrice(product.original_price_vnd, lang)}</s>}
+            {product.discount_pct ? <span className="rounded-full bg-[#fde8e7] px-2 py-0.5 text-[14px] font-semibold text-[#b42318]">−{product.discount_pct}%</span> : null}
+          </div>
+          {(warranty > 0 || returns > 0) && (
+            <div className="flex flex-wrap gap-2 text-[14px]">
+              {warranty > 0 && <span className="rounded-lg bg-[#f6f3ea] px-2.5 py-1">{t("product.warranty", { months: warranty })}</span>}
+              {returns > 0 && <span className="rounded-lg bg-[#f6f3ea] px-2.5 py-1">{st("prod.returns", { days: returns })}</span>}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button type="button" className="btn-primary" onClick={() => { addToCart(product); setNote(t("common.addedToCart")); }}>
+              <Icon name="cart" size={18} />{t("common.addToCart")}
+            </button>
+            <button type="button" className={inCompare ? "btn-secondary-active" : "btn-secondary"} onClick={toggleCompare} aria-pressed={inCompare}>
+              <Icon name="scale" size={18} />{inCompare ? t("compare.added") : st("cmp.addThis")}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate(`/world/${product.product_id}`)}><Icon name="globe" size={18} />{st("prod.world")}</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: product.name }))}`)}>
+              <Icon name="sparkles" size={18} />{st("prod.askAi")}
+            </button>
+            {product.product_url && (
+              <a href={product.product_url} target="_blank" rel="noreferrer" className="btn-secondary"><Icon name="link" size={18} />{st("prod.openStore")}</a>
+            )}
+          </div>
+          {note && <p role="status" className="text-[14px] text-[#1F5D3A]">{note}</p>}
+        </div>
+      </section>
+
+      {/* layer 1: the figure and what it means. The method, its values and its limits are in
+          the explainer below, so the same explanation is used on every page. */}
+      <section className="rounded-2xl bg-white border border-[#ebe6d8] p-5 md:p-7" aria-labelledby="co2h">
+        <h2 id="co2h" className="text-xl font-semibold text-[#1E2B22]">{st("prod.co2Title")}</h2>
+        {kg === null ? (
+          <p className="mt-3 text-[16px] text-[#374151] max-w-3xl">{st("prod.co2None")}</p>
+        ) : (
+          <div className="mt-3 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="flex flex-col gap-2">
+              <p className="text-4xl font-bold text-[#1F5D3A]">{formatKg(kg, lang)} <span className="text-xl font-medium text-[#4b5563]">kg CO₂e</span></p>
+              <ul className="text-[15px] text-[#374151] flex flex-col gap-1">
+                <li>{st("prod.co2Scope", { scope: t(`common.scope.${scope}`) })}</li>
+                <li>{st("prod.co2Source", { src: st(`src.${product.co2e_source}`) })} · {t(kind === "published" ? "common.co2Published" : "common.co2Estimated")}</li>
+              </ul>
+              {product.green_score !== null && (
+                <p className="text-[15px] font-medium text-[#1F5D3A]">
+                  {t("co2.greenScore")}: {formatNum(product.green_score, lang, 1)} / 5{" "}
+                  <span className="font-normal text-[#4b5563]">({t("co2.greenScoreHint")})</span>
+                </p>
+              )}
+              {explanation && <p className="text-[15px] text-[#4b5563] bg-[#f6f3ea] rounded-xl px-3 py-2">{explanation}</p>}
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold">{st("prod.equivalents")}</h3>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg * 4.1, lang, 0)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqCar")}</p></div>
+                <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg / 21.8, lang, 1)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqTrees")}</p></div>
+              </div>
+              <p className="mt-2 text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {kg !== null && <WhyConsider productId={product.product_id} />}
+
+      {co2 && co2.formula && kg !== null && (
+        <div id="co2" className="grid gap-6 lg:grid-cols-2 items-start">
+          <Co2Explainer co2={co2} compact />
+          <LifecycleJourney lifecycle={co2.lifecycle} />
+        </div>
+      )}
+
+      {greener && greener.product_id !== product.product_id && (
+        <section aria-labelledby="greener">
+          <h2 id="greener" className="text-xl font-semibold text-[#1E2B22]">{st("prod.greener")}</h2>
+          <div className="mt-3 max-w-sm"><ProductCard product={greener} highlight /></div>
+        </section>
+      )}
+
+      {relatedItems.length > 0 && (
+        <section aria-labelledby="related">
+          <h2 id="related" className="text-xl font-semibold text-[#1E2B22]">{st("prod.related")}</h2>
+          <div className="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+            {relatedItems.slice(0, 4).map((p) => <ProductCard key={p.product_id} product={p} />)}
+          </div>
+        </section>
+      )}
+
+      {description && description.length > 20 && (
+        <details className="rounded-2xl bg-white border border-[#ebe6d8] p-5">
+          <summary className="cursor-pointer text-[16px] font-semibold">{st("prod.description")}</summary>
+          <p className="mt-3 whitespace-pre-line text-[15px] text-[#374151]">{description.slice(0, 2000)}</p>
+        </details>
+      )}
+    </main>
+  );
 }

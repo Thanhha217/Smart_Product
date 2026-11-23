@@ -83,3 +83,38 @@ export function getCo2SourceKey(source) {
   if (source === "neighbor_average") return "product.co2SourceAverage";
   return "product.co2SourceOther";
 }
+
+
+// The ranking service writes its short "why this product" badges in English
+// (ranking_system/explanation_generator.py). Known patterns are translated; numbers are kept.
+const REASON_PATTERNS = [
+  [/^Huge (\d+)% sale discount$/i, (m) => `Đang giảm giá mạnh ${m[1]}%`],
+  [/^Great customer ratings \(([\d.]+)★\)$/i, (m) => `Khách hàng đánh giá cao (${m[1].replace(".", ",")}★)`],
+  [/^Great customer ratings$/i, () => "Khách hàng đánh giá cao"],
+  [/^Best budget value choice$/i, () => "Lựa chọn tiết kiệm nhất"],
+  [/^Best price\/quality ratio$/i, () => "Giá và chất lượng cân đối nhất"],
+  [/^Best value( for money)?$/i, () => "Đáng tiền nhất"],
+  [/^Lowest price$/i, () => "Giá thấp nhất"],
+  [/^Free (delivery|shipping)$/i, () => "Miễn phí giao hàng"],
+];
+
+const REASON_PATTERNS_FR = [
+  [/^Huge (\d+)% sale discount$/i, (m) => `Forte remise de ${m[1]} %`],
+  [/^Great customer ratings \(([\d.]+)★\)$/i, (m) => `Très bien noté par les clients (${m[1].replace(".", ",")}★)`],
+  [/^Great customer ratings$/i, () => "Très bien noté par les clients"],
+  [/^Best budget value choice$/i, () => "Meilleur choix petit budget"],
+  [/^Best price\/quality ratio$/i, () => "Meilleur rapport qualité-prix"],
+  [/^Best value( for money)?$/i, () => "Meilleur rapport qualité-prix"],
+  [/^Lowest price$/i, () => "Prix le plus bas"],
+  [/^Free (delivery|shipping)$/i, () => "Livraison gratuite"],
+];
+
+export function localizeReason(text, lang) {
+  if (!text || (lang !== "vi" && lang !== "fr")) return text;
+  const clean = String(text).trim();
+  for (const [re, fn] of lang === "fr" ? REASON_PATTERNS_FR : REASON_PATTERNS) {
+    const m = clean.match(re);
+    if (m) return fn(m);
+  }
+  return clean;
+}

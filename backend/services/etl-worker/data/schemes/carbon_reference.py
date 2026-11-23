@@ -11,6 +11,8 @@ class CarbonReferenceBase(SQLModel):
     co2e_kg: float
     scope: str = "cradle-to-grave"
     source: str  # EPD / report citation, for traceability
+    source_url: Optional[str] = None     # link to the manufacturer's report (team dataset, column "Link")
+    verification: Optional[str] = None   # how far the figure was checked against the report
 
 
 class CarbonReference(CarbonReferenceBase, table=True):

@@ -65,6 +65,7 @@ Selected with the `CO2E_LLM_PROVIDER` environment variable.
 | `CO2_GRID_EF`      | `0.681`                 | Vietnam grid factor (kg CO2e/kWh, 2024) for the lifecycle formula |
 | `CO2_VND_PER_USD`  | `25900`                 | VND per USD for the price-based (EEIO) step                    |
 | `CO2_CPI_NOW`      | `336.940`               | Current US CPI-U, deflates prices to the 2022 USD of the factors |
+| `CO2E_SIM_THRESHOLD` | `0.66`                | CLIP cosine a reference must reach to count as "similar" (step 3) |
 
 
 ## 4. Database
@@ -72,7 +73,7 @@ Selected with the `CO2E_LLM_PROVIDER` environment variable.
 The CO2e columns on `product` and the `carbonreference` table are created
 automatically on startup via `SQLModel.metadata.create_all`. On an existing
 Postgres DB the newer columns (`co2e_explanation_vi`, `co2e_category`,
-`co2e_references`) are added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+`co2e_references`, `co2e_detail`, `co2e_breakdown`) are added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
 (`data/__init__.py`), so the volume does not need to be recreated.
 
 Numbers already stored are reused by `product_url`. To recompute them with the
@@ -85,6 +86,22 @@ UPDATE product SET co2e_kg = NULL, co2e_source = NULL, co2e_confidence = NULL;
 The reference catalog (1,450 products with manufacturer figures) is seeded from
 `backend/services/etl-worker/data/seed/carbon_reference_seed_expanded.json` and
 reloaded whenever the file's row count differs from the table.
+
+`co2e_detail` (JSON) keeps the numbers of the method (category median, slope,
+kWh/year, price → USD 2022…) so the web shows the formula with the values
+substituted (`green/explain.py`); `co2e_breakdown` (JSON) is the lifecycle split
+used by the "factory → your home" diagram (`green/lifecycle.py`, typical stage
+shares and freight assumptions in `green/data/stage_shares.json`). Rows written
+before these columns existed are still explained: the formula and price methods
+are recomputed from the row; the others show the total only.
+
+The AI result page, compare page and test checkout live in the `assistant`
+service (port 8070, API contract: [demo/api-contract.md](demo/api-contract.md)):
+`ASSISTANT_URL`, `ASSISTANT_MODEL` (default `claude-opus-5-5`), `ASSISTANT_TIMEOUT_S`
+(20), `CHECKOUT_MODE` (must be `test`, the service refuses to start otherwise) and the
+secret `ANTHROPIC_API_KEY` (not committed; without it pages use rule-based texts).
+The MCP server (`mcp-server`, port 8100) uses `GATEWAY_URL`, `PUBLIC_WEB_URL`,
+`MCP_RATE_LIMIT_PER_MIN` — see [demo/mcp-chatgpt.md](demo/mcp-chatgpt.md).
 
 ## 5. Run & verify
 

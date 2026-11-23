@@ -111,7 +111,7 @@ def parse_specs(*texts: str | None) -> ProductSpecs:
     m = re.search(r"(?:giat|long\s*giat|khoi\s*luong\s*giat)[^0-9]{0,20}" + _NUM + r"\s*kg", s)
     if m:
         specs.load_kg = _to_float(m.group(1))
-    m = re.search(_NUM + r"\s*(?:inch|\")", s)
+    m = re.search(_NUM + r"\s*-?\s*(?:inch|\"|”|″)", s)  # 27 inch, 27-inch, 27", 27”
     if m:
         specs.screen_inch = _to_float(m.group(1))
     m = re.search(r"(?:khoi\s*luong|trong\s*luong|nang)[^0-9]{0,20}" + _NUM + r"\s*kg", s)

@@ -1,31 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-100: #F9FAFB;
-  /* Very light background accent */
-  --color-primary-200: #E7ECEF;
-  /* Light borders/soft backgrounds */
-  --color-primary-500: #329AD2;
-  /* Your original core 'primary' brand color */
-  --color-primary-800: #1B5B7E;
-  /* Deep text or dark mode surfaces */
-  --color-primary-900: #123D54;
-  /* Darkest contrast shade */
+  /* AgriSmart-style palette: cream paper, forest green, soft lime accents */
+  --color-primary-100: #F6F4EC;   /* page / soft panel */
+  --color-primary-200: #ECE8DC;   /* inputs, soft borders */
+  --color-primary-500: #2E7D4F;   /* brand green */
+  --color-primary-800: #1F5D3A;   /* deep forest */
+  --color-primary-900: #1E2B22;   /* ink */
 
-  --color-secondary-500: #9BD232;
-  --color-secondary-700: #7AA725;
+  --color-secondary-500: #6FB04A; /* fresh leaf accent */
+  --color-secondary-700: #4E8E33;
+
+  --color-cream: #F6F4EC;
+  --color-forest: #1F5D3A;
+  --color-forest-900: #173F28;
+  --color-leaf: #2E7D4F;
+  --color-mint: #E4F1E6;
+  --color-line: #E7E2D4;
+  --color-muted: #6B7468;
+  --color-amber: #E0A526;
+  --color-coral: #D9534F;
+  --color-sky: #3B8FD9;
+
+  /* Type scale: readable secondary text (the reference keeps labels >= 13px) */
+  --text-xs: 0.875rem;       /* 14px: smallest UI labels */
+  --text-xs--line-height: 1.4;
+  --text-sm: 1rem;           /* 16px: secondary text */
+  --text-sm--line-height: 1.55;
+  --text-base: 1.0625rem;    /* 17px: body */
+  --text-base--line-height: 1.65;
+  --text-lg: 1.1875rem;      /* 19px */
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.3125rem;      /* 21px: card titles */
+  --text-xl--line-height: 1.4;
+
+  --font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-primary-200);
+  background-color: var(--color-cream);
   color: var(--color-primary-900);
+  font-size: 17px;
+  line-height: 1.65;
 }
+
+h1 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* Cards: every white rounded block gets the template's soft border + shadow */
+.card, .bg-white.rounded-2xl, .bg-white.rounded-xl, .bg-white.rounded-3xl {
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 2px rgba(30, 43, 34, .04), 0 10px 28px -18px rgba(30, 43, 34, .22);
+}
+.card { background: #fff; border-radius: 20px; }
+.eyebrow { font-size: 13.5px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: var(--color-leaf); }
+.font-display { font-family: var(--font-display); }
+.pill { display: inline-flex; align-items: center; gap: .4rem; border-radius: 9999px; padding: .3rem .8rem; font-size: 14.5px; font-weight: 600; }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
@@ -113,4 +147,36 @@ input[type="range"].hide-track {
 
 input[type="range"].hide-thumb {
   --thumb-color: transparent;
+}
+/* ---- shared controls (one look for every page) ---- */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1F5D3A] px-4 py-2.5 text-[15px] font-semibold text-white
+      transition-colors hover:bg-[#174a2e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2E7D4F]
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl border border-[#d9d4c4] bg-white px-3.5 py-2.5 text-[15px] font-medium text-[#1E2B22]
+      transition-colors hover:border-[#2E7D4F] hover:text-[#1F5D3A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary-active {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl border border-[#2E7D4F] bg-[#eef4ec] px-3.5 py-2.5 text-[15px] font-medium text-[#1F5D3A]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F];
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[#d9d4c4] bg-white px-3 py-1.5 text-[14px] text-[#1E2B22]
+      transition-colors hover:border-[#2E7D4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F];
+  }
+  .chip-active {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[#1F5D3A] bg-[#1F5D3A] px-3 py-1.5 text-[14px] text-white
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2E7D4F];
+  }
+  .page-wrap { @apply mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8 py-6 md:py-8; }
+  .page-title { font-family: var(--font-display); @apply text-[32px] md:text-[38px] leading-tight text-[#1E2B22]; }
+  .page-lead { @apply mt-1.5 text-[17px] text-[#4b5563] max-w-3xl; }
+}
+:focus-visible { outline-color: #2E7D4F; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

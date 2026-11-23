@@ -91,3 +91,9 @@ class TestGreenScore:
         assert is_in_focus("air_conditioners", APPLIANCES)
         assert not is_in_focus("laptops", APPLIANCES)
         assert is_in_focus("laptops", ELECTRONICS)
+
+
+def test_screen_size_spellings():
+    from green.spec_parser import parse_specs
+    for text in ("Màn hình Dell 27-inch", 'Samsung Odyssey G5 27"', "LG 27 inch", "Asus 27”"):
+        assert parse_specs(text).screen_inch == 27.0

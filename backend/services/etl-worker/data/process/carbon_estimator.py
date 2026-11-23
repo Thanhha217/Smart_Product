@@ -10,8 +10,9 @@ from sqlmodel import Session, select
 from data import engine
 from data.schemes.carbon_reference import CarbonReference
 from data.schemes.product import Product
-from data.process.data_transformer import encode_text
+from data.process.data_transformer import encode_text, encode_texts
 from green.fallback import CategoryStats, canonical_category, estimate_without_neighbours
+from green.lifecycle import decompose
 from green.matching import find_exact_reference
 
 EMBED_DIM = 512          # Dimensionality of the CLIP text embedding vectors
@@ -41,7 +42,7 @@ PROMPT_NEIGHBOURS = 5   # Maximum number of close neighbours shown to the LLM in
 # formula (appliances), the category model of the reference catalogue (brand +
 # screen size) and the price-based EEIO factor, and leaves the product empty when
 # none applies.  See docs/research/co2-fallback.md.
-SIMILARITY_THRESHOLD = 0.66
+SIMILARITY_THRESHOLD = float(os.environ.get("CO2E_SIM_THRESHOLD", "0.66"))
 
 # ---------------------------------------------------------------------------
 # CATEGORY_BOUNDS
@@ -448,15 +449,17 @@ def _build_reference_index():
         index = faiss.IndexIDMap2(faiss.IndexFlatIP(EMBED_DIM))
         by_id = {}
         if references:
-            vectors, ids = [], []
+            vectors = encode_texts([_reference_text(ref) for ref in references])
+            ids = []
             for ref in references:
-                vectors.append(encode_text(_reference_text(ref)))
                 ids.append(ref.id)
                 by_id[ref.id] = {
                     "name": ref.name,
                     "category": canonical_category(ref.category),
                     "brand": ref.brand,
                     "co2e_kg": ref.co2e_kg,
+                    "source": ref.source,
+                    "url": getattr(ref, "source_url", None),
                 }
             matrix = np.asarray(vectors, dtype="float32")
             faiss.normalize_L2(matrix)
@@ -755,6 +758,18 @@ def _exact_reference(name):
     return find_exact_reference(name, (_ref_by_id or {}).values())
 
 
+def _store_detail(product, detail):
+    """co2e_detail (method numbers) and co2e_breakdown (lifecycle split) as JSON strings."""
+    try:
+        product.co2e_detail = json.dumps(detail or {}, ensure_ascii=False, default=float)
+        lc = decompose(product.co2e_kg, product.co2e_source, product.co2e_category, detail, product.name)
+        breakdown = {s["key"]: s["kg"] for s in lc["stages"]}
+        breakdown["basis"] = lc["basis"]
+        product.co2e_breakdown = json.dumps(breakdown)
+    except Exception as error:  # display data only: never block ingestion
+        print(f"CO2 breakdown skipped: {error}", flush=True)
+
+
 def estimate_product_co2e(product, product_embedding, category=None):
     """Fill product.co2e_* in place.
 
@@ -772,6 +787,10 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_confidence = existing.co2e_confidence
             product.co2e_explanation = existing.co2e_explanation
             product.co2e_explanation_vi = existing.co2e_explanation_vi
+            product.co2e_category = existing.co2e_category
+            product.co2e_references = existing.co2e_references
+            product.co2e_detail = getattr(existing, "co2e_detail", None)
+            product.co2e_breakdown = getattr(existing, "co2e_breakdown", None)
             _log_estimate(product, f"already_estimated:{product.co2e_source or 'unknown'}")
             return
 
@@ -783,7 +802,9 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_explanation = f"Manufacturer-published figure for {exact['name']}."
             product.co2e_explanation_vi = f"Số CO₂ do hãng công bố cho đúng mẫu {exact['name']}."
             product.co2e_category = exact["category"]
-            product.co2e_references = json.dumps([{"name": exact["name"], "co2e_kg": exact["co2e_kg"], "cosine": 1.0}], ensure_ascii=False)
+            product.co2e_references = json.dumps([{"name": exact["name"], "co2e_kg": exact["co2e_kg"], "cosine": 1.0,
+                                                    "source": exact.get("source"), "url": exact.get("url")}], ensure_ascii=False)
+            _store_detail(product, {"reference": exact["name"]})
             _log_estimate(product, "manufacturer")
             return
 
@@ -820,7 +841,11 @@ def estimate_product_co2e(product, product_embedding, category=None):
                 print(f"  references used: {[n['name'] for n, _ in close]}", flush=True)
             product.co2e_category = ref_category or close[0][0]["category"]
             product.co2e_references = json.dumps(
-                [{"name": n["name"], "co2e_kg": n["co2e_kg"], "cosine": round(s, 3)} for n, s in close], ensure_ascii=False)
+                [{"name": n["name"], "co2e_kg": n["co2e_kg"], "cosine": round(s, 3), "source": n.get("source"),
+                  "url": n.get("url")}
+                 for n, s in close], ensure_ascii=False)
+            _store_detail(product, {"threshold": SIMILARITY_THRESHOLD, "n": len(close),
+                                    "neighbour_average": round(_neighbour_average(close), 2)})
         else:
             if not USE_FALLBACK:
                 print(f"No reference with cosine >= {SIMILARITY_THRESHOLD} for '{product.name}' — leaving empty.", flush=True)
@@ -838,6 +863,7 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_explanation = estimate.explanation_en
             product.co2e_explanation_vi = estimate.explanation_vi
             product.co2e_category = ref_category
+            _store_detail(product, estimate.detail)
             print(f"  fallback detail: {estimate.detail}", flush=True)
 
         _log_estimate(product, product.co2e_source or "unknown")

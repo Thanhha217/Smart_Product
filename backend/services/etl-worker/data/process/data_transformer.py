@@ -32,3 +32,17 @@ def generate_embeddings(parsed_data):
 def encode_text(text):
     # CLIP text embedding via the provider (used by carbon_estimator).
     return _post_to_clip_provider("/encode-text", {"text": text})
+
+
+def encode_texts(texts, chunk=64):
+    """Batch CLIP embeddings (clip-provider /encode-texts); one request per text if the endpoint is missing."""
+    out = []
+    for start in range(0, len(texts), chunk):
+        part = texts[start:start + chunk]
+        try:
+            out.extend(_post_to_clip_provider("/encode-texts", {"texts": part}))
+        except requests.HTTPError as error:
+            if error.response is None or error.response.status_code != 404:
+                raise
+            out.extend(encode_text(t) for t in part)
+    return out

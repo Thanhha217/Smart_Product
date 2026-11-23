@@ -1,6 +1,6 @@
 import os
 from sqlmodel import Session, create_engine, text
-from green_score import green_score, parse_references
+from green_score import CATEGORY_BOUNDS, green_score, parse_json_object, parse_references
 
 POSTGRES_URL = os.environ.get("POSTGRES_URL")
 
@@ -27,6 +27,9 @@ def get_product_data_from_ids(product_id):
                 product.co2e_source AS co2e_source,
                 product.co2e_category AS co2e_category,
                 product.co2e_references AS co2e_references,
+                product.co2e_confidence AS co2e_confidence,
+                product.co2e_detail AS co2e_detail,
+                product.co2e_breakdown AS co2e_breakdown,
 
                 category.name AS category_name,
 
@@ -84,7 +87,13 @@ def get_product_data_from_ids(product_id):
                 "co2e_source": product_data_dict.get("co2e_source"),
                 "co2e_category": product_data_dict.get("co2e_category"),
                 "co2e_references": parse_references(product_data_dict.get("co2e_references")),
+                "co2e_confidence": product_data_dict.get("co2e_confidence"),
+                "co2e_detail": parse_json_object(product_data_dict.get("co2e_detail")),
+                "co2e_breakdown": parse_json_object(product_data_dict.get("co2e_breakdown")),
+                "description": product_data_dict.get("product_description"),
                 "green_score": green_score(product_data_dict["co2e_kg"], product_data_dict.get("co2e_category")),
+                # [L, U] of the green-score formula, so pages can show its terms
+                "green_score_bounds": CATEGORY_BOUNDS.get(product_data_dict.get("co2e_category") or ""),
             },
             "return_policy": {
                 "days_for_return": product_data_dict["days_for_return"],

@@ -18,17 +18,31 @@ EMBED_DIM = 512
 FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", "/opt/faiss_index/products.faiss")
 FAISS_IMAGE_INDEX_PATH = os.environ.get("FAISS_IMAGE_INDEX_PATH", "/opt/faiss_index/images.faiss")
 
-base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
-index = faiss.IndexIDMap2(base_index)
+def new_index():
+    return faiss.IndexIDMap2(faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT))
 
-image_base_index = faiss.IndexHNSWFlat(EMBED_DIM, 32, faiss.METRIC_INNER_PRODUCT)
-image_index = faiss.IndexIDMap2(image_base_index)
+
+def _open_index(path: Path):
+    """Continue the index on disk. Starting from an empty one would overwrite every
+    product indexed before this worker (re)started at the next write."""
+    if path.exists():
+        try:
+            loaded = faiss.read_index(str(path))
+            print(f"FAISS index {path} loaded ({loaded.ntotal} vectors).", flush=True)
+            return loaded
+        except Exception as error:
+            print(f"FAISS index {path} unreadable ({error}); starting a new one.", flush=True)
+    return new_index()
+
 
 index_path = Path(FAISS_INDEX_PATH)
 index_path.parent.mkdir(parents=True, exist_ok=True)
 
 image_index_path = Path(FAISS_IMAGE_INDEX_PATH)
 image_index_path.parent.mkdir(parents=True, exist_ok=True)
+
+index = _open_index(index_path)
+image_index = _open_index(image_index_path)
 
 def get_or_create(session: Session, instance, unique_column="name"):
 

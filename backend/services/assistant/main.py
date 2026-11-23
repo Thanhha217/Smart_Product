@@ -17,10 +17,15 @@ import traceback
 
 import anthropic
 import requests
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
+import data_client
+import orders
+import pages
 from assistant_llm import compose, make_plan
+from store import make_store
 from chart_sanitizer import sanitize_spec
 from green import assess_green, estimate_co2, estimate_savings, parse_specs
 
@@ -30,6 +35,8 @@ MAX_PRODUCTS = int(os.environ.get("ASSISTANT_MAX_PRODUCTS", "6"))
 if not DB_SEARCH_URL:
     raise ValueError("DB_SEARCH_URL environment variable is not set")
 
+orders.require_test_mode()
+store = make_store()
 app = FastAPI()
 
 
@@ -129,3 +136,162 @@ def assistant(req: AssistantRequest):
     except anthropic.APIError as error:
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"LLM error: {error.__class__.__name__}")
+
+
+
+# =====================================================================================
+# B1 / B3 API (docs/demo/api-contract.md); the gateway forwards /api/* here unchanged.
+# =====================================================================================
+
+def _error(status: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"error": {"code": code, "message": message}})
+
+
+class PageRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+    lang: str = "vi"
+    parent_id: str | None = None
+
+
+class OrderItem(BaseModel):
+    product_id: str
+    quantity: int = 1
+
+
+class OrderRequest(BaseModel):
+    items: list[OrderItem]
+    created_by: str = "user"
+    note: str | None = None
+
+
+@app.post("/api/assistant")
+def create_page(req: PageRequest):
+    if not req.message.strip():
+        return _error(400, "empty_message", "Empty message")
+    lang = req.lang if req.lang in ("en", "fr", "vi") else "en"
+    try:
+        page = pages.build_page(req.message.strip(), lang, store, req.parent_id)
+    except requests.RequestException:
+        traceback.print_exc()
+        return _error(502, "search_unavailable", "Search service unavailable")
+    return {"id": page["id"], "url": page["url"], "page": page}
+
+
+@app.get("/api/assistant/{page_id}")
+def get_page(page_id: str):
+    page = store.get_page(page_id)
+    if page is None:
+        return _error(404, "page_not_found", "Page not found")
+    return {"id": page["id"], "url": page["url"], "page": page}
+
+
+@app.get("/api/products/{product_id}/co2")
+def product_co2(product_id: str):
+    if not product_id.isdigit():
+        return _error(400, "invalid_id", "product_id must be numeric")
+    try:
+        item = data_client.product(product_id)
+    except requests.RequestException:
+        return _error(502, "db_search_unavailable", "db-search unavailable")
+    if item is None:
+        return _error(404, "product_not_found", "Product not found")
+    return pages.product_co2(item)
+
+
+@app.get("/api/compare")
+def compare(ids: str = Query(..., description="2-4 comma-separated product ids"), lang: str = "en"):
+    id_list = [i.strip() for i in ids.split(",") if i.strip()]
+    if not 1 <= len(id_list) <= 4 or not all(i.isdigit() for i in id_list):
+        return _error(400, "invalid_ids", "Give 1 to 4 numeric product ids")
+    try:
+        return pages.compare(id_list, lang if lang in ("en", "fr", "vi") else "en")
+    except requests.RequestException:
+        return _error(502, "db_search_unavailable", "db-search unavailable")
+
+
+@app.get("/api/method")
+def method():
+    return pages.METHOD
+
+
+def _card_or_none(pid: str):
+    item = data_client.product(pid)
+    return data_client.card(item) if item else None
+
+
+def _median(category):
+    stats = data_client.stats(category)
+    return stats.get("median_kg") if stats else None
+
+
+@app.post("/api/orders/test")
+def create_test_order(req: OrderRequest):
+    try:
+        return orders.create_order(store, [i.model_dump() for i in req.items], req.created_by,
+                                   _card_or_none, _median, req.note)
+    except orders.OrderError as e:
+        return _error(e.status, e.code, e.message)
+    except requests.RequestException:
+        return _error(502, "db_search_unavailable", "db-search unavailable")
+
+
+@app.get("/api/orders/test/{order_id}")
+def get_test_order(order_id: str):
+    try:
+        return orders.get_order(store, order_id)
+    except orders.OrderError as e:
+        return _error(e.status, e.code, e.message)
+
+
+@app.post("/api/orders/test/{order_id}/confirm")
+def confirm_test_order(order_id: str, x_confirm_source: str | None = Header(default=None)):
+    try:
+        return orders.confirm_order(store, order_id, x_confirm_source)
+    except orders.OrderError as e:
+        return _error(e.status, e.code, e.message)
+
+
+@app.post("/api/orders/test/{order_id}/cancel")
+def cancel_test_order(order_id: str):
+    try:
+        return orders.cancel_order(store, order_id)
+    except orders.OrderError as e:
+        return _error(e.status, e.code, e.message)
+
+
+class ExplainRequest(BaseModel):
+    product_id: str
+    topic: str = "co2e_total"
+    question: str | None = Field(default=None, max_length=300)
+    lang: str = "vi"
+    scenario: dict | None = None
+
+
+@app.post("/api/explain")
+def explain_endpoint(req: ExplainRequest):
+    """'Chọn đâu hỏi đó': explain one clicked part of a product's CO2 (docs/demo/api-explain.md)."""
+    import explain_api
+
+    if not req.product_id.isdigit():
+        return _error(400, "invalid_id", "product_id must be numeric")
+    try:
+        item = data_client.product(req.product_id)
+        if item is None:
+            return _error(404, "product_not_found", "Product not found")
+        co2 = pages.product_co2(item)
+        category = co2["product"].get("category")
+        stats = data_client.stats(category, req.product_id) if category else None
+        try:
+            related = data_client.related(req.product_id, 6)
+        except requests.RequestException:
+            related = None
+    except requests.RequestException:
+        return _error(502, "db_search_unavailable", "db-search unavailable")
+    return explain_api.explain(co2, stats, related, req.topic, req.question, req.lang, req.scenario)
+
+
+@app.get("/api/llm")
+def llm_info():
+    """Which LLM answers (for the system status page)."""
+    import llm_provider
+    return {"model": llm_provider.model_label()}

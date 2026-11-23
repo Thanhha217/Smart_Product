@@ -3,6 +3,9 @@ from pydantic import BaseModel
 class EncodeTextDTO(BaseModel):
     text: str
 
+class EncodeTextsDTO(BaseModel):
+    texts: list[str]
+
 class EncodeImageFromUrlDTO(BaseModel):
     image_url: str
 
