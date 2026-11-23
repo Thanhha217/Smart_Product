@@ -1,6 +1,16 @@
 import os
 import re
-from camoufox.pkgman import launch_path
+
+# The browser stack (scrapy-playwright + Camoufox) is optional: it is commented out in
+# airflow-requirements.txt, and the MWG spiders (dienmayxanh, tgdd) do not need it.
+# Without it every request uses Scrapy's plain HTTP downloader. SCRAPY_USE_BROWSER=0
+# forces plain HTTP even when the packages are installed.
+try:
+    from camoufox.pkgman import launch_path
+    import scrapy_playwright  # noqa: F401
+    USE_BROWSER = os.environ.get("SCRAPY_USE_BROWSER", "1") == "1"
+except ImportError:
+    USE_BROWSER = False
 # Scrapy settings for scrapers project
 #
 # For simplicity, this file contains only settings considered important or
@@ -44,26 +54,32 @@ DEFAULT_REQUEST_HEADERS = {
     "User-Agent": USER_AGENT,
 }
 
-DOWNLOAD_HANDLERS = {
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-}
-
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
-PLAYWRIGHT_BROWSER_TYPE = "firefox"
+# The lazada spider imports scrapy_playwright at module level; without this a missing
+# optional package would stop every spider from loading.
+SPIDER_LOADER_WARN_ONLY = True
 
-PLAYWRIGHT_LAUNCH_OPTIONS = {
-    "executable_path": launch_path(),
-    "headless": False,
-    "args": [
-        "--disable-blink-features=AutomationControlled",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--disable-dev-shm-usage",  
-        "--no-sandbox",
-        # "--blink-settings=imagesEnabled=false",
-    ],
-}
+if USE_BROWSER:
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+        "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    }
+
+
+    PLAYWRIGHT_BROWSER_TYPE = "firefox"
+
+    PLAYWRIGHT_LAUNCH_OPTIONS = {
+        "executable_path": launch_path(),
+        "headless": False,
+        "args": [
+            "--disable-blink-features=AutomationControlled",
+            "--disable-features=IsolateOrigins,site-per-process",
+            "--disable-dev-shm-usage",  
+            "--no-sandbox",
+            # "--blink-settings=imagesEnabled=false",
+        ],
+    }
 
 PLAYWRIGHT_CONTEXT_ARGS = {
     "locale": "vi-VN",
