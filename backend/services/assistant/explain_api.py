@@ -78,7 +78,8 @@ def build_facts(co2: dict, stats: dict | None, related: dict | None, lang: str) 
         "formula_steps": [f"{s.get('label_vi' if vi else 'label_en')}: {s.get('expr')}" for s in formula.get("steps") or []][-5:],
         "stages_kg_and_percent": stages,
         "stage_split_basis": lifecycle.get("basis"),
-        "assumed_origin": route.get("origin_vi" if vi else "origin_en"),
+        "assumed_origin": ({"CN": "Chine", "VN": "Vietnam", "TH": "Thaïlande", "MY": "Malaisie"}.get(route.get("origin_code"), route.get("origin_en"))
+                           if lang == "fr" else route.get("origin_vi" if vi else "origin_en")),
         "shipping": {"sea_km": route.get("sea_km"), "road_km": route.get("road_km"), "mode": route.get("mode"),
                      "assumed": route.get("assumed")} if route else None,
         "use_phase": use_phase or None,
@@ -167,7 +168,7 @@ def rule_based(topic: str, f: dict, lang: str, scenario: dict | None = None) -> 
         title = T("Vận chuyển về Việt Nam", "Shipping to Vietnam", "Transport jusqu’au Vietnam")
         answer = T(f"Sản phẩm được giả định sản xuất tại {origin}, đi {sea} km đường biển và {road} km đường bộ. Tàu biển phát thải rất ít trên mỗi kg hàng, máy bay thì gấp hàng chục lần.",
                    f"Assumed made in {origin}, it travels {sea} km by sea and {road} km by road. Ships emit very little per kg; planes dozens of times more.",
-                   f"Supposé fabriqué en/au {origin}, il parcourt {sea} km par mer et {road} km par route. Le bateau émet très peu par kg ; l’avion des dizaines de fois plus.")
+                   f"Fabrication supposée : {origin}. Il parcourt ensuite {sea} km par mer et {road} km par route. Le bateau émet très peu par kg ; l’avion des dizaines de fois plus.")
         bullets = [x for x in (_stage_line(f, "transport", L),) if x]
     elif topic in ("use", "grid"):
         ef = n(GRID_EF, 3)
