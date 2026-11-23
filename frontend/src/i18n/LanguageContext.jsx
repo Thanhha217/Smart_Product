@@ -1,23 +1,65 @@
+import { intlNumber } from "../lib/format";
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import en from "./en.json";
+import fr from "./fr.json";
 import vi from "./vi.json";
 
-const DICTS = { en, vi };
-export const SUPPORTED_LANGS = ["vi", "en"];
-const DEFAULT_LANG = "vi";           // đổi thành "en" nếu team muốn
-const STORAGE_KEY = "spf.lang";
+const DICTS = { en, fr, vi };
+// Order shown in the switcher; English is the default.
+export const SUPPORTED_LANGS = ["en", "fr", "vi"];
+export const DEFAULT_LANG = "en";
+// v2: earlier versions saved the auto-detected language; only an explicit choice is kept now.
+const STORAGE_KEY = "spf.lang.v2";
 
-// Locale đầy đủ dùng cho Intl (định dạng số, tiền, ngày)
-const LOCALES = { vi: "vi-VN", en: "en-US" };
+// Full locales for Intl (numbers, money, dates)
+export const LOCALES = { en: "en-US", fr: "fr-FR", vi: "vi-VN" };
+
+function readStored() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return SUPPORTED_LANGS.includes(saved) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function store(lang) {
+  try {
+    localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    /* private mode: the choice lasts for this page only */
+  }
+}
 
 function detectInitialLang() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (SUPPORTED_LANGS.includes(saved)) return saved;
+  // ?lang=fr in the URL wins (handy for demos and shared links) and is remembered.
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("lang");
+    if (SUPPORTED_LANGS.includes(fromUrl)) {
+      store(fromUrl);
+      return fromUrl;
+    }
+  } catch {
+    /* no window */
+  }
+  return readStored() ?? DEFAULT_LANG;
+}
 
-  const browser = navigator.language?.slice(0, 2);
-  if (SUPPORTED_LANGS.includes(browser)) return browser;
+/** Pick the text of the current language: pick(lang, {en, fr, vi}); fr falls back to en. */
+export function pick(lang, texts) {
+  if (!texts) return "";
+  return texts[lang] ?? texts.en ?? texts.vi ?? "";
+}
 
-  return DEFAULT_LANG;
+/** 3-way helper for modules written as tri(lang)(vi, en, fr). Missing fr falls back to en. */
+export function tri(lang) {
+  return (viText, enText, frText) => (lang === "vi" ? viText : lang === "fr" ? (frText ?? enText) : enText);
+}
+
+/** Backend fields come as name_vi / name_en (no French yet): fr uses en. */
+export function field(obj, base, lang) {
+  if (!obj) return undefined;
+  return obj[`${base}_${lang}`] ?? obj[`${base}_en`] ?? obj[`${base}_vi`];
 }
 
 const LanguageContext = createContext(null);
@@ -26,31 +68,32 @@ export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(detectInitialLang);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, lang);
-    document.documentElement.lang = lang;   // tốt cho SEO + screen reader
+    document.documentElement.lang = lang; // good for SEO and screen readers
   }, [lang]);
 
   const setLang = useCallback((next) => {
-    if (SUPPORTED_LANGS.includes(next)) setLangState(next);
+    if (!SUPPORTED_LANGS.includes(next)) return;
+    store(next); // remembered only when the user actively chooses
+    setLangState(next);
   }, []);
 
-  // t("results.for", { query: "iphone" })
+  // t("results.for", { query: "iphone" }); fallback fr -> en -> key
   const t = useCallback((key, vars) => {
-    const template = DICTS[lang]?.[key] ?? DICTS[DEFAULT_LANG]?.[key] ?? key;
+    const template = DICTS[lang]?.[key] ?? DICTS.en?.[key] ?? key;
     if (!vars) return template;
     return template.replace(/\{(\w+)\}/g, (_, name) =>
       vars[name] !== undefined ? String(vars[name]) : `{${name}}`
     );
   }, [lang]);
 
-  // formatNumber(15636212) -> "15.636.212" (vi) / "15,636,212" (en)
+  // formatNumber(15636212) -> "15,636,212" (en) / "15 636 212" (fr) / "15.636.212" (vi)
   const formatNumber = useCallback((value) => {
     if (value == null || Number.isNaN(Number(value))) return "";
-    return new Intl.NumberFormat(LOCALES[lang] ?? LOCALES[DEFAULT_LANG]).format(Number(value));
+    return intlNumber(LOCALES[lang] ?? LOCALES[DEFAULT_LANG], {}, Number(value));
   }, [lang]);
 
   const value = useMemo(
-    () => ({ lang, setLang, t, formatNumber }),
+    () => ({ lang, setLang, t, formatNumber, pick: (texts) => pick(lang, texts) }),
     [lang, setLang, t, formatNumber]
   );
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

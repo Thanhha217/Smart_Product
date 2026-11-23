@@ -23,16 +23,21 @@ const TABS = [
   { to: "/cart", icon: "cart", key: "tab.cart" },
 ];
 
-export function Logo({ light = false, compact = false }) {
+// Wordmark: leaf tile + "Smart Product Finder" in the display serif, with a short readable tagline.
+export function Logo({ light = false, compact = false, size = "md" }) {
+  const { t } = useI18n();
+  const big = size === "lg";
   return (
-    <Link to="/" className={`flex items-center gap-2.5 ${light ? "text-white" : "text-[#1F5D3A]"}`}>
-      <span className={`grid place-items-center w-9 h-9 rounded-xl ${light ? "bg-white/15" : "bg-[#E4F1E6]"}`}>
-        <Icon name="leaf" size={20} className={light ? "text-[#9be07a]" : "text-[#2E7D4F]"} />
+    <Link to="/" aria-label="Smart Product Finder" className={`group flex items-center gap-3 ${light ? "text-white" : "text-[#1B4D31]"}`}>
+      <span className={`grid place-items-center shrink-0 rounded-2xl ${big ? "w-12 h-12" : "w-11 h-11"} ${light ? "bg-white/15 ring-1 ring-white/20" : "bg-[#1F5D3A] shadow-[0_6px_16px_-8px_rgba(31,93,58,.7)]"}`}>
+        <Icon name="leaf" size={big ? 26 : 23} className={light ? "text-[#a8e38a]" : "text-[#bde8a5]"} />
       </span>
       {!compact && (
-        <span className="leading-tight">
-          <span className="block font-extrabold text-[17px] tracking-tight">SmartProduct</span>
-          <span className={`block text-[11px] font-semibold tracking-[.18em] uppercase ${light ? "text-white/60" : "text-[#6B7468]"}`}>Finder · CO₂</span>
+        <span className="flex flex-col leading-none">
+          <span className={`font-display font-bold leading-[1.15] tracking-[-0.01em] ${big ? "text-[25px]" : "text-[21px]"}`}>
+            Smart Product <span className={light ? "text-[#a8e38a]" : "text-[#2E7D4F]"}>Finder</span>
+          </span>
+          <span className={`mt-1.5 text-[13.5px] font-medium ${light ? "text-white/70" : "text-[#5E6B60]"}`}>{t("shell.tagline")}</span>
         </span>
       )}
     </Link>
@@ -55,14 +60,15 @@ function SproutArt() {
   );
 }
 
-function Sidebar({ t, onNavigate }) {
+function Sidebar({ t, onNavigate, drawer = false }) {
   return (
     <div className="flex h-full flex-col gap-6 px-4 py-6 text-white" style={{ background: "linear-gradient(180deg,#1F5D3A 0%,#173F28 100%)" }}>
-      <div className="px-2"><Logo light /></div>
+      <div className="px-1"><Logo light /></div>
+      {drawer && <div className="px-1"><LanguageSwitcher dark /></div>}
       <nav className="flex flex-col gap-1" aria-label="main">
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} onClick={onNavigate}
-                   className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium transition ${isActive ? "bg-[#3B8C55] text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>
+                   className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[16px] font-medium transition ${isActive ? "bg-[#3B8C55] text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>
             <Icon name={n.icon} size={19} />
             {t(n.key)}
           </NavLink>
@@ -99,7 +105,7 @@ function TopBar({ t, onMenu, count }) {
         <div className="hidden sm:block"><LanguageSwitcher /></div>
         <Link to="/cart" className="relative grid place-items-center w-10 h-10 rounded-full bg-white border border-[#E7E2D4] text-[#1F5D3A]" aria-label="cart">
           <Icon name="cart" size={19} />
-          {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#D9534F] text-white text-[11px] font-bold grid place-items-center">{count}</span>}
+          {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#D9534F] text-white text-[13.5px] font-bold grid place-items-center">{count}</span>}
         </Link>
         <Link to="/system" className="relative hidden sm:grid place-items-center w-10 h-10 rounded-full bg-white border border-[#E7E2D4] text-[#1F5D3A]" aria-label="system">
           <Icon name="bell" size={19} />
@@ -122,7 +128,7 @@ function BottomTabs({ t }) {
     <nav className="min-[900px]:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 border-t border-[#E7E2D4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="tabs">
       {TABS.map((tab) => (
         <NavLink key={tab.to} to={tab.to}
-                 className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[12.5px] font-semibold ${isActive ? "text-[#2E7D4F]" : "text-[#8a9186]"}`}>
+                 className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[13.5px] font-semibold ${isActive ? "text-[#2E7D4F]" : "text-[#8a9186]"}`}>
           {({ isActive }) => (<>
             <span className={`grid place-items-center w-9 h-7 rounded-full ${isActive ? "bg-[#E4F1E6]" : ""}`}><Icon name={tab.icon} size={19} /></span>
             {t(tab.key)}
@@ -143,19 +149,19 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen bg-[#F6F4EC]">
-      <aside className="hidden min-[900px]:block fixed inset-y-0 left-0 w-[248px] z-40">
+      <aside className="hidden min-[900px]:block fixed inset-y-0 left-0 w-[260px] z-40">
         <Sidebar t={t} />
       </aside>
       {open && (
         <div className="min-[900px]:hidden fixed inset-0 z-50">
           <button type="button" aria-label="close menu" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-[272px] shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-[288px] shadow-2xl">
             <button type="button" onClick={() => setOpen(false)} className="absolute right-3 top-5 z-10 text-white/80" aria-label="close"><Icon name="close" /></button>
-            <Sidebar t={t} onNavigate={() => setOpen(false)} />
+            <Sidebar t={t} drawer onNavigate={() => setOpen(false)} />
           </div>
         </div>
       )}
-      <div className="min-[900px]:pl-[248px] flex min-h-screen flex-col">
+      <div className="min-[900px]:pl-[260px] flex min-h-screen flex-col">
         <TopBar t={t} onMenu={() => setOpen(true)} count={count} />
         <div className="flex-1 pb-[72px] min-[900px]:pb-0 min-w-0">
           <Outlet />

@@ -65,10 +65,10 @@ const TOOLS = [
       "Ask the site's eco shopping assistant. It builds a full result page (recommendations, CO2 formula, lifecycle, charts, savings, sources) and opens it.",
     inputSchema: {
       type: "object",
-      properties: { message: { type: "string" }, lang: { type: "string", enum: ["vi", "en"], default: "vi" } },
+      properties: { message: { type: "string" }, lang: { type: "string", enum: ["en", "fr", "vi"], default: "en" } },
       required: ["message"],
     },
-    execute: async ({ message, lang = "vi" }) => {
+    execute: async ({ message, lang = "en" }) => {
       const res = await api.askAssistant({ message, lang });
       go(`/assistant/${res.id}`);
       return text({ id: res.id, url: `${site()}/assistant/${res.id}`, summary: res.page?.summary });

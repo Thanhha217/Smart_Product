@@ -123,7 +123,7 @@ export const api = {
     MOCK_API ? mock.cancelTestOrder(id) : request("POST", `/api/orders/test/${encodeURIComponent(id)}/cancel`, { body: {} }),
   getMethod: () => (MOCK_API ? mock.getMethod() : request("GET", "/api/method")),
   // "Chọn đâu hỏi đó": AI explanation of one part of a product's CO2 (docs/demo/api-explain.md)
-  explain: ({ product_id, topic, question = null, lang = "vi", scenario = null }) =>
+  explain: ({ product_id, topic, question = null, lang = "en", scenario = null }) =>
     MOCK_API
       ? mock.explain({ product_id, topic, question, lang, scenario })
       : request("POST", "/api/explain", { body: { product_id: String(product_id), topic, question, lang, scenario }, timeoutMs: 45000 }),

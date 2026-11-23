@@ -40,21 +40,21 @@ export default function ProductSlot({ product, image_url, platform_name }) {
         {platform_name && <span className="pill absolute left-2 top-2 bg-white/95 border border-[#E7E2D4] text-[#1E2B22]">{platform_name}</span>}
         {discount > 0 && <span className="pill absolute right-2 top-2 bg-[#FBE4E2] text-[#C2413C]">-{discount}%</span>}
       </div>
-      <p className="line-clamp-2 min-h-[2.7em] font-semibold text-[15.5px] leading-snug text-[#1E2B22]" title={product.name}>{product.name}</p>
+      <p className="line-clamp-2 min-h-[2.7em] font-semibold text-[16.5px] leading-snug text-[#1E2B22]" title={product.name}>{product.name}</p>
       {highlights.length > 0 && (
-        <ul className="text-[13.5px] leading-snug text-[#6B7468] space-y-0.5 min-h-[36px]">
+        <ul className="text-[14.5px] leading-snug text-[#6B7468] space-y-0.5 min-h-[36px]">
           {highlights.slice(0, 2).map((hl, idx) => <li key={idx} className="line-clamp-1">• {hl}</li>)}
         </ul>
       )}
-      {reason && <p className="rounded-lg bg-[#FBF0D6] text-[#8a5d10] px-2.5 py-1.5 text-[13.5px] font-medium line-clamp-2">✨ {reason}</p>}
+      {reason && <p className="rounded-lg bg-[#FBF0D6] text-[#8a5d10] px-2.5 py-1.5 text-[14.5px] font-medium line-clamp-2">✨ {reason}</p>}
       <div className="mt-auto flex items-end justify-between gap-2">
-        <p className="text-[21px] font-extrabold text-[#1F5D3A]">{formatNumber(product.final_price)}₫</p>
-        <p className="text-[13.5px] text-[#6B7468] whitespace-nowrap">★ {product.review_count ? `${(product.product_rating * 5).toFixed(1)} (${product.review_count})` : t("product.noRating")}</p>
+        <p className="text-[22px] font-extrabold text-[#1F5D3A]">{formatNumber(product.final_price)}₫</p>
+        <p className="text-[14.5px] text-[#6B7468] whitespace-nowrap">★ {product.review_count ? `${formatNumber(Math.round(product.product_rating * 50) / 10)} (${product.review_count})` : t("product.noRating")}</p>
       </div>
       {hasCo2 ? (
         <span className="pill self-start max-w-full" style={{ color: greenColor(score), background: greenBg(score) }}
               title={`${t("product.greenScore")}: ${score ?? "–"}/5 · ${t(getCo2SourceKey(product.co2e_source))}`}>
-          <Icon name="leaf" size={14} /> <span className="truncate">{formatNumber(product.co2e_kg)} kg CO₂e{score !== null && score !== undefined ? ` · ${score}/5` : ""}</span>
+          <Icon name="leaf" size={14} /> <span className="truncate">{formatNumber(product.co2e_kg)} kg CO₂e{score !== null && score !== undefined ? ` · ${formatNumber(score)}/5` : ""}</span>
         </span>
       ) : (
         <span className="pill self-start bg-[#ECEEE8] text-[#55604F]">{t("product.co2ShortUnavailable")}</span>

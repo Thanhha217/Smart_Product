@@ -7,7 +7,8 @@ import FormulaCard from "./components/co2/FormulaCard";
 import LifecycleDiagram from "./components/co2/LifecycleDiagram";
 import ProductCard from "./components/co2/ProductCard";
 import { GATEWAY_URL } from "./utils/consts";
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
+import { formatKg } from "../lib/format";
 import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey, localizeReason } from "./utils/helpers";
 
 
@@ -88,8 +89,8 @@ export default function Product() {
         }
     }, [params.productId, location.state]);
 
-    const secondaryBtn = "inline-flex items-center gap-1.5 bg-white border border-[#CFE0D2] text-[#1F5D3A] text-[15px] font-semibold rounded-xl px-4 py-2.5 hover:bg-[#F1F7F2] transition";
-    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-[13.5px] px-3 py-1.5 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
+    const secondaryBtn = "inline-flex items-center gap-1.5 bg-white border border-[#CFE0D2] text-[#1F5D3A] text-[16px] font-semibold rounded-xl px-4 py-2.5 hover:bg-[#F1F7F2] transition";
+    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-[14.5px] px-3 py-1.5 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
 
     if (loading) {
         return <div className="flex justify-center items-center p-10 min-h-full">{t("product.loading")}</div>;
@@ -146,10 +147,10 @@ export default function Product() {
                         {/* Why Recommended Callout (Explanation) */}
                         {reason && (
                             <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-4 my-2 w-full">
-                                <h3 className="font-bold text-orange-950 text-[15.5px] flex items-center gap-1.5 mb-1.5">
+                                <h3 className="font-bold text-orange-950 text-[16.5px] flex items-center gap-1.5 mb-1.5">
                                     ✨ {t("product.whyRecommended")}
                                 </h3>
-                                <p className="text-gray-700 text-[15px] leading-relaxed italic">
+                                <p className="text-gray-700 text-[16px] leading-relaxed italic">
                                     "{reason}"
                                 </p>
                             </div>
@@ -158,14 +159,14 @@ export default function Product() {
                         {/* Product Highlights / Specs (Details) */}
                         {highlights.length > 0 && (
                             <div className="flex flex-col gap-2 my-2 w-full">
-                                <h3 className="font-bold text-primary-900 text-[15.5px]">
+                                <h3 className="font-bold text-primary-900 text-[16.5px]">
                                     📋 {t("product.keyHighlights")}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     {highlights.map((hl, idx) => (
                                         <div key={idx} className="bg-[#FBFAF5] rounded-xl px-3 py-2.5 border border-[#E7E2D4] flex items-start gap-2">
-                                            <span className="text-primary-500 font-bold text-[14px]">✔</span>
-                                            <span className="text-gray-700 text-[14px] leading-snug">{hl}</span>
+                                            <span className="text-primary-500 font-bold text-[15px]">✔</span>
+                                            <span className="text-gray-700 text-[15px] leading-snug">{hl}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -173,8 +174,8 @@ export default function Product() {
                         )}
                         {productInfo.product.co2e_kg !== null && productInfo.product.co2e_kg !== undefined ? (
                             <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 bg-[#E4F1E6] text-[#1F5D3A] border border-[#cfe5d2] rounded-2xl px-4 py-3 w-fit text-[15.5px]">
-                                    <span>{t("product.estimatedGwp")}: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</span>
+                                <div className="flex items-center gap-2 bg-[#E4F1E6] text-[#1F5D3A] border border-[#cfe5d2] rounded-2xl px-4 py-3 w-fit text-[16.5px]">
+                                    <span>{t("product.estimatedGwp")}: <span className="font-bold">{formatKg(productInfo.product.co2e_kg, lang)}</span> kg CO₂e</span>
                                     <div className="group relative cursor-pointer ml-1 inline-block">
                                         <span className="bg-[#2E7D4F] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
                                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-10 shadow-lg">
@@ -199,11 +200,11 @@ export default function Product() {
                     <div className="flex flex-col gap-3 pt-1">
                         <div className="flex flex-wrap gap-3">
                             <button type="button" onClick={() => navigate(`/world/${params.productId}`)}
-                                className="inline-flex items-center gap-2 bg-[#1F5D3A] hover:bg-[#173F28] text-white text-[16px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
+                                className="inline-flex items-center gap-2 bg-[#1F5D3A] hover:bg-[#173F28] text-white text-[17px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
                                 🌏 {t("product.world")}
                             </button>
                             <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}
-                                className="inline-flex items-center gap-2 bg-[#6FB04A] hover:bg-[#4E8E33] text-white text-[16px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
+                                className="inline-flex items-center gap-2 bg-[#6FB04A] hover:bg-[#4E8E33] text-white text-[17px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
                                 ✨ {t("product.askAi")}
                             </button>
                         </div>
@@ -271,8 +272,8 @@ export default function Product() {
                                 <p className="text-gray-700 text-sm">{t(getCo2SourceKey(productInfo.product.co2e_source))}</p>
                                 {productInfo.product.co2e_references?.length > 0 && (
                                     <>
-                                        <h4 className="font-semibold text-primary-900 text-[14.5px] mt-1">{t("product.co2References")}</h4>
-                                        <ul className="text-[14px] text-gray-600 flex flex-col gap-1.5">
+                                        <h4 className="font-semibold text-primary-900 text-[15.5px] mt-1">{t("product.co2References")}</h4>
+                                        <ul className="text-[15px] text-gray-600 flex flex-col gap-1.5">
                                             {productInfo.product.co2e_references.map((ref, i) => (
                                                 <li key={i} className="flex justify-between gap-2 border-b border-gray-100 pb-1">
                                                     <span className="line-clamp-1">{ref.name}</span>
@@ -290,7 +291,7 @@ export default function Product() {
                             <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
                                 <h3 className="font-semibold text-primary-900 text-sm mb-1">{t("product.aiExplanation")}</h3>
                                 <p className="text-gray-700 text-sm italic">
-                                    "{co2Explanation || (lang === "vi" ? "Được ước tính dựa trên vật liệu, thông số kỹ thuật và các sản phẩm tham chiếu đã xác minh." : "Estimated based on product materials, specs, and similar verified benchmarks.")}"
+                                    "{co2Explanation || tri(lang)("Được ước tính dựa trên vật liệu, thông số kỹ thuật và các sản phẩm tham chiếu đã xác minh.", "Estimated based on product materials, specs, and similar verified benchmarks.", "Estimé d'après les matériaux, les caractéristiques et des produits de référence vérifiés.")}"
                                 </p>
                             </div>
                         </div>
@@ -304,17 +305,17 @@ export default function Product() {
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">🚗</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 4.1)} km</span>
-                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqDriving")}</span>
+                                        <span className="text-[13.5px] text-gray-600 leading-snug">{t("product.eqDriving")}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">📱</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 121)}</span>
-                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqPhones")}</span>
+                                        <span className="text-[13.5px] text-gray-600 leading-snug">{t("product.eqPhones")}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">🌳</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.max(1, Math.round(productInfo.product.co2e_kg / 22))}</span>
-                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqTrees")}</span>
+                                        <span className="text-[13.5px] text-gray-600 leading-snug">{t("product.eqTrees")}</span>
                                     </div>
                                 </div>
                             </div>

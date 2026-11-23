@@ -1,4 +1,4 @@
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { dashText } from "../i18n/dashboard";
 import { formatNum } from "../lib/format";
 import Icon from "./components/ui/Icon";
@@ -13,7 +13,7 @@ export default function System() {
   const online = (health?.services || []).filter((s) => s.status === "online").length;
   const total = (health?.services || []).length;
   const maxPlatform = Math.max(1, ...(o?.platforms || []).map((p) => p.n));
-  const checked = health?.checked_at ? new Date(health.checked_at).toLocaleTimeString(lang === "vi" ? "vi-VN" : "en-US") : "—";
+  const checked = health?.checked_at ? new Date(health.checked_at).toLocaleTimeString(LOCALES[lang]) : "—";
 
   return (
     <main className="mx-auto max-w-[1320px] px-4 min-[900px]:px-8 py-6 space-y-5">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useI18n } from "../../../i18n/LanguageContext";
+import { LOCALES, useI18n } from "../../../i18n/LanguageContext";
 
 // Browser speech recognition (Chrome / Edge / Safari). Hidden when unsupported.
 const SpeechRecognition =
@@ -20,7 +20,7 @@ export default function VoiceInput({ onTranscript, disabled }) {
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = lang === "vi" ? "vi-VN" : "en-US";
+    recognition.lang = LOCALES[lang] ?? "en-US";
     recognition.interimResults = false;
     recognition.onresult = (event) => {
       const text = Array.from(event.results).map((r) => r[0].transcript).join(" ");

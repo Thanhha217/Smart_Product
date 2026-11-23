@@ -256,7 +256,7 @@ export default function SearchResults() {
         <div className="flex flex-wrap justify-between items-end gap-3">
           <div>
             <p className="eyebrow">{t("nav.search")}</p>
-            <h1 className="text-[28px] font-bold leading-tight text-[#1E2B22]">{t("results.for", { query })}</h1>
+            <h1 className="text-[28px] font-bold leading-tight text-[#1E2B22]">{t("results.for", { query: query ?? "" })}</h1>
           </div>
 
           <div className="hidden md:flex gap-4 items-center">

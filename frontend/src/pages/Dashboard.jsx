@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { dashText } from "../i18n/dashboard";
 import { api } from "../api/client";
 import { formatKg, formatNum } from "../lib/format";
@@ -57,8 +57,8 @@ export function ServiceList({ health, D, compact = false }) {
         <li key={s.key} className="flex items-center gap-3.5 py-3.5">
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-[#F1EEE4] text-[#1F5D3A]"><Icon name={SERVICE_ICON[s.key] || "server"} size={19} /></span>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-[15.5px] truncate">{s.name}</p>
-            <p className="text-[13.5px] text-[#6B7468] truncate">{[s.detail, s.latency_ms != null ? `${s.latency_ms} ms` : null].filter(Boolean).join(" · ") || s.key}</p>
+            <p className="font-semibold text-[16.5px] truncate">{s.name}</p>
+            <p className="text-[14.5px] text-[#6B7468] truncate">{[s.detail, s.latency_ms != null ? `${s.latency_ms} ms` : null].filter(Boolean).join(" · ") || s.key}</p>
           </div>
           <StatusPill ok={s.status === "online"} labels={[D.online, D.offline]} />
         </li>
@@ -83,7 +83,7 @@ export default function Dashboard() {
     const list = (o?.greenest || []).filter((g) => g.product);
     return list.find((g) => g.category === "laptop")?.product?.product_id || list[0]?.product?.product_id;
   }, [o]);
-  const today = new Date().toLocaleDateString(lang === "vi" ? "vi-VN" : "en-US", { day: "numeric", month: "short", year: "numeric" });
+  const today = new Date().toLocaleDateString(LOCALES[lang], { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <main className="mx-auto max-w-[1360px] px-4 min-[900px]:px-10 py-8 space-y-7">
@@ -91,9 +91,9 @@ export default function Dashboard() {
         <div>
           <p className="eyebrow">Smart Product Finder</p>
           <h1 className="text-[40px] font-bold text-[#1E2B22] leading-tight mt-1">{D.dashTitle}</h1>
-          <p className="text-[17px] text-[#6B7468] mt-1">{D.dashLead}</p>
+          <p className="text-[18px] text-[#6B7468] mt-1">{D.dashLead}</p>
         </div>
-        <span className="pill bg-white border border-[#E7E2D4] text-[#1E2B22] !py-2.5 !px-4 !text-[14.5px]"><Icon name="calendar" size={16} /> {today}</span>
+        <span className="pill bg-white border border-[#E7E2D4] text-[#1E2B22] !py-2.5 !px-4 !text-[15.5px]"><Icon name="calendar" size={16} /> {today}</span>
       </div>
       {error && <p className="card p-4 text-sm text-[#C2413C]">{D.unavailable}</p>}
 
@@ -106,7 +106,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
         <Card title={D.worldTitle} right={<CardLink to="/world">{D.worldOpen}</CardLink>}>
-          <MiniWorld onClick={() => navigate(greenestId ? `/world/${greenestId}` : "/world")} labels={lang === "en" ? ["Production", "Use", "Transport"] : ["Sản xuất", "Sử dụng", "Vận chuyển"]} />
+          <MiniWorld onClick={() => navigate(greenestId ? `/world/${greenestId}` : "/world")} labels={tri(lang)(["Sản xuất", "Sử dụng", "Vận chuyển"], ["Production", "Use", "Transport"], ["Fabrication", "Utilisation", "Transport"])} />
           <div className="mt-4 flex flex-wrap gap-2.5">
             {[["#6FB04A", D.legend[0]], ["#E0A526", D.legend[1]], ["#D9534F", D.legend[2]]].map(([c, l]) => (
               <span key={l} className="pill bg-white border border-[#E7E2D4]"><span className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />{l}</span>
@@ -114,26 +114,26 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card title={D.gridTitle} sub="Việt Nam · 2024" right={<IconTile icon="factory" tone="slate" size={36} />}>
+        <Card title={D.gridTitle} sub={`${tri(lang)("Việt Nam", "Vietnam", "Vietnam")} · 2024`} right={<IconTile icon="factory" tone="slate" size={36} />}>
           <div className="flex items-center gap-4">
             <IconTile icon="bolt" tone="amber" size={64} />
             <div>
               <p className="text-[44px] leading-none font-extrabold text-[#1E2B22]">{formatNum(o?.grid_ef ?? 0.681, lang, 3)}</p>
-              <p className="text-[15px] text-[#6B7468] mt-1.5">{D.gridUnit}</p>
+              <p className="text-[16px] text-[#6B7468] mt-1.5">{D.gridUnit}</p>
             </div>
           </div>
-          <p className="mt-4 text-[15.5px] leading-relaxed text-[#55604F]">{D.gridNote}</p>
+          <p className="mt-4 text-[16.5px] leading-relaxed text-[#55604F]">{D.gridNote}</p>
           <div className="mt-5 grid grid-cols-5 gap-1.5 text-center">
             {D.gridSources.map(([icon, name, g]) => (
               <div key={name} className="rounded-xl bg-[#FBFAF5] border border-[#EFEBDF] py-2.5 px-1">
-                <p className="text-[12.5px] font-semibold text-[#55604F] whitespace-nowrap tracking-tight">{name}</p>
+                <p className="text-[13.5px] font-semibold text-[#55604F] whitespace-nowrap tracking-tight">{name}</p>
                 <span className="my-1 inline-grid place-items-center" style={{ color: g > 300 ? "#C2413C" : g > 40 ? "#B7801A" : "#2E7D4F" }}><Icon name={icon} size={22} /></span>
-                <p className="text-[16px] font-bold">{formatNum(g, lang, 0)}</p>
+                <p className="text-[17px] font-bold">{formatNum(g, lang, 0)}</p>
               </div>
             ))}
           </div>
-          <p className="mt-2.5 text-[13px] text-[#7d8579]">{D.sourcesNote}</p>
-          {greenestId && <Link to={`/world/${greenestId}?sim=1&grid=solar`} className="mt-4 inline-flex items-center gap-1 text-[15px] font-semibold text-[#2E7D4F] hover:underline">{D.gridSim} <Icon name="arrowRight" size={14} /></Link>}
+          <p className="mt-2.5 text-[13.5px] text-[#7d8579]">{D.sourcesNote}</p>
+          {greenestId && <Link to={`/world/${greenestId}?sim=1&grid=solar`} className="mt-4 inline-flex items-center gap-1 text-[16px] font-semibold text-[#2E7D4F] hover:underline">{D.gridSim} <Icon name="arrowRight" size={14} /></Link>}
         </Card>
       </div>
 
@@ -144,7 +144,7 @@ export default function Dashboard() {
               <div key={key} className="rounded-2xl border border-[#EFEBDF] bg-[#FBFAF5] p-4 flex items-center gap-3.5">
                 <IconTile icon={icon} tone={tone} size={46} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] text-[#55604F]">{D.sourceLabels[key]}</p>
+                  <p className="text-[16px] text-[#55604F]">{D.sourceLabels[key]}</p>
                   <p className="text-[24px] leading-tight font-extrabold mb-1">{loading ? "…" : `${formatNum(sourcePct(key), lang, 1)}%`}</p>
                   <Bar pct={sourcePct(key)} color={{ green: "#2E7D4F", blue: "#3B8FD9", amber: "#E0A526", red: "#D9534F" }[tone]} />
                 </div>
@@ -152,12 +152,12 @@ export default function Dashboard() {
             ))}
           </div>
           <div className="mt-5 rounded-2xl border border-[#EFEBDF] p-4">
-            <p className="text-[15.5px] font-bold mb-3">{D.chainTitle}</p>
+            <p className="text-[16.5px] font-bold mb-3">{D.chainTitle}</p>
             <ol className="space-y-3">
               {[["manufacturer", "0,9"], ["neighbor_average", "0,5"], ["category_model", "0,35"], ["none", "—"]].map(([key, conf], i) => (
                 <li key={key} className="flex items-start gap-3">
-                  <span className="grid place-items-center w-7 h-7 shrink-0 rounded-full bg-[#1F5D3A] text-white text-[13px] font-bold">{i + 1}</span>
-                  <p className="flex-1 text-[15px] leading-snug"><b>{D.sourceLabels[key]}</b> <span className="text-[#6B7468]">· {D.chainDesc[key]}</span></p>
+                  <span className="grid place-items-center w-7 h-7 shrink-0 rounded-full bg-[#1F5D3A] text-white text-[13.5px] font-bold">{i + 1}</span>
+                  <p className="flex-1 text-[16px] leading-snug"><b>{D.sourceLabels[key]}</b> <span className="text-[#6B7468]">· {D.chainDesc[key]}</span></p>
                   {conf !== "—" && <span className="pill bg-[#E4F1E6] text-[#1F5D3A] shrink-0">{D.confidence} {conf}</span>}
                 </li>
               ))}
@@ -174,15 +174,15 @@ export default function Dashboard() {
                   <Link to={`/compare?ids=${s.from.product_id},${s.to.product_id}`} className="flex gap-3 rounded-2xl p-2 -m-2 hover:bg-[#FBFAF5]">
                     <IconTile icon="alert" tone="amber" size={36} />
                     <span className="min-w-0">
-                      <span className="block text-[15.5px] font-semibold leading-snug line-clamp-2">{m.title}</span>
-                      <span className="block text-[14px] leading-snug text-[#6B7468] line-clamp-2 mt-0.5">{m.sub}</span>
+                      <span className="block text-[16.5px] font-semibold leading-snug line-clamp-2">{m.title}</span>
+                      <span className="block text-[15px] leading-snug text-[#6B7468] line-clamp-2 mt-0.5">{m.sub}</span>
                     </span>
                   </Link>
                 </li>
               );
             })}
             <li className="flex gap-3"><IconTile icon="info" tone="green" size={36} />
-              <span><span className="block text-[15.5px] font-semibold">{D.tipTitle}</span><span className="block text-[14px] text-[#6B7468] mt-0.5">{D.tipSub}</span></span>
+              <span><span className="block text-[16.5px] font-semibold">{D.tipTitle}</span><span className="block text-[15px] text-[#6B7468] mt-0.5">{D.tipSub}</span></span>
             </li>
             {loading && [0, 1].map((i) => <li key={i} className="h-12 rounded-2xl bg-[#F1EEE4] animate-pulse" />)}
           </ul>
@@ -200,15 +200,15 @@ export default function Dashboard() {
               <ChartTabs tabs={D.tabs}>
                 <div>
                   <RangeBars rows={(o?.by_category || []).slice(0, 6)} label={catLabel} lang={lang} />
-                  <p className="mt-3 text-[13px] text-[#7d8579]">{D.logScale}</p>
+                  <p className="mt-3 text-[13.5px] text-[#7d8579]">{D.logScale}</p>
                 </div>
                 <SourceStack rows={o?.by_source || []} labels={D.sourceLabels} lang={lang} />
               </ChartTabs>
             </div>
             <div className="rounded-2xl border border-[#EFEBDF] p-5 flex flex-col items-center">
-              <p className="text-[15.5px] font-bold mb-3 text-center">{D.coverage}</p>
+              <p className="text-[16.5px] font-bold mb-3 text-center">{D.coverage}</p>
               <Ring value={coverage} />
-              <p className="mt-3 text-[14px] text-[#6B7468] text-center flex items-center gap-1"><Icon name="check" size={14} className="text-[#2E7D4F]" />{D.coverageSub}</p>
+              <p className="mt-3 text-[15px] text-[#6B7468] text-center flex items-center gap-1"><Icon name="check" size={14} className="text-[#2E7D4F]" />{D.coverageSub}</p>
             </div>
           </div>
         </Card>

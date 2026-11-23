@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { addToCart } from "../lib/cart";
 import { formatKg, formatNum, greenColor } from "../lib/format";
@@ -16,7 +16,7 @@ import { derive, txt } from "./components/story/storyText";
 function H({ children, kicker }) {
   return (
     <header className="mb-3">
-      {kicker && <p className="text-[13px] uppercase tracking-widest text-emerald-700 font-semibold">{kicker}</p>}
+      {kicker && <p className="text-[13.5px] uppercase tracking-widest text-emerald-700 font-semibold">{kicker}</p>}
       <h2 className="text-xl md:text-2xl font-extrabold text-[#1f3b4d] leading-tight">{children}</h2>
     </header>
   );
@@ -58,7 +58,7 @@ function Distribution({ stats, kg, T, lang }) {
         <div className="absolute -top-1 h-6 w-0.5 bg-[#1f3b4d]" style={{ left: pos(stats.median_kg) }} title={T.median} />
         <div className="absolute -top-3 -ml-3 text-xl" style={{ left: pos(kg) }} aria-label="this product">📍</div>
       </div>
-      <div className="flex justify-between text-[13px] text-gray-500 mt-1">
+      <div className="flex justify-between text-[13.5px] text-gray-500 mt-1">
         <span>{formatKg(lo, lang)} kg · {T.lowLabel}</span><span>{T.median} {formatKg(stats.median_kg, lang)}</span><span>{formatKg(hi, lang)} kg · {T.highLabel}</span>
       </div>
     </div>
@@ -83,7 +83,7 @@ function RelatedBars({ product, items, lang, navigate }) {
         const self = r.product_id === product.product_id;
         return (
           <button key={r.product_id} type="button" onClick={() => !self && navigate(`/story/${r.product_id}`)}
-                  className={`w-full text-left text-[12px] ${self ? "font-bold" : "hover:opacity-80"}`}>
+                  className={`w-full text-left text-[13.5px] ${self ? "font-bold" : "hover:opacity-80"}`}>
             <span className="block truncate">{self ? "📍 " : ""}{r.name}</span>
             <span className="flex items-center gap-2">
               <span className="h-2.5 rounded-full" style={{ width: `${Math.max(4, (r.co2e_kg / max) * 75)}%`, background: greenColor(r.green_score), transition: "width .8s" }} />
@@ -120,14 +120,14 @@ function buildPages({ d, T, lang, go, navigate }) {
   return [
     // 0 cover
     <div key="cover" className="h-full flex flex-col">
-      <p className="text-[13px] uppercase tracking-widest text-emerald-700 font-semibold">{T.kicker}</p>
+      <p className="text-[13.5px] uppercase tracking-widest text-emerald-700 font-semibold">{T.kicker}</p>
       <h1 className="text-2xl md:text-3xl font-black text-[#1f3b4d] leading-tight mt-1">{p.name}</h1>
       <p className="text-sm text-gray-500 mt-1">{p.platform} · {T.price(p.price_vnd)}</p>
       <div className="my-2 mx-auto w-full max-w-[230px]"><CoverArt category={p.category} score={p.green_score} /></div>
       <Big kg={x.kg} lang={lang} />
       {p.green_score !== null && p.green_score !== undefined && (
         <p className="mt-2 inline-flex self-start rounded-full px-3 py-1 text-sm font-bold text-white" style={{ background: greenColor(p.green_score) }}>
-          {lang === "vi" ? "Điểm xanh" : "Green score"} {formatNum(p.green_score, lang, 1)}/5
+          {tri(lang)("Điểm xanh", "Green score", "Score vert")} {formatNum(p.green_score, lang, 1)}/5
         </p>
       )}
       <p className="mt-3 text-gray-700">{T.coverLead(x.kg)}</p>
@@ -139,7 +139,7 @@ function buildPages({ d, T, lang, go, navigate }) {
       <p className="text-gray-700">{T.meaningLead}</p>
       {x.kg !== null && <>
         <div className="my-3"><TreesScene trees={x.trees} /></div>
-        <ul className="space-y-2 text-[15px]">
+        <ul className="space-y-2 text-[16px]">
           <li>🌳 {T.trees(x.trees)}</li>
           <li>🚗 {T.car(x.carKm)}</li>
           <li>🔋 {T.charges(x.charges)}</li>
@@ -158,7 +158,7 @@ function buildPages({ d, T, lang, go, navigate }) {
                   onClick={() => go(stagePage[i + 1])} style={{ width: `${st[key].pct}%`, background: ["#1B5B7E", "#329AD2", "#d97706", "#7AA725"][i] }} />
         ))}
       </div>
-      {x.assumed && <p className="text-[13px] text-amber-700 mt-2">⚠ {d.lifecycle?.[lang === "vi" ? "note_vi" : "note_en"]}</p>}
+      {x.assumed && <p className="text-[13.5px] text-amber-700 mt-2">⚠ {d.lifecycle?.[lang === "vi" ? "note_vi" : "note_en"]}</p>}
     </div>,
 
     // 3 production
@@ -176,7 +176,7 @@ function buildPages({ d, T, lang, go, navigate }) {
       <ShipScene originCode={x.route?.origin_code} distanceKm={x.route?.distance_km} mode={x.route?.mode} />
       <StagePill stage={st.transport} lang={lang} />
       <p className="text-gray-700">{T.transBody(st.transport, x.route)}</p>
-      {x.route?.assumed && <p className="text-[13px] text-amber-700 mt-2">⚠ {T.assumedRoute}</p>}
+      {x.route?.assumed && <p className="text-[13.5px] text-amber-700 mt-2">⚠ {T.assumedRoute}</p>}
     </div>,
 
     // 5 use
@@ -199,7 +199,7 @@ function buildPages({ d, T, lang, go, navigate }) {
 
     // 7 formula
     <div key="formula">
-      <H kicker={lang === "vi" ? "Minh bạch" : "Transparency"}>{T.formulaTitle}</H>
+      <H kicker={tri(lang)("Minh bạch", "Transparency", "Transparence")}>{T.formulaTitle}</H>
       <p className="text-gray-700 text-sm">{T.formulaLead(d.formula?.method)}</p>
       <ol className="my-3 space-y-1">
         {T.chain.map((c, i) => (
@@ -209,9 +209,9 @@ function buildPages({ d, T, lang, go, navigate }) {
         ))}
       </ol>
       {d.formula?.expression && d.formula.expression !== "—" && (
-        <p className="font-mono text-[13px] bg-[#1f3b4d] text-emerald-100 rounded-lg px-3 py-2">{d.formula.expression}</p>
+        <p className="font-mono text-[13.5px] bg-[#1f3b4d] text-emerald-100 rounded-lg px-3 py-2">{d.formula.expression}</p>
       )}
-      <ul className="mt-2 space-y-1 text-[13px]">
+      <ul className="mt-2 space-y-1 text-[13.5px]">
         {steps.slice(-4).map((s, i) => (
           <li key={i} className="flex justify-between gap-2 border-b border-dashed border-gray-200 py-1">
             <span className="text-gray-600">{lang === "vi" ? s.label_vi : s.label_en}</span><span className="font-mono font-semibold text-right">{s.expr}</span>
@@ -223,9 +223,9 @@ function buildPages({ d, T, lang, go, navigate }) {
         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-emerald-600" style={{ width: `${(d.formula?.confidence || 0) * 100}%` }} /></div>
         <span className="font-semibold">{formatNum((d.formula?.confidence || 0) * 100, lang, 0)}%</span>
       </div>
-      <p className="mt-2 text-[12px] text-gray-500">🤖 {T.principle}</p>
+      <p className="mt-2 text-[13.5px] text-gray-500">🤖 {T.principle}</p>
       {d.references?.length > 0 && (
-        <div className="mt-2 text-[12px]"><p className="font-semibold text-gray-700">{T.refs}</p>
+        <div className="mt-2 text-[13.5px]"><p className="font-semibold text-gray-700">{T.refs}</p>
           <ul>{d.references.slice(0, 3).map((r) => (
             <li key={r.name}>{r.url ? <a className="text-sky-700 underline" href={r.url} target="_blank" rel="noreferrer">{r.name}</a> : r.name} — {formatKg(r.co2e_kg, lang)} kg</li>
           ))}</ul></div>
@@ -234,7 +234,7 @@ function buildPages({ d, T, lang, go, navigate }) {
 
     // 8 compare
     <div key="compare">
-      <H kicker={lang === "vi" ? "Điểm xanh 0–5" : "Green score 0–5"}>{T.compareTitle}</H>
+      <H kicker={tri(lang)("Điểm xanh 0–5", "Green score 0–5", "Score vert 0–5")}>{T.compareTitle}</H>
       <p className="text-gray-700">{T.compareBody(d.stats)}</p>
       <Distribution stats={d.stats} kg={x.kg} T={T} lang={lang} />
       {alt && (
@@ -261,13 +261,13 @@ function buildPages({ d, T, lang, go, navigate }) {
         {x.trees !== null && <li>{T.wefeEco(x.trees)}</li>}
       </ul>
       <p className="mt-3 rounded-lg bg-sky-50 border border-sky-200 px-3 py-2 text-sm text-sky-900">🏙️ {T.city(x.cityTonnes, x.savedPerUnit)}</p>
-      <p className="text-[13px] text-gray-400 mt-1">{T.scenarioNote}</p>
+      <p className="text-[13.5px] text-gray-400 mt-1">{T.scenarioNote}</p>
     </div>,
 
     // 10 actions
     <div key="act">
       <H>{T.actTitle}</H>
-      <ul className="space-y-1.5 text-[15px] mb-4">{T.tips.map((t) => <li key={t}>✅ {t}</li>)}</ul>
+      <ul className="space-y-1.5 text-[16px] mb-4">{T.tips.map((t) => <li key={t}>✅ {t}</li>)}</ul>
       <div className="grid gap-2">
         <button type="button" className="rounded-xl bg-emerald-600 text-white font-semibold py-2.5" onClick={() => navigate(`/assistant?q=${encodeURIComponent(p.name)}&go=1`)}>✨ {T.actAsk}</button>
         <button type="button" className="rounded-xl border border-emerald-600 text-emerald-700 font-semibold py-2.5" onClick={() => navigate(`/compare?ids=${p.product_id}${alt ? "," + alt.product_id : ""}`)}>⚖️ {T.actCompare}</button>
@@ -284,7 +284,7 @@ function buildPages({ d, T, lang, go, navigate }) {
       <div className="mt-auto pt-6 text-center">
         <p className="text-2xl">🌏</p>
         <p className="font-black text-[#1f3b4d]">Smart Product Finder</p>
-        <Link to="/method" className="text-sm text-sky-700 underline">{lang === "vi" ? "Phương pháp tính CO₂ đầy đủ" : "Full CO₂ method"}</Link>
+        <Link to="/method" className="text-sm text-sky-700 underline">{tri(lang)("Phương pháp tính CO₂ đầy đủ", "Full CO₂ method", "Méthode CO₂ complète")}</Link>
       </div>
     </div>,
   ];

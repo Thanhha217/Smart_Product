@@ -55,7 +55,7 @@ export default function ExplainPanel({ open, topic, preset, productId, lang, sce
       <div className="overflow-y-auto px-5 pb-4 flex-1 min-h-0">
         {image && <img src={image} alt="" className="mt-3 w-full h-36 md:h-44 object-cover rounded-2xl shadow" />}
         {asked && <p className="mt-2 text-sm font-semibold text-emerald-800">❓ {asked}</p>}
-        <p className="mt-2 text-[15px] leading-relaxed text-gray-800">{body?.answer || preset.answer}</p>
+        <p className="mt-2 text-[16px] leading-relaxed text-gray-800">{body?.answer || preset.answer}</p>
         {(body?.bullets?.length ? body.bullets : preset.bullets || []).length > 0 && (
           <ul className="mt-2 space-y-1 text-sm text-gray-700">
             {(body?.bullets?.length ? body.bullets : preset.bullets).map((b) => <li key={b} className="flex gap-2"><span className="text-emerald-600">●</span><span>{b}</span></li>)}
@@ -67,8 +67,8 @@ export default function ExplainPanel({ open, topic, preset, productId, lang, sce
             <div className="h-3 rounded wx-shim" /><div className="h-3 rounded wx-shim w-5/6" /><div className="h-3 rounded wx-shim w-2/3" />
           </div>
         )}
-        {!busy && ai && <p className="mt-3 text-[11px] text-gray-400">{isRules ? T.byRules : T.byAi(ai.model)}</p>}
-        {!busy && error && <p className="mt-3 text-[11px] text-amber-700">⚠ {T.aiError}</p>}
+        {!busy && ai && <p className="mt-3 text-[13.5px] text-gray-400">{isRules ? T.byRules : T.byAi(ai.model)}</p>}
+        {!busy && error && <p className="mt-3 text-[13.5px] text-amber-700">⚠ {T.aiError}</p>}
         {followUps.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {followUps.map((f) => (
@@ -77,7 +77,7 @@ export default function ExplainPanel({ open, topic, preset, productId, lang, sce
             ))}
           </div>
         )}
-        <p className="mt-3 text-[11px] text-gray-400">{T.numbersNote}</p>
+        <p className="mt-3 text-[13.5px] text-gray-400">{T.numbersNote}</p>
       </div>
       <form className="border-t border-gray-100 p-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (question.trim()) { ask(question.trim()); setQuestion(""); } }}>
         <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={T.askPlaceholder}

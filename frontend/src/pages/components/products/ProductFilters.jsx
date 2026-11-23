@@ -21,9 +21,9 @@ export default function ProductFilter({
 }) {
     const { t } = useI18n();
 
-    const titleCss = "text-[16px] font-bold text-[#1E2B22]"
-    const numCss = "w-full bg-[#F6F4EC] border border-[#E7E2D4] rounded-xl pl-3 pr-14 py-2 text-right text-[15px] font-semibold"
-    const unitCss = "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13.5px] text-[#6B7468]"
+    const titleCss = "text-[17px] font-bold text-[#1E2B22]"
+    const numCss = "w-full bg-[#F6F4EC] border border-[#E7E2D4] rounded-xl pl-3 pr-14 py-2 text-right text-[16px] font-semibold"
+    const unitCss = "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[14.5px] text-[#6B7468]"
 
     const handleMinChange = (e) => {
         const val = Number(e.target.value);
@@ -51,12 +51,12 @@ export default function ProductFilter({
             <section className="flex flex-col gap-3">
                 <p className={titleCss}>{t("filter.priceRange")}</p>
                 <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
-                    <span className="text-[14px] text-[#55604F]">{t("filter.from")}</span>
+                    <span className="text-[15px] text-[#55604F]">{t("filter.from")}</span>
                     <label className="relative block">
                         <input type="number" aria-label="min price" className={numCss} min="0" max={priceLimit} value={minPriceValue} onChange={handleMinChange}/>
                         <span className={unitCss}>.000₫</span>
                     </label>
-                    <span className="text-[14px] text-[#55604F]">{t("filter.to")}</span>
+                    <span className="text-[15px] text-[#55604F]">{t("filter.to")}</span>
                     <label className="relative block">
                         <input type="number" aria-label="max price" className={numCss} min="0" max={priceLimit} value={maxPriceValue} onChange={handleMaxChange}/>
                         <span className={unitCss}>.000₫</span>
@@ -98,7 +98,7 @@ export default function ProductFilter({
             <section className="flex flex-col gap-3 border-t border-[#EFEBDF] pt-5">
             <p className={titleCss}>{t("filter.productFilters")}</p>
 
-            <div className="flex flex-col gap-2.5 text-[15px]">
+            <div className="flex flex-col gap-2.5 text-[16px]">
                 <div className="flex items-center gap-2">
                     <input type="checkbox" name="on-sale-check" id="on-sale-check" aria-labelledby="on-sale-label" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)}/>
                     <label id="on-sale-label" htmlFor="on-sale-check">{t("filter.onSale")}</label>

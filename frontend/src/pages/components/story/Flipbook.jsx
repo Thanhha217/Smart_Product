@@ -19,7 +19,7 @@ function Paper({ children, side, number }) {
     <div className={`relative h-full w-full bg-[#fffdf8] overflow-hidden ${side === "left" ? "rounded-l-xl" : side === "right" ? "rounded-r-xl" : "rounded-xl"}`}
          style={{ boxShadow: side === "left" ? "inset -18px 0 24px -18px rgba(0,0,0,.25)" : side === "right" ? "inset 18px 0 24px -18px rgba(0,0,0,.25)" : "none" }}>
       <div className="h-full overflow-y-auto px-6 py-5 md:px-8 md:py-6">{children}</div>
-      {number !== undefined && <span className="absolute bottom-2 text-[13px] text-gray-400 select-none" style={{ [side === "left" ? "left" : "right"]: 14 }}>{number}</span>}
+      {number !== undefined && <span className="absolute bottom-2 text-[13.5px] text-gray-400 select-none" style={{ [side === "left" ? "left" : "right"]: 14 }}>{number}</span>}
     </div>
   );
 }

@@ -68,6 +68,41 @@ const EN = {
   todayTitle: "Today", todayItems: ["Compare CO₂ before buying", "Ask the AI about a product", "Pick a high green score"],
 };
 
+const FR = {
+  ...EN,
+  eyebrow: "Achats intelligents",
+  headline: ["Des achats plus malins", "pour un avenir", "plus vert"],
+  lead: "Connaissez le CO₂ de chaque produit avant d'acheter : de l'usine à chez vous, avec des sources transparentes et une IA qui explique tout ce que vous touchez.",
+  askCta: "Demander à l'IA", worldCta: "Explorer le monde CO₂", dashCta: "Vue d'ensemble",
+  searchPh: "Que voulez-vous acheter ? ex. portable peu émetteur à moins de 20 M",
+  features: [["eye", "Suivi du CO₂", "en temps réel"], ["chart", "Analyse", "des données"], ["sparkles", "Demandez à l'IA", "partout"], ["leaf", "Suggestions", "plus vertes"]],
+  benefits: [["bars", "Décider avec les données", "Chaque chiffre renvoie à un rapport."], ["leaf", "Réduire les émissions", "Moins de CO₂ pour le même prix."],
+             ["bolt", "Économiser l'énergie", "Voir la consommation et la facture à l'avance."], ["globe", "Un avenir durable", "Vers des villes intelligentes et WEFE."]],
+  dashTitle: "Vue d'ensemble", dashLead: "Le CO₂ en direct depuis le système",
+  stats: { products: "Produits avec CO₂", refs: "Chiffres de fabricants", laptop: "CO₂ médian des portables", grid: "Réseau vietnamien" },
+  statSubs: { products: (pct) => `${pct} des produits avec prix`, refs: "rapports EPD/PCF", laptop: "kg CO₂e · cycle de vie", grid: "kg CO₂e / kWh (2024)" },
+  worldTitle: "Monde CO₂", worldOpen: "Ouvrir", legend: ["Vert", "À surveiller", "Émissions élevées"],
+  gridTitle: "Réseau électrique vietnamien", gridUnit: "kg CO₂e par kWh", gridNote: "Encore très charbonné : plus on consomme, plus on émet.",
+  gridSim: "Voir la simulation solaire en toiture", sourcesNote: "Émissions médianes sur le cycle de vie (GIEC AR5), g CO₂e/kWh",
+  gridSources: [["factory", "Charbon", 820], ["bolt", "Gaz", 490], ["droplet", "Hydro", 24], ["sun", "Solaire", 48], ["wind", "Éolien", 11]],
+  sourcesTitle: "D'où viennent les chiffres", sourcesLead: "Chaque chiffre indique sa source", viewDetails: "Voir la méthode",
+  sourceLabels: { manufacturer: "Chiffre du fabricant", neighbor_average: "Produits similaires", category_model: "Niveau de catégorie", lifecycle_formula: "Formule de cycle de vie", eeio_price: "D'après le prix", none: "Pas de chiffre" },
+  chainTitle: "Ordre des méthodes et fiabilité", confidence: "fiabilité",
+  chainDesc: { manufacturer: "modèle exact avec un rapport du fabricant", neighbor_average: "moyenne de produits similaires (≥ 66 %)",
+               category_model: "niveau typique de la catégorie, ajusté selon la marque et la taille d'écran", none: "pas assez d'éléments : laissé vide, jamais deviné" },
+  alertsTitle: "Suggestions récentes", viewAll: "Tout voir",
+  suggestion: (from, to, kg) => ({ title: `Passer à ${to}`, sub: `au lieu de ${from} · économise ${kg} kg CO₂e à prix proche` }),
+  tipTitle: "Astuce : garder ses appareils 1 à 2 ans de plus", tipSub: "répartit la fabrication sur plus d'années",
+  greenTitle: "Produit le plus vert par catégorie", greenLead: "L'article le moins émetteur de chaque catégorie", openWorld: "Ouvrir le monde",
+  tabs: ["CO₂ par catégorie", "Sources des données"], logScale: "échelle log, kg CO₂e · trait = médiane, bande = 25–75 %",
+  coverage: "Couverture CO₂", coverageSub: "des produits avec prix calculés",
+  servicesTitle: "Services du système", servicesLead: "État des services en cours",
+  systemTitle: "Système", systemLead: "Santé des services et sources des données", platforms: "Produits par boutique", checked: "Vérifié à",
+  refresh: "Vérifier à nouveau", loading: "Chargement…", unavailable: "Ce service n'est pas encore joignable.",
+  greeting: "Bonjour 👋", greetingSub: "Faisons des achats un peu plus verts aujourd'hui",
+  todayTitle: "Aujourd'hui", todayItems: ["Comparer le CO₂ avant d'acheter", "Interroger l'IA sur un produit", "Choisir un bon score vert"],
+};
+
 export function dashText(lang) {
-  return lang === "en" ? EN : VI;
+  return lang === "vi" ? VI : lang === "fr" ? FR : EN;
 }

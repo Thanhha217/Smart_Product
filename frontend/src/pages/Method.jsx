@@ -6,7 +6,7 @@ import { SectionCard } from "./components/co2/Co2Bits";
 // /method — static, bilingual explanation of the CO2 method.
 export default function Method() {
   const { lang, t } = useI18n();
-  const m = METHOD[lang] || METHOD.vi;
+  const m = METHOD[lang] || METHOD.en;
   return (
     <main className="max-w-5xl mx-auto px-4 py-6 flex flex-col gap-4">
       <h1 className="text-2xl md:text-3xl font-bold text-primary-500">{m.title}</h1>

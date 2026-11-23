@@ -30,7 +30,7 @@ function Ring({ pct, kg, lang, color = "#2E7D4F" }) {
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center leading-tight">
         <div><p className="text-[22px] font-black text-[#16324a]">{formatNum(p, lang, 0)}%</p>
-          <p className="text-[12px] text-gray-500">{formatKg(kg, lang) ?? "—"} kg</p></div>
+          <p className="text-[13.5px] text-gray-500">{formatKg(kg, lang) ?? "—"} kg</p></div>
       </div>
     </div>
   );
@@ -41,7 +41,7 @@ function Seg({ value, options, onChange, disabled }) {
     <div className={`inline-flex rounded-full bg-emerald-50 p-1 border border-emerald-100 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
       {options.map(([v, label]) => (
         <button key={v} type="button" onClick={() => onChange(v)} aria-pressed={value === v}
-                className={`rounded-full px-4 py-2 text-[15px] font-semibold transition ${value === v ? "bg-[#1F5D3A] text-white shadow" : "text-[#1F5D3A] hover:bg-white"}`}>{label}</button>
+                className={`rounded-full px-4 py-2 text-[16px] font-semibold transition ${value === v ? "bg-[#1F5D3A] text-white shadow" : "text-[#1F5D3A] hover:bg-white"}`}>{label}</button>
       ))}
     </div>
   );
@@ -54,7 +54,7 @@ function Controls({ sceneKey, sc, setSc, base, S, lang }) {
     return <Seg value={local ? "sea" : sc.mode} disabled={local} onChange={(mode) => setSc({ ...sc, mode })} options={[["sea", S.mode.sea], ["air", S.mode.air]]} />;
   }
   if (sceneKey === "transport/route" || sceneKey === "transport") {
-    return <Seg value={sc.origin} onChange={(origin) => setSc({ ...sc, origin })} options={["CN", "VN", "TH"].map((o) => [o, ORIGINS[o][lang === "vi" ? "vi" : "en"]])} />;
+    return <Seg value={sc.origin} onChange={(origin) => setSc({ ...sc, origin })} options={["CN", "VN", "TH"].map((o) => [o, (ORIGINS[o][lang] ?? ORIGINS[o].en)])} />;
   }
   if (sceneKey === "use/grid" || sceneKey === "use") {
     return <Seg value={sc.grid} onChange={(grid) => setSc({ ...sc, grid })} options={[["vn", S.grid.vn], ["solar", S.grid.solar]]} />;
@@ -62,7 +62,7 @@ function Controls({ sceneKey, sc, setSc, base, S, lang }) {
   if (sceneKey === "use/years") {
     return (
       <label className="block">
-        <span className="text-[15px] font-semibold text-[#16324a]">{S.years(sc.years)}</span>
+        <span className="text-[16px] font-semibold text-[#16324a]">{S.years(sc.years)}</span>
         <input type="range" min="1" max="12" value={sc.years} onChange={(e) => setSc({ ...sc, years: Number(e.target.value) })}
                className="w-full accent-[#2E7D4F] mt-1" aria-label={S.names["use/years"]} />
       </label>
@@ -79,7 +79,7 @@ function GridBars({ S, lang }) {
   return (
     <div className="mt-2 space-y-1.5">
       {[["vn", GRIDS.vn * 1000], ...IPCC].map(([k, g]) => (
-        <div key={k} className="flex items-center gap-2 text-[14px]">
+        <div key={k} className="flex items-center gap-2 text-[15px]">
           <span className={`w-24 shrink-0 ${k === "vn" ? "font-bold text-[#16324a]" : "text-gray-600"}`}>{k === "vn" ? S.grid.vn : S.sources[k]}</span>
           <span className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
             <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (g / max) * 100)}%`, background: k === "vn" ? "#D9534F" : g > 300 ? "#E0A526" : "#2E7D4F", transition: "width .8s" }} />
@@ -109,7 +109,7 @@ function CategoryPanel({ d, lang, S, onOpenProduct }) {
             <div className="absolute -top-1 h-7 w-1 rounded bg-[#16324a]" style={{ left: `${pos(st.median_kg)}%` }} />
             <div className="absolute -top-4 -ml-3 text-2xl" style={{ left: `${pos(p.co2e_kg)}%` }} aria-label={S.you}>📍</div>
           </div>
-          <div className="flex justify-between text-[13px] text-gray-500 mt-2"><span>{formatKg(st.min, lang)} kg</span><span>{formatKg(st.median_kg, lang)} kg</span><span>{formatKg(st.max, lang)} kg</span></div>
+          <div className="flex justify-between text-[13.5px] text-gray-500 mt-2"><span>{formatKg(st.min, lang)} kg</span><span>{formatKg(st.median_kg, lang)} kg</span><span>{formatKg(st.max, lang)} kg</span></div>
         </div>
       )}
       <div className="grid gap-3">
@@ -118,12 +118,12 @@ function CategoryPanel({ d, lang, S, onOpenProduct }) {
           return (
             <button key={c.product_id} type="button" disabled={self} onClick={(e) => onOpenProduct(c.product_id, e.currentTarget.getBoundingClientRect())}
                     className={`text-left rounded-2xl p-4 bg-white shadow transition ${self ? "ring-2 ring-amber-400" : "hover:shadow-xl hover:-translate-y-0.5"}`}>
-              <p className="text-[16px] font-semibold text-[#16324a] line-clamp-1">{self ? "📍 " : ""}{c.name}</p>
+              <p className="text-[17px] font-semibold text-[#16324a] line-clamp-1">{self ? "📍 " : ""}{c.name}</p>
               <div className="flex items-center gap-3 mt-2">
                 <span className="h-3 rounded-full" style={{ width: `${Math.max(4, (c.co2e_kg / max) * 70)}%`, background: greenColor(c.green_score), transition: "width .8s" }} />
-                <span className="text-[15px] font-bold">{formatKg(c.co2e_kg, lang)} kg</span>
+                <span className="text-[16px] font-bold">{formatKg(c.co2e_kg, lang)} kg</span>
               </div>
-              {!self && <p className="mt-1 text-[14px] text-emerald-700 font-semibold">{S.openWorld}</p>}
+              {!self && <p className="mt-1 text-[15px] text-emerald-700 font-semibold">{S.openWorld}</p>}
             </button>
           );
         })}
@@ -143,7 +143,7 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
   const local = sc.origin === "VN";
   const o = ORIGINS[sc.origin] || ORIGINS.CN;
   const c = {
-    kg: k(kg), pct: formatNum(pct, lang, 0), prodKg: k(stages.materials_production), origin: o[lang === "vi" ? "vi" : "en"],
+    kg: k(kg), pct: formatNum(pct, lang, 0), prodKg: k(stages.materials_production), origin: o[lang] ?? o.en,
     sea: formatNum(o.sea, lang, 0), road: formatNum(o.road, lang, 0), local, years: sc.years,
     kwh: formatNum(stages.use ? stages.use / GRIDS[sc.grid] : null, lang, 0), ef: formatNum(GRIDS.vn, lang, 3),
     shipKg: base?.ok ? k(simulate(base, { ...sc, mode: "sea" }).stages.transport) : "—",
@@ -181,27 +181,27 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
       {/* info card: left on desktop, bottom sheet on phones */}
       <section data-card className="absolute z-10 left-3 right-3 bottom-3 max-h-[46%] md:max-h-none md:right-auto md:left-6 md:top-24 md:bottom-6 md:w-[440px]
                                     overflow-y-auto rounded-3xl bg-white/95 backdrop-blur shadow-2xl border border-white p-5 md:p-6">
-        <p className="text-[12px] uppercase tracking-[.18em] font-bold text-emerald-700">{S.names[top]}</p>
+        <p className="text-[13.5px] uppercase tracking-[.18em] font-bold text-emerald-700">{S.names[top]}</p>
         <h2 className="font-serif text-[26px] md:text-[32px] leading-tight font-bold text-[#16324a]">{S.names[sceneKey]}</h2>
         {stageKey && (
           <div className="mt-3 flex items-center gap-4" data-explain={TOPIC_OF_SCENE[top]}>
             <Ring pct={pct} kg={kg} lang={lang} color={stageColor} />
             <div>
-              <p className="text-[30px] font-black text-[#16324a] leading-none">{c.kg} <span className="text-[15px] font-semibold text-gray-500">kg CO₂e</span></p>
-              <p className="text-[14px] text-gray-600 mt-1">{top === "materials" ? S.inProduction : `${c.pct}% ${S.ofTotal}`}</p>
-              {d.lifecycle?.basis === "typical_share" && <p className="text-[12px] text-amber-700 mt-1">⚠ {S.assumedSplit}</p>}
+              <p className="text-[30px] font-black text-[#16324a] leading-none">{c.kg} <span className="text-[16px] font-semibold text-gray-500">kg CO₂e</span></p>
+              <p className="text-[15px] text-gray-600 mt-1">{top === "materials" ? S.inProduction : `${c.pct}% ${S.ofTotal}`}</p>
+              {d.lifecycle?.basis === "typical_share" && <p className="text-[13.5px] text-amber-700 mt-1">⚠ {S.assumedSplit}</p>}
             </div>
           </div>
         )}
         <div className="mt-3 space-y-2">
-          {lines.map((line) => <p key={line} className="text-[16px] leading-relaxed text-gray-800">{line}</p>)}
+          {lines.map((line) => <p key={line} className="text-[17px] leading-relaxed text-gray-800">{line}</p>)}
         </div>
         {sceneKey === "use/grid" && <GridBars S={S} lang={lang} />}
         {top === "formula" && (
           <div className="mt-3">
             <ol className="space-y-1">
               {st.chain.map((label, i) => (
-                <li key={label} className={`rounded-xl px-3 py-2 text-[15px] ${i === chainIdx ? "bg-emerald-600 text-white font-bold" : i < chainIdx ? "bg-gray-100 text-gray-400 line-through" : "bg-gray-50 text-gray-500"}`}>{i + 1}. {label}{i === chainIdx ? " ✓" : ""}</li>
+                <li key={label} className={`rounded-xl px-3 py-2 text-[16px] ${i === chainIdx ? "bg-emerald-600 text-white font-bold" : i < chainIdx ? "bg-gray-100 text-gray-400 line-through" : "bg-gray-50 text-gray-500"}`}>{i + 1}. {label}{i === chainIdx ? " ✓" : ""}</li>
               ))}
             </ol>
             <FormulaReveal steps={(d.formula?.steps || []).slice(-4)} total={d.product.co2e_kg} greenScore={d.product.green_score} lang={lang} />
@@ -210,11 +210,11 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
         <div className="mt-4"><Controls sceneKey={sceneKey} sc={sc} setSc={setSc} base={base} S={S} lang={lang} /></div>
         {kids.length > 0 && (
           <div className="mt-4">
-            <p className="text-[13px] font-semibold text-gray-500 mb-2">👆 {S.dive}</p>
+            <p className="text-[13.5px] font-semibold text-gray-500 mb-2">👆 {S.dive}</p>
             <div className="flex flex-wrap gap-2">
               {kids.map((h) => (
                 <button key={h.key} type="button" onClick={(e) => onDive(h.key, e.currentTarget.getBoundingClientRect())}
-                        className="rounded-full border-2 border-emerald-200 bg-emerald-50 px-4 py-2 text-[15px] font-semibold text-[#1F5D3A] hover:bg-emerald-100 transition">
+                        className="rounded-full border-2 border-emerald-200 bg-emerald-50 px-4 py-2 text-[16px] font-semibold text-[#1F5D3A] hover:bg-emerald-100 transition">
                   {S.names[h.key]} →
                 </button>
               ))}
@@ -222,7 +222,7 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
           </div>
         )}
         <button type="button" onClick={() => onAsk(TOPIC_OF_SCENE[sceneKey] || TOPIC_OF_SCENE[top])}
-                className="mt-4 w-full rounded-2xl bg-gradient-to-r from-[#1F5D3A] to-[#2E7D4F] text-white text-[16px] font-bold py-3 shadow hover:shadow-lg transition">
+                className="mt-4 w-full rounded-2xl bg-gradient-to-r from-[#1F5D3A] to-[#2E7D4F] text-white text-[17px] font-bold py-3 shadow hover:shadow-lg transition">
           {S.askHere}
         </button>
       </section>

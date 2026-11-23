@@ -221,7 +221,7 @@ const Production = memo(function Production({ sub }) {
 
 // ------------------------------------------------------------------ transport: open sea
 
-const Transport = memo(function Transport({ sub, mode, local, originLabel }) {
+const Transport = memo(function Transport({ sub, mode, local, originLabel, vietnamLabel }) {
   const air = mode === "air" && !local;
   return (
     <g>
@@ -259,7 +259,7 @@ const Transport = memo(function Transport({ sub, mode, local, originLabel }) {
         <circle cx="1118" cy="200" r="9" fill="#2E7D4F" />
         {!local && <path d={air ? "M900 120 Q1010 40 1118 200" : "M900 120 Q1000 230 1118 200"} fill="none" stroke={air ? "#D9534F" : "#3B8FD9"} strokeWidth="5" strokeDasharray="12 10" className="sa-belt-r" />}
         <text x="900" y="150" textAnchor="middle" fontSize="16" fontWeight="700" fill={INK}>{originLabel}</text>
-        <text x="1118" y="232" textAnchor="middle" fontSize="16" fontWeight="700" fill={INK}>Việt Nam</text>
+        <text x="1118" y="232" textAnchor="middle" fontSize="16" fontWeight="700" fill={INK}>{vietnamLabel}</text>
       </g>
       {sub === "transport/mode" && !local && (
         <g>
@@ -340,7 +340,7 @@ const Use = memo(function Use({ sub, category, solar, meter }) {
 
 // ------------------------------------------------------------------ end of life: recycling plant
 
-const EndOfLife = memo(function EndOfLife({ sub }) {
+const EndOfLife = memo(function EndOfLife({ sub, plasticLabel }) {
   const items = [["#5b6d7a", 32, 22], ["#16324a", 20, 34], ["#9aa9b3", 40, 18]];
   return (
     <g>
@@ -364,7 +364,7 @@ const EndOfLife = memo(function EndOfLife({ sub }) {
       <g><rect x="820" y="140" width="12" height="160" fill="#46525a" /><rect x="820" y="140" width="220" height="12" fill="#46525a" />
         <g className="sa-lift"><rect x="1000" y="152" width="4" height="90" fill="#46525a" /><path d="M980 242 h44 v14 h-10 v-8 h-24 v8 h-10z" fill="#D9534F" /></g></g>
       {/* output bins */}
-      {[["Cu", 860, "#c4652d"], ["Al", 950, "#9aa9b3"], ["Au", 1040, "#d4a017"], ["Nhựa", 1130, "#3B8FD9"]].map(([s, x, c]) => (
+      {[["Cu", 860, "#c4652d"], ["Al", 950, "#9aa9b3"], ["Au", 1040, "#d4a017"], [plasticLabel, 1130, "#3B8FD9"]].map(([s, x, c]) => (
         <g key={s}><rect x={x - 38} y="440" width="76" height="110" rx="8" fill={c} opacity=".9" /><text x={x} y="495" textAnchor="middle" dominantBaseline="central" fontSize={s.length > 2 ? 18 : 24} fontWeight="800" fill="#fff">{s}</text></g>
       ))}
       {sub === "end_of_life/ewaste" && (
@@ -396,7 +396,7 @@ export default function SceneArt({ sceneKey, labels, onDive, data, painting }) {
   return (
     <svg viewBox={view} preserveAspectRatio="xMidYMid meet" className="absolute inset-0 w-full h-full" role="img" aria-label={labels[sceneKey]}>
       {painting && <image href={painting} x="0" y="0" width="1200" height="700" preserveAspectRatio="xMidYMid slice" opacity=".9" />}
-      <g opacity={painting ? 0.55 : 1}><Art sub={isSub ? sceneKey : null} {...data} /></g>
+      <g opacity={painting ? 0.55 : 1}><Art sub={isSub ? sceneKey : null} {...data} vietnamLabel={labels.vietnam || "Vietnam"} plasticLabel={labels.plastic || "Plastic"} /></g>
       {!isSub && (HOTSPOTS[top] || []).map((spot) => <Hotspot key={spot.key} h={spot} label={labels[spot.key]} onDive={onDive} />)}
     </svg>
   );

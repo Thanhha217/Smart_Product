@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { formatKg, formatVnd } from "../lib/format";
 import { SectionCard, Skeleton, TestModeBanner } from "./components/co2/Co2Bits";
@@ -106,7 +106,7 @@ export default function Order() {
                   <li key={i}>
                     {(() => {
                       try {
-                        return new Date(e.at).toLocaleString(lang === "vi" ? "vi-VN" : "en-US");
+                        return new Date(e.at).toLocaleString(LOCALES[lang]);
                       } catch {
                         return e.at;
                       }

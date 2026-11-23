@@ -39,7 +39,7 @@ function LaptopPreview({ o, lang, D, t }) {
             ))}
           </div>
           <div className="flex-1 p-3 space-y-2.5 min-w-0">
-            <p className="font-display text-[15px] font-bold">{D.dashTitle}</p>
+            <p className="font-display text-[16px] font-bold">{D.dashTitle}</p>
             <div className="grid grid-cols-2 gap-2">
               <MiniStat icon="leaf" tone="green" label={D.stats.products} value={formatNum(o?.with_co2 ?? 7515, lang, 0)} />
               <MiniStat icon="bolt" tone="red" label={D.stats.grid} value={formatNum(o?.grid_ef ?? 0.681, lang, 3)} />
@@ -113,7 +113,7 @@ export default function Home() {
         <Hills />
         <div className="relative mx-auto max-w-[1320px] px-5 min-[900px]:px-10 pt-6 pb-16">
           <div className="flex items-center justify-between">
-            <Logo />
+            <Logo size="lg" />
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
               <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-2 rounded-full bg-[#1F5D3A] text-white px-4 py-2 text-sm font-semibold hover:bg-[#173F28]">{D.dashCta} <Icon name="arrowRight" size={15} /></Link>
@@ -127,17 +127,17 @@ export default function Home() {
               <h1 className="mt-3 text-[42px] sm:text-[52px] leading-[1.04] font-bold text-[#173F28]">
                 {D.headline[0]}<br />{D.headline[1]}<br /><span className="text-[#2E7D4F]">{D.headline[2]}</span>
               </h1>
-              <p className="mt-5 max-w-[520px] text-[17px] leading-relaxed text-[#4B554A]">{D.lead}</p>
+              <p className="mt-5 max-w-[520px] text-[18px] leading-relaxed text-[#4B554A]">{D.lead}</p>
 
               <form onSubmit={(e) => { e.preventDefault(); ask(); }} className="mt-6 card p-2 flex items-center gap-2 max-w-[560px]">
                 <Icon name="sparkles" className="ml-2 text-[#2E7D4F]" />
                 <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={D.searchPh}
-                       className="flex-1 min-w-0 bg-transparent outline-none text-[15px] py-2" aria-label={D.askCta} />
+                       className="flex-1 min-w-0 bg-transparent outline-none text-[16px] py-2" aria-label={D.askCta} />
                 <button type="submit" disabled={!question.trim()} className="rounded-xl bg-[#1F5D3A] text-white font-semibold px-4 py-2.5 disabled:opacity-50">{D.askCta}</button>
               </form>
               <div className="mt-3 flex flex-wrap gap-2 max-w-[560px]">
                 {SUGGESTED_KEYS.slice(0, 3).map((key) => (
-                  <button key={key} type="button" onClick={() => ask(t(key))} className="rounded-full bg-white border border-[#E7E2D4] px-3.5 py-1.5 text-[14px] hover:border-[#6FB04A]">{t(key)}</button>
+                  <button key={key} type="button" onClick={() => ask(t(key))} className="rounded-full bg-white border border-[#E7E2D4] px-3.5 py-1.5 text-[15px] hover:border-[#6FB04A]">{t(key)}</button>
                 ))}
               </div>
               <Link to="/world" className="mt-6 inline-flex items-center gap-3 rounded-full bg-white border border-[#E7E2D4] pl-2 pr-5 py-2 font-semibold hover:border-[#6FB04A] shadow-sm">
@@ -148,7 +148,7 @@ export default function Home() {
                 {D.features.map(([icon, a, b]) => (
                   <div key={a} className="flex flex-col items-center text-center gap-2">
                     <span className="grid place-items-center w-14 h-14 rounded-full bg-white border border-[#E7E2D4] text-[#2E7D4F] shadow-sm"><Icon name={icon} size={24} /></span>
-                    <span className="text-[14.5px] font-semibold leading-snug">{a}<br />{b}</span>
+                    <span className="text-[15.5px] font-semibold leading-snug">{a}<br />{b}</span>
                   </div>
                 ))}
               </div>
@@ -176,7 +176,7 @@ export default function Home() {
           {D.benefits.map(([icon, title, sub]) => (
             <div key={title} className="flex items-start gap-4">
               <span className="grid place-items-center w-14 h-14 shrink-0 rounded-full bg-white border border-[#E7E2D4] text-[#2E7D4F] shadow-sm"><Icon name={icon} size={24} /></span>
-              <div><p className="font-display text-[20px] font-bold leading-tight text-[#173F28]">{title}</p><p className="mt-1.5 text-[15px] leading-relaxed text-[#6B7468]">{sub}</p></div>
+              <div><p className="font-display text-[21px] font-bold leading-tight text-[#173F28]">{title}</p><p className="mt-1.5 text-[16px] leading-relaxed text-[#6B7468]">{sub}</p></div>
             </div>
           ))}
         </div>

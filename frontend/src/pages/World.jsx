@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useI18n } from "../i18n/LanguageContext";
+import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { formatKg, formatNum, greenColor } from "../lib/format";
 import ProductPicker from "./components/story/ProductPicker";
@@ -50,7 +50,7 @@ function useFillHeight(ref) {
 function Chip({ topic, children, className = "", onClick, style }) {
   return (
     <button type="button" data-explain={topic} onClick={onClick} style={style}
-            className={`rounded-full px-3.5 py-1.5 text-[14px] font-semibold border transition hover:shadow ${className}`}>{children}</button>
+            className={`rounded-full px-3.5 py-1.5 text-[15px] font-semibold border transition hover:shadow ${className}`}>{children}</button>
   );
 }
 
@@ -213,11 +213,13 @@ function WorldView({ productId }) {
   if (!d || !sc) return <div ref={wrap} className="grid place-items-center text-gray-500 animate-pulse" style={{ height }}>🌏 {T.loading}</div>;
 
   const p = d.product;
-  const originName = ORIGINS[sc.origin]?.[lang === "vi" ? "vi" : "en"];
+  const originName = ORIGINS[sc.origin]?.[lang] ?? ORIGINS[sc.origin]?.en;
+  const L3 = tri(lang);
   const labels = {
     aria: T.aria, stages: T.stages, originLand: T.originLand, originPort: T.originPort, vnPort: T.vnPort,
     factory: `${T.factoryAt(originName)} ${sc.origin === base.origin ? T.assumed : ""}`.trim(),
-    coal: lang === "vi" ? "Nhiệt điện than" : "Coal power",
+    coal: L3("Nhiệt điện than", "Coal power", "Centrale à charbon"),
+    vietnam: L3("Việt Nam", "Vietnam", "Vietnam"),
   };
   const side = (topic || tour) && wide;   // a side panel is open: keep controls out from under it
   const simStages = { ...tw };
@@ -243,11 +245,11 @@ function WorldView({ productId }) {
 
       {/* HUD */}
       {!scene && <div className="absolute z-20 left-3 top-3 right-3 md:right-auto md:max-w-[460px] rounded-3xl bg-white/90 backdrop-blur shadow-xl border border-white p-3 md:p-4">
-        <p className="text-[12px] uppercase tracking-widest text-emerald-700 font-semibold">🌏 {lang === "vi" ? "Thế giới CO₂ của sản phẩm" : "The product's CO₂ world"}</p>
+        <p className="text-[13.5px] uppercase tracking-widest text-emerald-700 font-semibold">🌏 {L3("Thế giới CO₂ của sản phẩm", "The product's CO₂ world", "Le monde CO₂ du produit")}</p>
         <h1 className="font-extrabold text-[#16324a] leading-tight text-lg md:text-xl line-clamp-2">{p.name}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-emerald-600 border-emerald-600 text-white text-[15px]">
-            {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : (lang === "vi" ? "Chưa có số CO₂" : "No CO₂ figure")}
+          <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-emerald-600 border-emerald-600 text-white text-[16px]">
+            {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : L3("Chưa có số CO₂", "No CO₂ figure", "Pas de chiffre CO₂")}
           </Chip>
           {p.green_score !== null && p.green_score !== undefined && (
             <Chip topic="green_score" onClick={() => open("green_score")} className="text-white border-transparent" style={{ background: greenColor(p.green_score) }}>
@@ -261,15 +263,15 @@ function WorldView({ productId }) {
           <Chip topic="category" onClick={(e) => enter("category", e)} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">📊 {T.category}</Chip>
           {d.related?.greener_alternative && <Chip topic="greener_alternative" onClick={(e) => enter("greener_alternative", e)} className="bg-white border-emerald-300 text-emerald-800 hidden sm:inline-block">🌱 {T.alternative}</Chip>}
         </div>
-        <p className="mt-2 text-[13px] text-gray-500 hidden md:block">{methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-sky-700 underline">{T.book}</Link> · <Link to="/method" className="text-sky-700 underline">{T.method}</Link></p>
-        <p className="mt-2 text-[13px] font-semibold text-amber-700">👆 {lang === "vi" ? "Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong" : "Tap the factory, the ship, the house… to step inside"}</p>
+        <p className="mt-2 text-[13.5px] text-gray-500 hidden md:block">{methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-sky-700 underline">{T.book}</Link> · <Link to="/method" className="text-sky-700 underline">{T.method}</Link></p>
+        <p className="mt-2 text-[13.5px] font-semibold text-amber-700">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
       </div>}
 
       {/* tour button */}
       {!tour && !scene && (
         <button type="button" onClick={() => { setTopic(null); setTour(true); }}
                 className="absolute z-20 left-1/2 -translate-x-1/2 top-[148px] md:top-4 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-extrabold px-5 py-2.5 shadow-xl hover:scale-105 transition whitespace-nowrap">
-          ▶ {lang === "vi" ? "Xem giải thích từng bước" : "Guided explanation"}
+          ▶ {L3("Xem giải thích từng bước", "Guided explanation", "Explication pas à pas")}
         </button>
       )}
 
@@ -285,13 +287,13 @@ function WorldView({ productId }) {
           const kg = s === "materials" ? null : tw[s];
           return (
             <button key={s} type="button" data-explain={STAGE_TOPIC[s]} onClick={(e) => { e.stopPropagation(); choose(s, e.currentTarget.getBoundingClientRect()); }} aria-pressed={focus === s}
-                    className={`rounded-full px-3.5 py-2 text-[14px] font-semibold whitespace-nowrap transition ${focus === s ? "bg-[#16324a] text-white shadow" : "hover:bg-emerald-50 text-gray-700"}`}>
+                    className={`rounded-full px-3.5 py-2 text-[15px] font-semibold whitespace-nowrap transition ${focus === s ? "bg-[#16324a] text-white shadow" : "hover:bg-emerald-50 text-gray-700"}`}>
               {T.stages[s]}{kg !== null && kg !== undefined ? <span className={`ml-1 ${focus === s ? "text-emerald-200" : "text-emerald-700"}`}>{formatKg(kg, lang)}</span> : null}
             </button>
           );
         })}
         <button type="button" data-explain="co2e_total" onClick={() => { setFocus(null); camera.overview(); open("co2e_total"); }}
-                className="rounded-full px-3.5 py-2 text-[14px] font-bold whitespace-nowrap bg-emerald-600 text-white">{T.total} {formatKg(sim?.total ?? p.co2e_kg, lang)} kg</button>
+                className="rounded-full px-3.5 py-2 text-[15px] font-bold whitespace-nowrap bg-emerald-600 text-white">{T.total} {formatKg(sim?.total ?? p.co2e_kg, lang)} kg</button>
       </nav>}
 
       {/* camera + ask controls */}
@@ -305,7 +307,7 @@ function WorldView({ productId }) {
         </>}
       </div>
       {askMode && <p className="absolute z-20 left-1/2 -translate-x-1/2 bottom-[72px] rounded-full bg-amber-400 text-[#16324a] text-sm font-semibold px-4 py-1.5 shadow">❓ {T.askModeOn}</p>}
-      {!askMode && !topic && !tour && !scene && <p className="absolute z-10 right-4 top-4 rounded-full bg-white/80 px-3 py-1 text-xs text-[#16324a] shadow hidden lg:block">🖐 {T.hint}</p>}
+      {!askMode && !topic && !tour && !scene && <p className="absolute z-10 right-4 top-[72px] max-w-[300px] rounded-2xl bg-white/85 px-3.5 py-2 text-xs leading-snug text-[#16324a] shadow hidden xl:block">🖐 {T.hint}</p>}
 
       {tour ? (
         <Tour open={tour} startStep={Math.max(0, (Number(params.get("step")) || 1) - 1)} onClose={() => { setTour(false); setFocus(null); go(null, null, { replace: true }); camera.overview(0); }} art={art} lang={lang}

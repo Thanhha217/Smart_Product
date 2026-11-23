@@ -98,10 +98,21 @@ const REASON_PATTERNS = [
   [/^Free (delivery|shipping)$/i, () => "Miễn phí giao hàng"],
 ];
 
+const REASON_PATTERNS_FR = [
+  [/^Huge (\d+)% sale discount$/i, (m) => `Forte remise de ${m[1]} %`],
+  [/^Great customer ratings \(([\d.]+)★\)$/i, (m) => `Très bien noté par les clients (${m[1].replace(".", ",")}★)`],
+  [/^Great customer ratings$/i, () => "Très bien noté par les clients"],
+  [/^Best budget value choice$/i, () => "Meilleur choix petit budget"],
+  [/^Best price\/quality ratio$/i, () => "Meilleur rapport qualité-prix"],
+  [/^Best value( for money)?$/i, () => "Meilleur rapport qualité-prix"],
+  [/^Lowest price$/i, () => "Prix le plus bas"],
+  [/^Free (delivery|shipping)$/i, () => "Livraison gratuite"],
+];
+
 export function localizeReason(text, lang) {
-  if (!text || lang !== "vi") return text;
+  if (!text || (lang !== "vi" && lang !== "fr")) return text;
   const clean = String(text).trim();
-  for (const [re, fn] of REASON_PATTERNS) {
+  for (const [re, fn] of lang === "fr" ? REASON_PATTERNS_FR : REASON_PATTERNS) {
     const m = clean.match(re);
     if (m) return fn(m);
   }

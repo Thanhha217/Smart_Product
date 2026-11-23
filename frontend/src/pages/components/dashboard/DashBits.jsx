@@ -14,8 +14,8 @@ export function Card({ title, sub, right, children, className = "", pad = "p-6" 
       {(title || right) && (
         <header className="mb-5 flex items-start justify-between gap-3">
           <div>
-            {title && <h3 className="text-[19px] font-bold text-[#1E2B22] leading-snug">{title}</h3>}
-            {sub && <p className="text-[14.5px] text-[#6B7468] mt-1">{sub}</p>}
+            {title && <h3 className="text-[20px] font-bold text-[#1E2B22] leading-snug">{title}</h3>}
+            {sub && <p className="text-[15.5px] text-[#6B7468] mt-1">{sub}</p>}
           </div>
           {right}
         </header>
@@ -27,7 +27,7 @@ export function Card({ title, sub, right, children, className = "", pad = "p-6" 
 
 export function CardLink({ to, children }) {
   return (
-    <Link to={to} className="inline-flex items-center gap-1 text-[14.5px] font-semibold text-[#2E7D4F] hover:underline whitespace-nowrap">
+    <Link to={to} className="inline-flex items-center gap-1 text-[15.5px] font-semibold text-[#2E7D4F] hover:underline whitespace-nowrap">
       {children} <Icon name="arrowRight" size={14} />
     </Link>
   );
@@ -48,10 +48,10 @@ export function StatCard({ icon, tone, label, value, unit, sub, loading }) {
     <div className="card p-5 flex items-center gap-3.5">
       <IconTile icon={icon} tone={tone} size={50} />
       <div className="min-w-0">
-        <p className="text-[14.5px] leading-snug text-[#55604F] font-medium">{label}</p>
+        <p className="text-[15.5px] leading-snug text-[#55604F] font-medium">{label}</p>
         {loading ? <div className="h-7 w-20 rounded-lg bg-[#ECE8DC] animate-pulse my-1" />
             : <p className="text-[28px] leading-tight font-extrabold text-[#1E2B22]">{value}{unit && <span className="ml-1 text-base font-semibold text-[#6B7468]">{unit}</span>}</p>}
-        {sub && <p className="text-[13.5px] leading-snug font-semibold mt-0.5" style={{ color: fg }}>{sub}</p>}
+        {sub && <p className="text-[14.5px] leading-snug font-semibold mt-0.5" style={{ color: fg }}>{sub}</p>}
       </div>
     </div>
   );
@@ -98,7 +98,7 @@ export function RangeBars({ rows, label, lang }) {
   return (
     <div className="space-y-4">
       {rows.map((r) => (
-        <div key={r.category} className="grid grid-cols-[120px_1fr_84px] items-center gap-3 text-[15px]">
+        <div key={r.category} className="grid grid-cols-[120px_1fr_84px] items-center gap-3 text-[16px]">
           <span className="truncate font-semibold text-[#1E2B22]">{label(r.category)}</span>
           <div className="relative h-3 rounded-full bg-[#F1EEE4]">
             <div className="absolute top-1/2 h-[2px] -translate-y-1/2 bg-[#CFC9B8]" style={{ left: x(r.min_kg), width: `calc(${x(r.max_kg)} - ${x(r.min_kg)})` }} />
@@ -108,7 +108,7 @@ export function RangeBars({ rows, label, lang }) {
           <span className="text-right font-bold">{formatKg(r.median_kg, lang)} kg</span>
         </div>
       ))}
-      <div className="grid grid-cols-[120px_1fr_84px] gap-3 text-[12.5px] text-[#7d8579]">
+      <div className="grid grid-cols-[120px_1fr_84px] gap-3 text-[13.5px] text-[#7d8579]">
         <span />
         <div className="flex justify-between"><span>1</span><span>10</span><span>100</span><span>1.000</span><span>10.000</span></div>
         <span />
@@ -125,7 +125,7 @@ export function SourceStack({ rows, labels, lang }) {
       <div className="flex h-5 rounded-full overflow-hidden">
         {rows.map((r) => <div key={r.source} title={labels[r.source] || r.source} style={{ width: `${(100 * r.n) / total}%`, background: colors[r.source] || "#bbb" }} />)}
       </div>
-      <ul className="mt-4 grid sm:grid-cols-2 gap-2.5 text-[14.5px]">
+      <ul className="mt-4 grid sm:grid-cols-2 gap-2.5 text-[15.5px]">
         {rows.map((r) => (
           <li key={r.source} className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm" style={{ background: colors[r.source] || "#bbb" }} />
@@ -142,7 +142,7 @@ export function ChartTabs({ tabs, children }) {
   const [i, setI] = useState(0);
   return (
     <div>
-      <div className="mb-5 inline-flex flex-wrap rounded-full bg-[#F1EEE4] p-1 text-[14.5px] font-semibold">
+      <div className="mb-5 inline-flex flex-wrap rounded-full bg-[#F1EEE4] p-1 text-[15.5px] font-semibold">
         {tabs.map((tab, k) => (
           <button key={tab} type="button" onClick={() => setI(k)}
                   className={`rounded-full px-4 py-2 transition ${i === k ? "bg-[#1F5D3A] text-white shadow" : "text-[#55604F] hover:text-[#1E2B22]"}`}>{tab}</button>
@@ -158,8 +158,8 @@ export function GreenCard({ product, category, lang }) {
   const score = product.green_score;
   return (
     <Link to={`/world/${product.product_id}`} className="group rounded-2xl border border-[#E7E2D4] bg-[#FBFAF5] p-4 hover:border-[#9ccf7d] hover:bg-white transition flex flex-col gap-2 min-w-0">
-      <span className="text-[12.5px] font-bold uppercase tracking-wider text-[#6B7468]">{category}</span>
-      <span className="text-[14.5px] font-semibold leading-snug line-clamp-3 min-h-[4.2em]" title={product.name}>{product.name}</span>
+      <span className="text-[13.5px] font-bold uppercase tracking-wider text-[#6B7468]">{category}</span>
+      <span className="text-[15.5px] font-semibold leading-snug line-clamp-3 min-h-[4.2em]" title={product.name}>{product.name}</span>
       <span className="text-xl font-extrabold text-[#1E2B22] mt-auto">{formatKg(product.co2e_kg, lang)} <span className="text-xs font-semibold text-[#6B7468]">kg CO₂e</span></span>
       {score !== null && score !== undefined && (
         <span className="pill self-start" style={{ color: greenColor(score), background: greenBg(score) }}>🍃 {formatNum(score, lang, 1)}/5</span>
@@ -169,7 +169,7 @@ export function GreenCard({ product, category, lang }) {
 }
 
 // Small illustrated preview of the CO2 world, like the field map of the template.
-export function MiniWorld({ onClick, labels = ["Sản xuất", "Sử dụng", "Vận chuyển"] }) {
+export function MiniWorld({ onClick, labels = ["Production", "Use", "Transport"] }) {
   return (
     <button type="button" onClick={onClick} className="relative block w-full overflow-hidden rounded-2xl text-left" aria-label="CO2 world">
       <svg viewBox="0 0 640 300" className="block w-full h-auto">

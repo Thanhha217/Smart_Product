@@ -1,3 +1,4 @@
+import { tri } from "../i18n/LanguageContext";
 // Demo fixtures served when VITE_MOCK_API=1 (no backend needed).
 // Shapes follow docs/demo/api-contract.md. Figures reuse the worked examples of the
 // CO2 method document; green scores use the db-search category bounds.
@@ -459,18 +460,19 @@ export async function getMethod() {
 export async function explain({ product_id, topic, question, lang, scenario }) {
   await delay(700);
   const p = product(product_id);
-  const vi = lang === "vi";
-  const kg = new Intl.NumberFormat(vi ? "vi-VN" : "en-US", { maximumFractionDigits: 1 }).format(p.co2e_kg);
-  const total = scenario?.total_kg ? new Intl.NumberFormat(vi ? "vi-VN" : "en-US", { maximumFractionDigits: 1 }).format(scenario.total_kg) : null;
+  const T = tri(lang);
+  const loc = { en: "en-US", fr: "fr-FR", vi: "vi-VN" }[lang] || "en-US";
+  const kg = new Intl.NumberFormat(loc, { maximumFractionDigits: 1 }).format(p.co2e_kg);
+  const total = scenario?.total_kg ? new Intl.NumberFormat(loc, { maximumFractionDigits: 1 }).format(scenario.total_kg) : null;
   return {
     topic, title: null,
     answer: question
-      ? (vi ? `Về câu hỏi "${question}": ${p.name} có tổng khoảng ${kg} kg CO₂e; phần giải thích chi tiết dùng đúng các số trên màn hình.` : `About "${question}": ${p.name} totals about ${kg} kg CO₂e; the detailed explanation uses the figures on screen.`)
+      ? T(`Về câu hỏi "${question}": ${p.name} có tổng khoảng ${kg} kg CO₂e; phần giải thích chi tiết dùng đúng các số trên màn hình.`, `About "${question}": ${p.name} totals about ${kg} kg CO₂e; the detailed explanation uses the figures on screen.`, `À propos de « ${question} » : ${p.name} totalise environ ${kg} kg CO₂e ; l'explication détaillée utilise les chiffres à l'écran.`)
       : topic === "what_if" && total
-        ? (vi ? `Theo kịch bản bạn chọn, tổng là ${total} kg CO₂e, còn số chính thức vẫn là ${kg} kg.` : `In your scenario the total is ${total} kg CO₂e; the official figure stays ${kg} kg.`)
-        : (vi ? `(Dữ liệu mẫu) ${p.name}: tổng ${kg} kg CO₂e. Bấm các chặng khác để xem từng phần.` : `(Sample data) ${p.name}: ${kg} kg CO₂e in total. Tap other stages to see each part.`),
+        ? T(`Theo kịch bản bạn chọn, tổng là ${total} kg CO₂e, còn số chính thức vẫn là ${kg} kg.`, `In your scenario the total is ${total} kg CO₂e; the official figure stays ${kg} kg.`, `Dans votre scénario, le total est de ${total} kg CO₂e ; le chiffre officiel reste ${kg} kg.`)
+        : T(`(Dữ liệu mẫu) ${p.name}: tổng ${kg} kg CO₂e. Bấm các chặng khác để xem từng phần.`, `(Sample data) ${p.name}: ${kg} kg CO₂e in total. Tap other stages to see each part.`, `(Données d'exemple) ${p.name} : ${kg} kg CO₂e au total. Touchez les autres étapes pour voir chaque part.`),
     bullets: [],
-    follow_ups: vi ? ["Phần nào lớn nhất?", "Làm sao giảm CO₂?"] : ["Which part is largest?", "How to reduce CO₂?"],
+    follow_ups: T(["Phần nào lớn nhất?", "Làm sao giảm CO₂?"], ["Which part is largest?", "How to reduce CO₂?"], ["Quelle part est la plus grande ?", "Comment réduire le CO₂ ?"]),
     facts: { co2e_kg: p.co2e_kg },
     model: "rule-based (mock)", cached: false, number_check_failures: 0,
   };

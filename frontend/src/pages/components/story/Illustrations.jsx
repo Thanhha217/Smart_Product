@@ -1,3 +1,4 @@
+import { useI18n } from "../../../i18n/LanguageContext";
 // Animated, data-driven SVG scenes for the CO2 flipbook.
 // The drawings react to the real numbers (ship route length, number of trees, smoke amount...),
 // and never print a number that is not passed in. All text labels stay in HTML or in props.
@@ -126,6 +127,7 @@ export function FactoryScene({ intensity = 0.5 }) {
 }
 
 export function ShipScene({ originCode = "CN", distanceKm, mode }) {
+  const { lang } = useI18n();
   // Route length grows with distance; Vietnam-made products only travel by road.
   const local = originCode === "VN" || mode === "road";
   const len = local ? 0 : Math.max(0.35, Math.min(1, (distanceKm || 2000) / 3000));
@@ -135,7 +137,7 @@ export function ShipScene({ originCode = "CN", distanceKm, mode }) {
     <svg viewBox="0 0 320 180" className="w-full h-auto" role="img" aria-label="Shipping route to Vietnam">
       <rect width="320" height="180" rx="14" fill={C.sea} />
       <path d="M250 60 q20 10 25 30 q-5 30 10 55 l-30 10 q-15 -40 -10 -95z" fill={C.land2} />
-      <text x="262" y="170" fontSize="11" fontWeight="700" fill={C.ink}>Việt Nam</text>
+      <text x="262" y="170" fontSize="11" fontWeight="700" fill={C.ink}>{lang === "vi" ? "Việt Nam" : "Vietnam"}</text>
       {!local && <>
         <path d={`M0 0 L${startX + 10} 0 L${startX + 30} 50 L${startX - 10} 90 L0 90 Z`} fill={C.land2} opacity=".9" />
         <path d={route} fill="none" stroke="#fff" strokeWidth="3" className="sb-flow" />

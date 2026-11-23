@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useI18n } from "../i18n/LanguageContext";
+import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { api, MOCK_API } from "../api/client";
 import { addHistory, getHistory } from "../lib/storage";
 import VoiceInput from "./components/assistant/VoiceInput";
@@ -126,7 +126,7 @@ export default function Assistant() {
                   <span className="text-xs text-gray-500 whitespace-nowrap">
                     {(() => {
                       try {
-                        return new Date(h.at).toLocaleString(lang === "vi" ? "vi-VN" : "en-US");
+                        return new Date(h.at).toLocaleString(LOCALES[lang]);
                       } catch {
                         return "";
                       }

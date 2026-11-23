@@ -1,4 +1,6 @@
+import { intlNumber } from "../../../lib/format";
 import { memo } from "react";
+import { LOCALES } from "../../../i18n/LanguageContext";
 
 export const WORLD_W = 2400;
 export const WORLD_H = 1400;
@@ -328,7 +330,7 @@ function PowerPlant({ solar, labels }) {
         <rect x="2160" y="1110" width="190" height="120" rx="6" fill="#4d5a63" />
         <rect x="2190" y="1010" width="30" height="100" fill="#3b464e" /><rect x="2260" y="1030" width="26" height="80" fill="#3b464e" />
         <Smoke x={2205} y={1000} n={5} color="#7d868c" scale={1.3} /><Smoke x={2273} y={1022} n={4} color="#7d868c" scale={1.1} />
-        <text x="2255" y="1180" textAnchor="middle" fontSize="20" fontWeight="700" fill="#fff">⚡ {labels?.coal || "Nhiệt điện than"}</text>
+        <text x="2255" y="1180" textAnchor="middle" fontSize="20" fontWeight="700" fill="#fff">⚡ {labels?.coal || "Coal power"}</text>
       </g>
       <g className="wx-fade" style={{ opacity: solar ? 1 : 0 }}>
         {[0, 1, 2].map((i) => <g key={i} transform={`translate(${2160 + i * 70} 1170) skewX(-18)`}><rect width="60" height="40" fill="#2f5d9c" stroke="#cfe3ff" strokeWidth="2" /><path d="M0 20 h60 M20 0 v40 M40 0 v40" stroke="#cfe3ff" strokeWidth="1.5" /></g>)}
@@ -353,7 +355,7 @@ function Recycle() {
 }
 
 function Bubble({ x, y, kg, r, label, topic, focused, lang }) {
-  const text = kg === null || kg === undefined ? "—" : `${new Intl.NumberFormat(lang === "vi" ? "vi-VN" : "en-US", { maximumFractionDigits: kg >= 100 ? 0 : 1 }).format(kg)} kg`;
+  const text = kg === null || kg === undefined ? "—" : `${intlNumber(LOCALES[lang] ?? "en-US", { maximumFractionDigits: kg >= 100 ? 0 : 1 }, kg)} kg`;
   return (
     <g data-explain={topic} transform={`translate(${x} ${y})`}>
       <g className="wx-bob" style={{ animationDelay: `${(x % 7) * 0.3}s` }}>
@@ -383,7 +385,7 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Lands />
       <Trees />
       <text x="40" y="1050" fontSize="30" fontWeight="800" fill="#2d5a3a" opacity=".6">{labels.originLand}</text>
-      <text x="1745" y="560" fontSize="34" fontWeight="800" fill="#2d5a3a" opacity=".7">Việt Nam</text>
+      <text x="1745" y="560" fontSize="34" fontWeight="800" fill="#2d5a3a" opacity=".7">{labels.vietnam || "Vietnam"}</text>
 
       {/* glowing flow of emissions */}
       <path d={flow} fill="none" stroke="url(#wx-flow)" strokeWidth="26" strokeLinecap="round" strokeLinejoin="round" opacity=".35" filter="url(#wx-glow)" />

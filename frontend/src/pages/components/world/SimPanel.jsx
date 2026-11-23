@@ -6,7 +6,7 @@ function Seg({ value, options, onChange, disabled }) {
     <div className="grid gap-1 p-1 rounded-xl bg-gray-100" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0,1fr))` }}>
       {options.map(([v, label]) => (
         <button key={v} type="button" disabled={disabled} onClick={() => onChange(v)} aria-pressed={value === v}
-                className={`rounded-lg px-2 py-1.5 text-[13px] font-semibold transition ${value === v ? "bg-white shadow text-emerald-800" : "text-gray-600 hover:text-gray-900"} disabled:opacity-40`}>
+                className={`rounded-lg px-2 py-1.5 text-[13.5px] font-semibold transition ${value === v ? "bg-white shadow text-emerald-800" : "text-gray-600 hover:text-gray-900"} disabled:opacity-40`}>
           {label}
         </button>
       ))}
@@ -29,7 +29,7 @@ export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T
           <p className="font-extrabold text-[#16324a]">{T.simTitle}</p>
           {!base.ok ? <p className="text-sm text-gray-600">{T.noSplit}</p> : <>
             <label className="block text-xs font-semibold text-gray-500">{T.origin}
-              <Seg value={sc.origin} onChange={(v) => setSc({ ...sc, origin: v })} options={["CN", "VN", "TH"].map((o) => [o, origins[o][lang === "vi" ? "vi" : "en"]])} />
+              <Seg value={sc.origin} onChange={(v) => setSc({ ...sc, origin: v })} options={["CN", "VN", "TH"].map((o) => [o, (origins[o][lang] ?? origins[o].en)])} />
             </label>
             <label className="block text-xs font-semibold text-gray-500">{T.mode}
               <Seg value={sc.origin === "VN" ? "sea" : sc.mode} disabled={sc.origin === "VN"} onChange={(v) => setSc({ ...sc, mode: v })} options={[["sea", T.ship], ["air", T.plane]]} />
@@ -53,7 +53,7 @@ export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T
                   {delta < 0 ? "−" : "+"}{formatKg(Math.abs(delta), lang)} kg ({delta < 0 ? "−" : "+"}{formatKg((Math.abs(delta) / base.total) * 100, lang)}%)
                 </p>
               )}
-              <p className="text-[11px] text-gray-500 mt-1">{T.scenarioNote(formatKg(base.total, lang))}</p>
+              <p className="text-[13.5px] text-gray-500 mt-1">{T.scenarioNote(formatKg(base.total, lang))}</p>
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={onReset} disabled={!changed} className="flex-1 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-40">{T.reset}</button>

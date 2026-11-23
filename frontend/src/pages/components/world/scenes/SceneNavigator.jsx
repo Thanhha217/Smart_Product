@@ -187,7 +187,7 @@ export default function SceneNavigator({ scene, go, takeOrigin, renderScene, S, 
       <div data-flourish className="absolute inset-0 pointer-events-none bg-[#f6f1e6] opacity-0" />
 
       {/* breadcrumb + close */}
-      <nav className="absolute z-30 left-3 md:left-6 top-3 md:top-5 right-16 flex flex-wrap items-center gap-1 text-[15px]" aria-label="breadcrumb">
+      <nav className="absolute z-30 left-3 md:left-6 top-3 md:top-5 right-16 flex flex-wrap items-center gap-1 text-[16px]" aria-label="breadcrumb">
         <button type="button" onClick={() => go(null, null)} className="rounded-full bg-white/90 shadow px-3 py-1.5 font-semibold text-[#1F5D3A] hover:bg-white">🌏 {S.world}</button>
         {crumbs.map((k) => (
           <span key={k} className="flex items-center gap-1">
@@ -217,7 +217,7 @@ export default function SceneNavigator({ scene, go, takeOrigin, renderScene, S, 
                   className={`rounded-full transition-all ${top === k ? "w-8 h-3 bg-[#1F5D3A]" : JOURNEY.includes(k) ? "w-3 h-3 bg-emerald-300 hover:bg-emerald-500" : "w-3 h-3 bg-amber-300 hover:bg-amber-500"}`} />
         ))}
       </div>
-      <p className="hidden md:block absolute z-20 right-5 bottom-5 rounded-full bg-black/35 text-white text-[13px] px-3 py-1">↔ {S.swipe}</p>
+      <p className="hidden md:block absolute z-20 right-5 bottom-5 rounded-full bg-black/35 text-white text-[13.5px] px-3 py-1">↔ {S.swipe}</p>
     </div>
   );
 }
