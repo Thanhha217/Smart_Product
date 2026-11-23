@@ -46,6 +46,8 @@ const S = {
     vi: "Gợi ý để khám phá, chưa phải kết quả tìm kiếm: sản phẩm có giá và có số CO₂, CO₂ thấp nhất trước.",
   },
   "search.resultsFor": { en: "Results for “{q}”", fr: "Résultats pour « {q} »", vi: "Kết quả cho “{q}”" },
+  "search.whyTop": { en: "Why “{name}” comes first", fr: "Pourquoi « {name} » arrive en tête",
+                     vi: "Vì sao “{name}” đứng đầu" },
   "search.resultsFiltered": { en: "Filtered products", fr: "Produits filtrés", vi: "Sản phẩm đã lọc" },
   "search.count": { en: "{n} products", fr: "{n} produits", vi: "{n} sản phẩm" },
   "search.countOne": { en: "1 product", fr: "1 produit", vi: "1 sản phẩm" },

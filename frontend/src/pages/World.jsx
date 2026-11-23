@@ -9,7 +9,7 @@ import WorldExplore from "./components/world/explore/WorldExplore";
 import WorldScene, { WORLD_H, WORLD_W, legPath, stageTarget } from "./components/world/WorldScene";
 import ExplainPanel from "./components/world/ExplainPanel";
 import SimPanel from "./components/world/SimPanel";
-import FormulaHud from "./components/world/FormulaHud";
+import WorldHeader from "./components/world/WorldHeader";
 import GreenPanel from "./components/world/GreenPanel";
 import Tour, { sceneFor } from "./components/world/Tour";
 import { useCamera, useTween } from "./components/world/useCamera";
@@ -312,7 +312,7 @@ function WorldView({ productId }) {
       {/* HUD: product, total and the CO2 formula with this product's numbers */}
       {!scene && (
         <div ref={hudRef} className="absolute z-20 left-3 top-3 right-3 md:right-auto md:w-[440px] max-h-[calc(100%-96px)] overflow-y-auto rounded-3xl">
-          <FormulaHud d={d} lang={lang} T={T} t={t} compact={!wide} onTopic={open} onFormula={(e) => enter("formula", e)} />
+          <WorldHeader d={d} compact={!wide} onTopic={open} onChangeProduct={() => navigate("/world")} />
           {!xl && !tour && (
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={() => { setTopic(null); setTour(true); }}

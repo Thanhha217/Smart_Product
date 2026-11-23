@@ -13,6 +13,7 @@ import { useRecent } from "../lib/recent";
 import SuggestedProducts from "./components/common/SuggestedProducts";
 import { qualityOf } from "../lib/searchState";
 import { ProductImage } from "./components/common/ProductCard";
+import WhyConsider from "./components/co2/WhyConsider";
 import { EmptyState, ErrorState, InlineSpinner } from "./components/common/States";
 import Icon from "./components/ui/Icon";
 
@@ -129,6 +130,8 @@ export default function Compare() {
     ] : []),
   ];
   const conclusion = !mixed && sameScope ? text(table.data?.conclusion) : null;
+  // the row the table marks as the lowest CO2; only meaningful when the products compare at all
+  const bestCo2Id = !mixed && sameScope ? [...(best.co2 || [])][0] || null : null;
 
   return (
     <main className="page-wrap flex flex-col gap-5">
@@ -202,6 +205,7 @@ export default function Compare() {
               </div>
               <p className="text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
               {conclusion && <p className="rounded-xl bg-[#f6f3ea] px-4 py-3 text-[15.5px] text-[#1E2B22]">{conclusion}</p>}
+              {!mixed && sameScope && bestCo2Id && <WhyConsider productId={bestCo2Id} />}
             </>
           )}
         </>

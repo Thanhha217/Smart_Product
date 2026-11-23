@@ -10,12 +10,13 @@ import { addToCompare, removeFromCompare, useCompare } from "../lib/compare";
 import { co2Kind, co2Scope, formatCount, formatPrice, normalizeList, normalizeProduct, num, text } from "../lib/data";
 import { formatKg, formatNum } from "../lib/format";
 import { addRecent } from "../lib/recent";
-import { qualityOf } from "../lib/searchState";
+
 import { GATEWAY_URL } from "./utils/consts";
 import ProductCard, { ProductImage, specLabel } from "./components/common/ProductCard";
 import { EmptyState, ErrorState } from "./components/common/States";
-import FormulaCard from "./components/co2/FormulaCard";
-import LifecycleDiagram from "./components/co2/LifecycleDiagram";
+import Co2Explainer from "./components/co2/Co2Explainer";
+import WhyConsider from "./components/co2/WhyConsider";
+import LifecycleJourney from "./components/co2/LifecycleJourney";
 import Icon from "./components/ui/Icon";
 
 async function loadProduct(id) {
@@ -86,9 +87,7 @@ export default function Product() {
   const kg = num(product.co2e_kg);
   const scope = co2Scope(product);
   const kind = co2Kind(product);
-  const quality = qualityOf(product.co2e_confidence);
   const explanation = text(lang === "vi" ? (item?.product?.co2e_explanation_vi || item?.product?.co2e_explanation) : item?.product?.co2e_explanation);
-  const references = (Array.isArray(item?.product?.co2e_references) ? item.product.co2e_references : []).filter((r) => r && text(r.name));
   const warranty = num(item?.return_policy?.warranty_duration);
   const returns = num(item?.return_policy?.days_for_return);
   const description = text(item?.product?.description);
@@ -154,6 +153,8 @@ export default function Product() {
         </div>
       </section>
 
+      {/* layer 1: the figure and what it means. The method, its values and its limits are in
+          the explainer below, so the same explanation is used on every page. */}
       <section className="rounded-2xl bg-white border border-[#ebe6d8] p-5 md:p-7" aria-labelledby="co2h">
         <h2 id="co2h" className="text-xl font-semibold text-[#1E2B22]">{st("prod.co2Title")}</h2>
         {kg === null ? (
@@ -162,45 +163,36 @@ export default function Product() {
           <div className="mt-3 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-2">
               <p className="text-4xl font-bold text-[#1F5D3A]">{formatKg(kg, lang)} <span className="text-xl font-medium text-[#4b5563]">kg CO₂e</span></p>
-              {product.green_score !== null && <p className="text-[15px] font-medium text-[#1F5D3A]">{t("co2.greenScore")}: {formatNum(product.green_score, lang, 1)} / 5 <span className="font-normal text-[#4b5563]">({t("co2.greenScoreHint")})</span></p>}
-              <ul className="mt-1 text-[15px] text-[#374151] flex flex-col gap-1">
+              <ul className="text-[15px] text-[#374151] flex flex-col gap-1">
                 <li>{st("prod.co2Scope", { scope: t(`common.scope.${scope}`) })}</li>
                 <li>{st("prod.co2Source", { src: st(`src.${product.co2e_source}`) })} · {t(kind === "published" ? "common.co2Published" : "common.co2Estimated")}</li>
-                {quality && <li>{st("prod.co2Quality", { q: st(`quality.${quality}`) })}</li>}
               </ul>
-              {explanation && <p className="text-[15px] text-[#4b5563] bg-[#f6f3ea] rounded-xl px-3 py-2">{explanation}</p>}
-              <p className="text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div>
-                <h3 className="text-[15px] font-semibold">{st("prod.equivalents")}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg * 4.1, lang, 0)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqCar")}</p></div>
-                  <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg / 21.8, lang, 1)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqTrees")}</p></div>
-                </div>
-              </div>
-              {references.length > 0 && (
-                <div>
-                  <h3 className="text-[15px] font-semibold">{st("prod.references")}</h3>
-                  <ul className="mt-1 text-[14px] text-[#374151] flex flex-col gap-1">
-                    {references.slice(0, 5).map((r, i) => (
-                      <li key={`${r.name}-${i}`}>
-                        {text(r.url) ? <a href={r.url} target="_blank" rel="noreferrer" className="underline text-[#1F5D3A]">{r.name}</a> : r.name}
-                        {num(r.co2e_kg) !== null && <> — {formatKg(r.co2e_kg, lang)} kg CO₂e</>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {product.green_score !== null && (
+                <p className="text-[15px] font-medium text-[#1F5D3A]">
+                  {t("co2.greenScore")}: {formatNum(product.green_score, lang, 1)} / 5{" "}
+                  <span className="font-normal text-[#4b5563]">({t("co2.greenScoreHint")})</span>
+                </p>
               )}
+              {explanation && <p className="text-[15px] text-[#4b5563] bg-[#f6f3ea] rounded-xl px-3 py-2">{explanation}</p>}
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold">{st("prod.equivalents")}</h3>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg * 4.1, lang, 0)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqCar")}</p></div>
+                <div className="rounded-xl bg-[#f6f3ea] p-3"><p className="text-xl font-bold">{formatNum(kg / 21.8, lang, 1)}</p><p className="text-[14px] text-[#4b5563]">{st("prod.eqTrees")}</p></div>
+              </div>
+              <p className="mt-2 text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
             </div>
           </div>
         )}
       </section>
 
+      {kg !== null && <WhyConsider productId={product.product_id} />}
+
       {co2 && co2.formula && kg !== null && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <FormulaCard formula={co2.formula} />
-          <LifecycleDiagram lifecycle={co2.lifecycle} />
+        <div id="co2" className="grid gap-6 lg:grid-cols-2 items-start">
+          <Co2Explainer co2={co2} compact />
+          <LifecycleJourney lifecycle={co2.lifecycle} category={product.category} />
         </div>
       )}
 

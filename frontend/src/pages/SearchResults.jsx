@@ -13,6 +13,7 @@ import {
   toSearchParams, updateState,
 } from "../lib/searchState";
 import ProductCard from "./components/common/ProductCard";
+import WhyConsider from "./components/co2/WhyConsider";
 import { EmptyState, ErrorState, InlineSpinner, LoadingGrid, SampleDataNote } from "./components/common/States";
 import SearchFilters from "./components/products/SearchFilters";
 import Icon from "./components/ui/Icon";
@@ -291,6 +292,8 @@ export default function SearchResults() {
             )}
             {(status === "success" || status === "updating") && items.length > 0 && (
               <>
+                {items[0] && <WhyConsider productId={items[0].product_id} need={state.q || null}
+                                          title={st("search.whyTop", { name: items[0].name })} className="mb-4" />}
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {items.map((p) => <ProductCard key={p.product_id} product={p} />)}
                 </div>

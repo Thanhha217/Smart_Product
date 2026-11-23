@@ -123,10 +123,11 @@ def _enable_unaccent():
 def search_products(q: Optional[str] = None, category: Optional[str] = None, brand: Optional[str] = None,
                     platform: Optional[str] = None, min_price: Optional[float] = None, max_price: Optional[float] = None,
                     has_co2: bool = False, has_price: bool = False, co2_source: Optional[str] = None,
-                    sort: str = "relevance", page: int = 1, page_size: int = 24, include_accessories: bool = False):
+                    sort: str = "relevance", page: int = 1, page_size: int = 24, include_accessories: bool = False,
+                    has_image: bool = False):
     """Filtered product search (see search_api.py)."""
     return search_api.search(engine, q, category, brand, platform, min_price, max_price, has_co2, has_price,
-                             co2_source, sort, page, page_size, include_accessories)
+                             co2_source, sort, page, page_size, include_accessories, has_image=has_image)
 
 
 @app.get("/categories")

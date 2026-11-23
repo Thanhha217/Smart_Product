@@ -73,6 +73,10 @@ def _conditions(f: dict) -> tuple[list[str], dict]:
         where.append("p.final_price > 0")
     if f.get("has_co2"):
         where.append("p.co2e_kg IS NOT NULL")
+    if f.get("has_image"):
+        # only for picking a stand-in picture in the UI; it never changes how CO2 is computed
+        where.append("EXISTS (SELECT 1 FROM image i WHERE i.product_id = p.id "
+                     "AND i.image_url IS NOT NULL AND btrim(i.image_url) <> '')")
     if f.get("co2_source"):
         where.append("p.co2e_source = :co2_source")
         params["co2_source"] = f["co2_source"]
@@ -152,7 +156,7 @@ def card(row: dict) -> dict:
 def search(engine, q: str | None = None, category: str | None = None, brand: str | None = None,
            platform: str | None = None, min_price: float | None = None, max_price: float | None = None,
            has_co2: bool = False, has_price: bool = False, co2_source: str | None = None, sort: str = "relevance",
-           page: int = 1, page_size: int = 24, include_accessories: bool = False) -> dict:
+           page: int = 1, page_size: int = 24, include_accessories: bool = False, has_image: bool = False) -> dict:
     parsed = parse_query(q)
     understood = {"category": parsed.category, "brand": parsed.brand, "min_price": parsed.min_price,
                   "max_price": parsed.max_price, "eco": parsed.eco, "terms": parsed.terms}
@@ -160,7 +164,7 @@ def search(engine, q: str | None = None, category: str | None = None, brand: str
         "category": category or parsed.category, "brand": brand or parsed.brand, "platform": platform,
         "min_price": min_price if min_price is not None else parsed.min_price,
         "max_price": max_price if max_price is not None else parsed.max_price,
-        "has_co2": has_co2, "has_price": has_price,
+        "has_co2": has_co2, "has_price": has_price, "has_image": has_image,
         "co2_source": co2_source if co2_source in CO2_SOURCES else None, "terms": parsed.terms,
         "include_accessories": include_accessories,
     }

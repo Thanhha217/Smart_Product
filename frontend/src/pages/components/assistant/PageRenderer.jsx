@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useI18n } from "../../../i18n/LanguageContext";
+import { tri, useI18n } from "../../../i18n/LanguageContext";
 import { explore } from "../../../i18n/explore";
 import { formatPrice } from "../../../lib/data";
 import { EmptyState } from "../common/States";
@@ -26,7 +26,7 @@ export default function PageRenderer({ page, onFollowUp, followUpLoading }) {
         <p className="text-xs text-gray-500">{t("assistant.disclaimer")}</p>
       </section>
 
-      <PlanPanel plan={page.plan} />
+      <PlanPanel plan={page.plan} onAsk={onFollowUp} busy={followUpLoading} />
 
       {Object.keys(products).length === 0 && (
         <EmptyState title={explore(lang).noResultsTitle} body={explore(lang).noResultsBody}>
@@ -62,31 +62,52 @@ export default function PageRenderer({ page, onFollowUp, followUpLoading }) {
   );
 }
 
-/** What the AI understood: the search it ran, the category and the budget (all from page.plan). */
-function PlanPanel({ plan }) {
+/**
+ * What the site understood, as chips the visitor can correct. Removing the budget re-asks the
+ * same question without it; "Sửa yêu cầu" goes back to the form with the text already there.
+ * Everything shown here comes from page.plan, which the backend built from the question.
+ */
+function PlanPanel({ plan, onAsk, busy }) {
   const { lang } = useI18n();
+  const L3 = tri(lang);
   const X = explore(lang);
   if (!plan || (!plan.search_query && !plan.category_slug)) return null;
   const slug = plan.category_slug;
   const cat = slug ? (X.categories[slug] || X.unsupportedNames?.[slug] || slug.replace(/_/g, " ")) : null;
   const budget = plan.budget_max_vnd ? formatPrice(plan.budget_max_vnd, lang) : null;
-  const rows = [
-    plan.search_query && [X.plan.search, `“${plan.search_query}”`],
-    cat && [X.plan.category, cat],
-    [X.plan.budget, budget || X.plan.none],
+  const chips = [
+    plan.search_query && { key: "q", label: X.plan.search, value: plan.search_query },
+    cat && { key: "category", label: X.plan.category, value: cat },
+    { key: "budget", label: X.plan.budget, value: budget || X.plan.none, removable: Boolean(budget) },
   ].filter(Boolean);
+
   return (
-    <section aria-labelledby="plan-title" className="rounded-2xl border border-[#ebe6d8] bg-white p-4">
-      <h2 id="plan-title" className="text-[15px] font-semibold text-[#1E2B22]">{X.understoodTitle}</h2>
+    <section aria-labelledby="plan-title" className="rounded-2xl border border-[#DCEBD9] bg-[#F7FBF6] p-4">
+      <h2 id="plan-title" className="text-[15.5px] font-semibold text-[#1E2B22]">
+        {L3("Tôi hiểu bạn đang cần:", "What I understood:", "Ce que j'ai compris :")}
+      </h2>
       <dl className="mt-2 flex flex-wrap gap-2">
-        {rows.map(([k, v]) => (
-          <div key={k} className="chip"><dt className="inline text-[#6b7280]">{k}: </dt><dd className="inline font-medium">{v}</dd></div>
+        {chips.map((c) => (
+          <div key={c.key} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#CFE6D5] pl-3 pr-1.5 py-1 text-[14.5px]">
+            <dt className="text-[#55604F]">{c.label}:</dt>
+            <dd className="font-semibold text-[#1F5D3A]">{c.value}</dd>
+            {c.removable && (
+              <button type="button" disabled={busy} onClick={() => onAsk?.(plan.search_query)}
+                      className="grid place-items-center w-5 h-5 rounded-full hover:bg-[#E4F1E6] disabled:opacity-40"
+                      aria-label={L3("Hỏi lại, bỏ ngân sách", "Ask again without the budget", "Redemander sans le budget")}>×</button>
+            )}
+          </div>
         ))}
       </dl>
-      <p className="mt-2 text-[13.5px] text-[#6b7280]">{X.planSource}</p>
-      {plan.search_query && (
-        <p className="mt-1 text-[14px]"><Link className="text-[#1F5D3A] underline" to={`/search?q=${encodeURIComponent(plan.search_query)}`}>{X.linkSearch}</Link></p>
-      )}
+      <p className="mt-2 flex flex-wrap items-center gap-3 text-[14px]">
+        <Link className="font-semibold text-[#1F5D3A] underline" to={`/assistant?q=${encodeURIComponent(plan.search_query || "")}`}>
+          {L3("Sửa yêu cầu", "Change the request", "Modifier la demande")}
+        </Link>
+        {plan.search_query && (
+          <Link className="font-semibold text-[#1F5D3A] underline" to={`/search?q=${encodeURIComponent(plan.search_query)}`}>{X.linkSearch}</Link>
+        )}
+      </p>
+      <p className="mt-1.5 text-[13.5px] text-[#6b7280]">{X.planSource}</p>
     </section>
   );
 }

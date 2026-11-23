@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../ui/Icon";
+import ProductThumb from "./ProductThumb";
 import { useI18n } from "../../../i18n/LanguageContext";
 import { co2Kind, co2Scope, formatPrice, normalizeProduct } from "../../../lib/data";
 import { formatKg, formatNum, greenBg, greenColor } from "../../../lib/format";
@@ -15,21 +16,9 @@ export function specLabel(t, spec) {
   return label === `spec.${spec.key}` ? spec.value : label;
 }
 
-const CATEGORY_ICON = { laptops: "cpu", monitors: "eye", smartphones: "plug", headphones: "bell", smartwatches: "calendar", tablets: "book" };
-
+/** Kept as a named export for the pages that used it before ProductThumb existed. */
 export function ProductImage({ product, className = "h-40" }) {
-  const [broken, setBroken] = useState(false);
-  const { t } = useI18n();
-  if (!product.image_url || broken) {
-    return (
-      <div className={`${className} rounded-xl bg-gradient-to-br from-[#eef4ec] to-[#f6f3ea] grid place-items-center text-[#7aa58a]`}
-           role="img" aria-label={t("common.noImage")}>
-        <Icon name={CATEGORY_ICON[product.category] || "leaf"} size={44} strokeWidth={1.4} />
-      </div>
-    );
-  }
-  return <img src={product.image_url} alt={product.name} loading="lazy" onError={() => setBroken(true)}
-              className={`${className} w-full rounded-xl object-contain bg-white`} />;
+  return <ProductThumb product={product} className={className} />;
 }
 
 export function Co2Badge({ product, size = "sm" }) {
@@ -73,7 +62,7 @@ export default function ProductCard({ product: raw, reason, onAdded, showActions
     <article className={`group flex flex-col rounded-2xl bg-white border ${highlight ? "border-[#2E7D4F] ring-2 ring-[#2E7D4F]/15" : "border-[#ebe6d8]"} p-4 shadow-sm hover:shadow-md transition-shadow`}>
       <Link to={`/product/${product.product_id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F] rounded-xl">
         <div className="relative">
-          <ProductImage product={product} />
+          <ProductThumb product={product} />
           <div className="absolute left-2 top-2 flex flex-wrap gap-1">
             {product.platform && <span className="rounded-full bg-white/95 px-2 py-0.5 text-[12.5px] font-medium text-[#1E2B22] shadow-sm">{product.platform}</span>}
             {product.condition === "used" && <span className="rounded-full bg-[#fff4e5] px-2 py-0.5 text-[12.5px] text-[#92400e]">{t("common.used")}</span>}

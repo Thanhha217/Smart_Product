@@ -5,7 +5,7 @@ import ChartView from "../ChartView";
 import ProductCard from "../../common/ProductCard";
 import { explore } from "../../../../i18n/explore";
 import FormulaCard from "../../co2/FormulaCard";
-import LifecycleDiagram from "../../co2/LifecycleDiagram";
+import LifecycleJourney from "../../co2/LifecycleJourney";
 import { SectionCard, SourceLabel } from "../../co2/Co2Bits";
 
 export function RecommendationCards({ section, products }) {
@@ -27,7 +27,7 @@ export function FormulaSection({ section, products }) {
 }
 
 export function LifecycleSection({ section, products }) {
-  return <LifecycleDiagram lifecycle={section.lifecycle} productName={products[section.product_id]?.name} />;
+  return <LifecycleJourney lifecycle={section.lifecycle} category={products[section.product_id]?.category} compact />;
 }
 
 export function Co2Chart({ section }) {
