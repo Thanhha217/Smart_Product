@@ -18,8 +18,10 @@ The first step that applies wins:
 4. ``None``              - nothing applies: the product stays without a number.
 
 Leave-one-family-out test on the 1,450 products with manufacturer numbers (Nov 2026):
-the category model has a median error of 18.5 % (monitors 9 %, phones 14 %, laptops
-20 %, desktops 22 %) against 24 % for the plain category median; the formula gives
+the category model has a median error of 20.9 % (monitors 13.8 %, phones 13.7 %, laptops
+22.6 %, desktops 22.2 %) against 24.1 % for the plain category median (re-run in the repo:
+scripts/research/eval_co2_methods.py, docs/research/results-co2-eval.md; an earlier out-of-repo
+run reported 18.5 %); the formula gives
 1,972 kg for a 75" TV (grid 0.681) against 982-2,388 kg in Samsung's four 75" reports.
 Details: docs/research/co2-fallback.md.
 
@@ -212,7 +214,13 @@ def category_model_estimate(stats: CategoryStats | None, category: str | None,
                         f"(median of {level.n} manufacturer-reported products{adj_en})."),
         explanation_vi=(f"Ước tính theo mức CO₂ điển hình của {label_vi} (trung vị {level.n} sản phẩm có số "
                         f"do hãng công bố{adj_vi})."),
-        detail={"category": category, "n_refs": level.n, "brand": brand, "screen_inch": inch},
+        detail={"category": category, "n_refs": level.n, "brand": brand, "screen_inch": inch,
+                "category_median_kg": round(math.exp(level.log_median), 2),
+                "brand_median_kg": (round(math.exp(level.log_median + level.brand_offset[brand.lower()]), 2)
+                                    if brand else None),
+                "brand_n": level.brand_n[brand.lower()] if brand else None,
+                "slope": SIZE_MODEL[category][0] if inch else None,
+                "ref_inch": SIZE_MODEL[category][1] if inch else None},
     )
 
 
@@ -251,7 +259,10 @@ def formula_estimate(category: str | None, name: str | None, description: str | 
                         f"({_KWH_SOURCE_VI[r.kwh_source]}) trong {_vn_dec(r.lifetime_years)} năm với lưới điện Việt Nam "
                         f"({_vn_dec(EF_GRID)} kg CO₂e/kWh) = {_vn(use_total)} kg, + thải bỏ {_vn_dec(r.eol_kg)} kg."),
         detail={"formula_category": key, "kwh_source": r.kwh_source, "annual_kwh": r.annual_kwh,
-                "low_kg": r.lifecycle_low_kg, "high_kg": r.lifecycle_high_kg},
+                "low_kg": r.lifecycle_low_kg, "high_kg": r.lifecycle_high_kg,
+                "embodied_kg": r.embodied_kg, "eol_kg": r.eol_kg, "lifetime_years": r.lifetime_years,
+                "use_kg_per_year": r.use_kg_per_year, "refrigerant_kg_per_year": r.refrigerant_kg_per_year,
+                "ef_grid": EF_GRID, "weight_kg": specs.weight_kg},
     )
 
 
@@ -269,11 +280,16 @@ def _eeio() -> dict:
 
 
 
+def _vnd_per_usd() -> float:
+    return float(os.environ.get("CO2_VND_PER_USD", _eeio()["currency"]["vnd_per_usd"]))
+
+
+def _cpi_now() -> float:
+    return float(os.environ.get("CO2_CPI_NOW", _eeio()["currency"]["cpi_u_now"]))
+
+
 def vnd_to_usd2022(price_vnd: float) -> float:
-    cur = _eeio()["currency"]
-    vnd_per_usd = float(os.environ.get("CO2_VND_PER_USD", cur["vnd_per_usd"]))
-    cpi_now = float(os.environ.get("CO2_CPI_NOW", cur["cpi_u_now"]))
-    return price_vnd / vnd_per_usd * cur["cpi_u_2022"] / cpi_now
+    return price_vnd / _vnd_per_usd() * _eeio()["currency"]["cpi_u_2022"] / _cpi_now()
 
 
 def eeio_estimate(category: str | None, price_vnd: float | None) -> Estimate | None:
@@ -297,7 +313,9 @@ def eeio_estimate(category: str | None, price_vnd: float | None) -> Estimate | N
         explanation_vi=(f"Ước tính thô theo giá bán: {_vn(price_vnd)} đ ≈ {_vn(usd)} USD (giá 2022) × "
                         f"{str(factor['kg_per_usd2022']).replace('.', ',')} kg CO₂e/USD của ngành '{title}' "
                         f"(hệ số chuỗi cung ứng US EPA v1.3). Chỉ gồm sản xuất và vận chuyển, chưa gồm điện khi sử dụng."),
-        detail={"naics": naics, "usd2022": usd, "factor": factor["kg_per_usd2022"]},
+        detail={"naics": naics, "usd2022": usd, "factor": factor["kg_per_usd2022"], "title": title,
+                "price_vnd": float(price_vnd), "vnd_per_usd": _vnd_per_usd(),
+                "cpi_2022": data["currency"]["cpi_u_2022"], "cpi_now": _cpi_now()},
     )
 
 

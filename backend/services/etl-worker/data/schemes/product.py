@@ -39,3 +39,7 @@ class Product(ProductBase, table=True):
     # reference products used, as a JSON list of {name, co2e_kg, cosine}.
     co2e_category: Optional[str] = Field(default=None)
     co2e_references: Optional[str] = Field(default=None)
+    # JSON: the numbers of the method (category median, slope, kWh/year...) so the web can
+    # show the formula with values substituted, and the lifecycle split (green/lifecycle.py).
+    co2e_detail: Optional[str] = Field(default=None)
+    co2e_breakdown: Optional[str] = Field(default=None)

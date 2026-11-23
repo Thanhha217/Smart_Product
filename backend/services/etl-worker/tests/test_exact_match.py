@@ -41,3 +41,9 @@ def test_no_partial_word_or_other_variant():
 def test_short_names_never_match_alone():
     # "pixel 8" has only 2 words: too generic to count as an exact model
     assert _match("Google Pixel 8 Pro") is None
+
+
+def test_plus_variant_is_a_different_model():
+    refs = [{"name": "Samsung Galaxy Tab S9 128GB", "brand": "Samsung"}, {"name": "Samsung Galaxy Tab S9+", "brand": "Samsung"}]
+    assert find_exact_reference("Máy tính bảng Samsung Galaxy Tab S9+ 256GB", refs)["name"] == "Samsung Galaxy Tab S9+"
+    assert find_exact_reference("Samsung Galaxy Tab S9 128GB Xám", refs)["name"] == "Samsung Galaxy Tab S9 128GB"

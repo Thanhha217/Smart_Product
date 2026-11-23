@@ -11,8 +11,11 @@ MIN_TOKENS = 3  # a reference name needs at least this many words to count as an
 
 
 def tokens(text: str | None) -> str:
-    """Lower-case words and numbers joined by single spaces: 'MacBook Air 13" (M3)' -> 'macbook air 13 m3'."""
-    return " ".join(re.findall(r"[a-z0-9]+", (text or "").lower()))
+    """Lower-case words and numbers joined by single spaces: 'MacBook Air 13" (M3)' -> 'macbook air 13 m3'.
+
+    A trailing '+' stays part of the word, so 'Galaxy Tab S9+' never matches the plain S9 report.
+    """
+    return " ".join(re.findall(r"[a-z0-9]+\+*", (text or "").lower()))
 
 
 def find_exact_reference(name: str | None, references: Iterable[Mapping]) -> Mapping | None:
