@@ -51,7 +51,7 @@ function Counter({ value, lang, digits }) {
   return <>{digits !== undefined ? formatNum(v, lang, digits) : formatKg(v, lang)}</>;
 }
 
-function FormulaReveal({ steps, total, greenScore, lang }) {
+export function FormulaReveal({ steps, total, greenScore, lang }) {
   const [shown, setShown] = useState(0);
   const n = steps.length + 2;
   useEffect(() => {
