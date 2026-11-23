@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import threading
 
 import faiss
@@ -13,6 +12,7 @@ from data.schemes.carbon_reference import CarbonReference
 from data.schemes.product import Product
 from data.process.data_transformer import encode_text
 from green.fallback import CategoryStats, canonical_category, estimate_without_neighbours
+from green.matching import find_exact_reference
 
 EMBED_DIM = 512          # Dimensionality of the CLIP text embedding vectors
 TOP_K = 5               # Number of candidate neighbours retrieved from the FAISS index before similarity filtering
@@ -749,26 +749,10 @@ USE_FALLBACK = os.environ.get("CO2E_FALLBACK", "1") == "1"
 # Step 1 of the final method: the manufacturer published a figure for this exact model.
 
 
-def _tokens(text):
-    return " ".join(re.findall(r"[a-z0-9]+", (text or "").lower()))
-
-
 def _exact_reference(name):
-    """Longest reference name (>= 3 tokens) contained word-for-word in the product name."""
+    """Reference whose name appears word for word in the product name (green.matching)."""
     _build_reference_index()
-    haystack = f" {_tokens(name)} "
-    best = None
-    best_len = 0
-    for ref in (_ref_by_id or {}).values():
-        key = _tokens(ref["name"])
-        keys = [key]
-        brand = _tokens(ref.get("brand"))
-        if brand and key.startswith(brand + " "):
-            keys.append(key[len(brand) + 1:])      # shops often drop the brand: "Điện thoại iPhone 15 128GB"
-        for k in keys:
-            if len(k.split()) >= 3 and f" {k} " in haystack and len(k) > best_len:
-                best, best_len = ref, len(k)
-    return best
+    return find_exact_reference(name, (_ref_by_id or {}).values())
 
 
 def estimate_product_co2e(product, product_embedding, category=None):

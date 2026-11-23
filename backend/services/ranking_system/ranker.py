@@ -11,8 +11,7 @@ from product_searcher import get_products_from_ids, get_similar_products_indices
 from explanation_generator import generate_ranking_explanations
 
 MAX_RELEVANT_PRODUCTS = 20
-RRF_K = 60  # standard RRF damping constant
-CARBON_RRF_WEIGHT = 0.2
+from rrf import CARBON_RRF_WEIGHT, RRF_K, _ranks_from_scores, _rrf_fuse  # noqa: F401 (re-exported)
 
 new_ranker = catboost.CatBoostRanker()
 new_ranker.load_model('models/catboost_ranker_model.txt')
@@ -53,50 +52,6 @@ def _build_name_boosts(query, product_list):
 
     return np.array(boosts, dtype=float)
 
-
-def _ranks_from_scores(scores, higher_is_better=True):
-    """1-based rank for each item; tied values share the same rank.
-
-    Ties must not be broken by array position: when no product has a CO2e
-    estimate they all tie, and handing rank 1 to whichever came first would let
-    candidate order leak into the final ranking.
-    """
-    values = -scores if higher_is_better else scores
-    ordered = np.argsort(values, kind="stable")
-    sorted_values = values[ordered]
-
-    # Competition ranking: every member of a tie group takes the group's first position.
-    starts_group = np.ones(len(values), dtype=bool)
-    starts_group[1:] = sorted_values[1:] != sorted_values[:-1]
-    group_ranks = np.maximum.accumulate(
-        np.where(starts_group, np.arange(1, len(values) + 1), 0)
-    )
-
-    ranks = np.empty(len(values), dtype=int)
-    ranks[ordered] = group_ranks
-    return ranks
-
-
-def _rrf_fuse(relevance_scores, co2e_values):
-    """Fuse a relevance ranking with a carbon ranking via Reciprocal Rank Fusion.
-
-    Relevance stays dominant, while the carbon signal is applied as a softer
-    penalty. Lower co2e ranks better. Products with no estimate (NaN) get the
-    middle carbon rank of the products that have one, so a missing number is
-    neither rewarded nor punished.
-    Returns candidate indices ordered best-to-worst.
-    """
-    relevance_ranks = _ranks_from_scores(relevance_scores, higher_is_better=True)
-
-    co2e_values = np.asarray(co2e_values, dtype=float)
-    known = ~np.isnan(co2e_values)
-    carbon_ranks = np.ones(len(co2e_values), dtype=float)
-    if known.any():
-        carbon_ranks[known] = _ranks_from_scores(co2e_values[known], higher_is_better=False)
-        carbon_ranks[~known] = (known.sum() + 1) / 2.0
-
-    rrf_scores = 1.0 / (RRF_K + relevance_ranks) + CARBON_RRF_WEIGHT / (RRF_K + carbon_ranks)
-    return np.argsort(-rrf_scores, kind="stable")
 
 def query_ranking_system(query, limit, image_base64=None):
 
