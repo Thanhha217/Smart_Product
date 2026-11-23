@@ -85,3 +85,64 @@ def product_endpoint(product_id: str):
     
     product_data = response.json()
     return {"product": product_data}
+
+# =====================================================================================
+# /api/* for the AI page, compare page, test checkout and MCP server
+# (docs/demo/api-contract.md). The gateway only forwards: status code and JSON body
+# are passed through unchanged.
+# =====================================================================================
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+
+def _forward(method: str, url: str, request: Request | None = None, json_body=None, timeout: float = 120):
+    headers = {}
+    if request is not None and request.headers.get("x-confirm-source"):
+        headers["X-Confirm-Source"] = request.headers["x-confirm-source"]
+    params = dict(request.query_params) if request is not None else None
+    try:
+        response = requests.request(method, url, params=params, json=json_body, headers=headers, timeout=timeout)
+    except requests.exceptions.RequestException:
+        return JSONResponse(status_code=502, content={"error": {"code": "upstream_unavailable",
+                                                                "message": "Upstream service unavailable"}})
+    try:
+        body = response.json()
+    except ValueError:
+        body = {"error": {"code": "bad_upstream_response", "message": response.text[:200]}}
+    return JSONResponse(status_code=response.status_code, content=body)
+
+
+def _assistant_url():
+    if not ASSISTANT_URL:
+        return None
+    return ASSISTANT_URL.rstrip("/")
+
+
+def _no_assistant():
+    return JSONResponse(status_code=503, content={"error": {"code": "assistant_not_configured",
+                                                            "message": "Assistant service is not configured"}})
+
+
+@app.get("/api/products/{product_id}/related")
+def api_related(product_id: str, request: Request):
+    return _forward("GET", f"{DB_SEARCH_URL}/products/{product_id}/related", request)
+
+
+@app.get("/api/categories/{category}/stats")
+def api_category_stats(category: str, request: Request):
+    return _forward("GET", f"{DB_SEARCH_URL}/categories/{category}/stats", request)
+
+
+@app.api_route("/api/{path:path}", methods=["GET", "POST"])
+async def api_assistant(path: str, request: Request):
+    """Everything else under /api goes to the assistant service (pages, co2, compare, method, test orders)."""
+    base = _assistant_url()
+    if base is None:
+        return _no_assistant()
+    body = None
+    if request.method == "POST":
+        raw = await request.body()
+        body = await request.json() if raw else None
+    timeout = 300 if path == "assistant" else 60
+    import anyio
+    return await anyio.to_thread.run_sync(lambda: _forward(request.method, f"{base}/api/{path}", request, body, timeout))

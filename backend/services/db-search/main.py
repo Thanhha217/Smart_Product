@@ -3,7 +3,8 @@ import requests
 from fastapi import FastAPI, HTTPException
 from typing import Optional
 
-from db_search_functions import get_product_data_from_id, get_products_data_from_ids
+from co2_queries import category_stats, related_product_ids
+from db_search_functions import engine, get_product_data_from_id, get_products_data_from_ids
 from dto.QueryDTO import ProductsFromIdsDTO, QueryWithImageDTO
 app = FastAPI()
 
@@ -61,3 +62,23 @@ def query(q: str = None, limit: int = 32, payload: Optional[QueryWithImageDTO] =
                     item["recommendation_reason"] = explanation
 
     return {"products": products_data}
+
+
+@app.get("/products/{product_id}/related")
+def related(product_id: int, limit: int = 6):
+    limit = max(1, min(limit, 24))
+    result = related_product_ids(engine, product_id, limit)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    category, ids, alternative = result
+    return {
+        "product_id": str(product_id),
+        "category": category,
+        "items": get_products_data_from_ids(ids),
+        "greener_alternative": get_product_data_from_id(alternative) if alternative else None,
+    }
+
+
+@app.get("/categories/{category}/stats")
+def stats(category: str, product_id: Optional[int] = None):
+    return category_stats(engine, category, product_id)
