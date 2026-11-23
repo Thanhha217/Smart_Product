@@ -459,6 +459,7 @@ def _build_reference_index():
                     "brand": ref.brand,
                     "co2e_kg": ref.co2e_kg,
                     "source": ref.source,
+                    "url": getattr(ref, "source_url", None),
                 }
             matrix = np.asarray(vectors, dtype="float32")
             faiss.normalize_L2(matrix)
@@ -802,7 +803,7 @@ def estimate_product_co2e(product, product_embedding, category=None):
             product.co2e_explanation_vi = f"Số CO₂ do hãng công bố cho đúng mẫu {exact['name']}."
             product.co2e_category = exact["category"]
             product.co2e_references = json.dumps([{"name": exact["name"], "co2e_kg": exact["co2e_kg"], "cosine": 1.0,
-                                                    "source": exact.get("source")}], ensure_ascii=False)
+                                                    "source": exact.get("source"), "url": exact.get("url")}], ensure_ascii=False)
             _store_detail(product, {"reference": exact["name"]})
             _log_estimate(product, "manufacturer")
             return
@@ -840,7 +841,8 @@ def estimate_product_co2e(product, product_embedding, category=None):
                 print(f"  references used: {[n['name'] for n, _ in close]}", flush=True)
             product.co2e_category = ref_category or close[0][0]["category"]
             product.co2e_references = json.dumps(
-                [{"name": n["name"], "co2e_kg": n["co2e_kg"], "cosine": round(s, 3), "source": n.get("source")}
+                [{"name": n["name"], "co2e_kg": n["co2e_kg"], "cosine": round(s, 3), "source": n.get("source"),
+                  "url": n.get("url")}
                  for n, s in close], ensure_ascii=False)
             _store_detail(product, {"threshold": SIMILARITY_THRESHOLD, "n": len(close),
                                     "neighbour_average": round(_neighbour_average(close), 2)})
