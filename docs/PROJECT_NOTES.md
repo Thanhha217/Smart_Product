@@ -67,6 +67,8 @@ Thứ tự, dừng ở bước đầu ra số (`co2e_source` · `co2e_confidence
 Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ liệu thô `research/data/co2-eval-2026-11-23.*`.
 
 ## 5. API demo (đầy đủ: [demo/api-contract.md](demo/api-contract.md))
+- **Tìm kiếm thật** `GET /api/search` (db-search `search_api.py`): hiểu danh mục / hãng (kể cả iPhone→Apple) / ngân sách / "ít CO₂" từ câu (vi/en/fr, `search_query.py`), từ còn lại phải có trong tên (không dấu, Postgres `unaccent`); danh mục chưa có (điều hòa, tủ lạnh…) → `unsupported`, 0 kết quả; bộ lọc + facets có số đếm; giá 0 = chưa có giá (null), CO₂ thiếu luôn xếp cuối; 0 kết quả → `relaxations` để người dùng tự chọn; phụ kiện bị xếp nhầm danh mục (miếng dán, RAM…) ẩn mặc định kèm số lượng. `GET /api/categories`: số thật theo danh mục.
+- Frontend chuẩn hóa dữ liệu thiếu ở `src/lib/data.js`; thẻ sản phẩm chung `components/common/ProductCard.jsx`; trạng thái trống/lỗi/tải `components/common/States.jsx`; so sánh `lib/compare.js` (tối đa 4); chuỗi riêng từng nhóm trang: `i18n/shop.js`, `i18n/explore.js`.
 - `POST /api/assistant {message, lang, parent_id}` → `{id, url, page}`; `GET /api/assistant/{id}`.
 - `GET /api/products/{id}/co2` (formula + lifecycle + references có `url`), `/related`, `GET /api/categories/{cat}/stats`, `GET /api/compare?ids=`, `GET /api/method`.
 - `POST /api/orders/test` → `awaiting_confirmation`; `POST …/{id}/confirm` **bắt buộc header `X-Confirm-Source: web-ui`** (chặn theo chính sách, không phải bảo mật thật); `…/cancel`; `CHECKOUT_MODE` ≠ `test` → assistant không khởi động.
@@ -94,10 +96,11 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 | `etl-worker`: `pytest tests/test_exact_match.py tests/test_fallback.py tests/test_green.py tests/test_explain.py` | 52 |
 | Toàn hệ thống (Docker đang chạy): `python scripts/demo/smoke_e2e.py` | 18 bước |
 | `ranking_system`: `pytest test_rrf.py` | 6 |
-| `assistant`: `pytest` (fake db-search + fake LLM) | 42 |
-| `gateway`: `pytest tests` | 2 |
+| `assistant`: `pytest` (fake db-search + fake LLM) | 46 |
+| `gateway`: `pytest tests` | 3 |
+| `db-search`: `pytest tests/test_search_query.py tests/test_product_specs.py tests/test_accessory.py` | 14 |
 | `mcp-server`: `pytest` | 17 |
-| `frontend`: `npm run build` | build OK |
+| `frontend`: `npm run test` (vitest: dữ liệu thiếu, giỏ, so sánh, URL tìm kiếm) + `npm run build` | 33 |
 - `etl-worker/tests/test_category_matcher.py`: 4 test `TestParserIntegration` **đã hỏng từ trước** (không liên quan CO₂).
 - Đã chạy thật bằng Docker 23/11: dump 55.409 dòng → khử trùng còn 14.130, 7.389 có giá → backfill (`etl-worker/tools/backfill.py`) → 7.389/7.389 có CO₂ + FAISS. `scripts/demo/smoke_e2e.py`: 18/18 bước đạt (search, CO₂, related, stats, compare, trang AI, đơn thử, MCP).
 - `npm run lint` hỏng sẵn vì repo không có `eslint.config.js`.

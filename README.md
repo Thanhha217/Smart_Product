@@ -40,7 +40,8 @@ cd backend/services/assistant && pip install -r requirements.txt pytest httpx &&
 cd backend/services/gateway && python -m pytest tests
 cd backend/services/mcp-server && pip install -r requirements.txt -r requirements-dev.txt && python -m pytest
 python scripts/research/eval_co2_methods.py        # leave-one-family-out evaluation of the CO2 fallbacks
-cd frontend && npm install && npm run build
+cd backend/services/db-search && python -m pytest tests/test_search_query.py tests/test_product_specs.py tests/test_accessory.py
+cd frontend && npm install && npm run test && npm run build
 ```
 
 ## Running the application
