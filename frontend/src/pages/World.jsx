@@ -3,7 +3,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { formatKg, formatNum, greenColor } from "../lib/format";
-import ProductPicker from "./components/story/ProductPicker";
+import { co2Kind, co2Scope } from "../lib/data";
+import { ErrorState } from "./components/common/States";
+import { explore } from "../i18n/explore";
+import WorldExplore from "./components/world/explore/WorldExplore";
 import { methodText } from "./components/story/storyText";
 import WorldScene, { WORLD_H, WORLD_W, legPath, stageTarget } from "./components/world/WorldScene";
 import ExplainPanel from "./components/world/ExplainPanel";
@@ -55,7 +58,7 @@ function Chip({ topic, children, className = "", onClick, style }) {
 }
 
 function WorldView({ productId }) {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const T = useMemo(() => worldText(lang), [lang]);
   const S = useMemo(() => sceneText(lang), [lang]);
   const navigate = useNavigate();
@@ -92,6 +95,7 @@ function WorldView({ productId }) {
   const camera = useCamera({ width: WORLD_W, height: WORLD_H, minW: 420 });
 
   useEffect(() => { loadArt().then(setArt); }, []);
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -117,7 +121,7 @@ function WorldView({ productId }) {
       }
     })();
     return () => { alive = false; };
-  }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [productId, nonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const base = useMemo(() => (d ? baseline(d) : null), [d]);
   const sim = useMemo(() => (base && sc ? simulate(base, sc) : null), [base, sc]);
@@ -209,8 +213,28 @@ function WorldView({ productId }) {
   };
   const enter = (t, e) => { setTopic(null); setTour(false); go(SCENE_OF_TOPIC[t], e?.currentTarget?.getBoundingClientRect() || null); };
 
-  if (error) return <p className="text-center text-red-600 py-16">{T.notFound}</p>;
-  if (!d || !sc) return <div ref={wrap} className="grid place-items-center text-gray-500 animate-pulse" style={{ height }}>🌏 {T.loading}</div>;
+  if (error) {
+    const X = explore(lang);
+    const missing = error.status === 404;
+    return (
+      <div className="page-wrap py-10 max-w-3xl">
+        <ErrorState title={missing ? T.notFound : X.worldErrorTitle} body={missing ? X.worldNotFoundBody : X.worldErrorBody}
+                    onRetry={missing ? null : () => setNonce((n) => n + 1)} />
+        <p className="mt-4 flex flex-wrap gap-3">
+          <Link to="/world" className="btn-secondary">{X.worldBack}</Link>
+          <Link to="/search" className="btn-secondary">{X.linkSearch}</Link>
+        </p>
+      </div>
+    );
+  }
+  if (!d || !sc) return (
+    <div ref={wrap} role="status" aria-live="polite" className="grid place-items-center text-[#4b5563] bg-[#eef6fb]" style={{ height }}>
+      <span className="inline-flex items-center gap-3 text-[16px]">
+        <span className="w-5 h-5 rounded-full border-2 border-[#2E7D4F] border-t-transparent animate-spin" aria-hidden="true" />
+        {T.loading}
+      </span>
+    </div>
+  );
 
   const p = d.product;
   const originName = ORIGINS[sc.origin]?.[lang] ?? ORIGINS[sc.origin]?.en;
@@ -247,6 +271,19 @@ function WorldView({ productId }) {
       {!scene && <div className="absolute z-20 left-3 top-3 right-3 md:right-auto md:max-w-[460px] rounded-3xl bg-white/90 backdrop-blur shadow-xl border border-white p-3 md:p-4">
         <p className="text-[13.5px] uppercase tracking-widest text-emerald-700 font-semibold">🌏 {L3("Thế giới CO₂ của sản phẩm", "The product's CO₂ world", "Le monde CO₂ du produit")}</p>
         <h1 className="font-extrabold text-[#16324a] leading-tight text-lg md:text-xl line-clamp-2">{p.name}</h1>
+        {p.co2e_kg !== null && (
+          <p className="mt-1 text-[13.5px] text-[#4b5563]">
+            {[
+              explore(lang).hudUnit,
+              t(`common.scope.${co2Scope(p) || "cradle_to_grave"}`),
+              p.co2e_source ? t(`source.${p.co2e_source}`) : null,
+            ].filter(Boolean).join(" · ")}
+            {" "}
+            <span className={`rounded-full px-1.5 text-[12.5px] ${co2Kind(p) === "published" ? "bg-[#dcefe0] text-[#1F5D3A]" : "bg-[#f3f4f6] text-[#4b5563]"}`}>
+              {t(co2Kind(p) === "published" ? "common.co2Published" : "common.co2Estimated")}
+            </span>
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-emerald-600 border-emerald-600 text-white text-[16px]">
             {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : L3("Chưa có số CO₂", "No CO₂ figure", "Pas de chiffre CO₂")}
@@ -256,9 +293,11 @@ function WorldView({ productId }) {
               {T.greenScore} {formatNum(p.green_score, lang, 1)}/5
             </Chip>
           )}
-          <Chip topic="confidence" onClick={() => open("confidence")} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">
-            {T.confidence} {formatNum((d.formula?.confidence || 0) * 100, lang, 0)}%
-          </Chip>
+          {typeof d.formula?.confidence === "number" && (
+            <Chip topic="confidence" onClick={() => open("confidence")} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">
+              {T.confidence} {formatNum(d.formula.confidence * 100, lang, 0)}%
+            </Chip>
+          )}
           <Chip topic="formula" onClick={(e) => enter("formula", e)} className="bg-white border-gray-200 text-gray-700">🧮 {T.formula}</Chip>
           <Chip topic="category" onClick={(e) => enter("category", e)} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">📊 {T.category}</Chip>
           {d.related?.greener_alternative && <Chip topic="greener_alternative" onClick={(e) => enter("greener_alternative", e)} className="bg-white border-emerald-300 text-emerald-800 hidden sm:inline-block">🌱 {T.alternative}</Chip>}
@@ -324,12 +363,6 @@ function WorldView({ productId }) {
 
 export default function World() {
   const { productId } = useParams();
-  const { lang } = useI18n();
-  const T = useMemo(() => worldText(lang), [lang]);
   if (productId) return <WorldView key={productId} productId={productId} />;
-  return (
-    <main className="min-h-screen px-3 md:px-6 py-6 overflow-x-hidden" style={{ background: "radial-gradient(circle at 80% 0%, #d6f0ff, #eef8f1 55%, #f6f1e6)" }}>
-      <ProductPicker basePath="/world" icon="🌏🏭🚢🏠♻️" title={T.landingTitle} lead={T.landingLead} />
-    </main>
-  );
+  return <WorldExplore />;
 }

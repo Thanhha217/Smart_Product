@@ -5,7 +5,7 @@ export const METHOD = {
   vi: {
     title: "Phương pháp tính CO₂ của Smart Product Finder",
     intro:
-      "Mỗi sản phẩm được gán lượng phát thải vòng đời (kg CO₂e, khung cradle-to-grave ISO 14067). Hệ thống luôn ưu tiên số thật của hãng, chỉ ước lượng khi không có, ghi rõ nguồn và độ tin cậy của mọi con số. AI chỉ dùng để tìm sản phẩm giống nhau, không tự đoán ra số. Không đủ căn cứ thì để trống.",
+      "Mỗi sản phẩm được gán lượng phát thải vòng đời (kg CO₂e cả vòng đời, theo phạm vi cradle-to-grave mô tả trong ISO 14067; không phải số được chứng nhận). Hệ thống luôn ưu tiên số thật của hãng, chỉ ước lượng khi không có, ghi rõ nguồn và điểm tin cậy nội bộ của mọi con số. AI chỉ dùng để tìm sản phẩm giống nhau, không tự đoán ra số. Không đủ căn cứ thì để trống.",
     chainTitle: "Chuỗi tính: bước nào ra số trước thì dừng",
     chain: [
       { key: "manufacturer", label: "1. Trùng đúng mẫu", sub: "tên chứa nguyên tên mẫu (≥ 3 từ)" },
@@ -75,7 +75,7 @@ export const METHOD = {
   en: {
     title: "How Smart Product Finder computes CO₂",
     intro:
-      "Every product gets a lifecycle footprint (kg CO₂e, cradle-to-grave per ISO 14067). The system always prefers the manufacturer's own figure, estimates only when there is none, and labels the source and confidence of every number. AI only finds similar products; it never invents a number. Without enough evidence the value stays empty.",
+      "Every product gets a lifecycle footprint (kg CO₂e over the whole life, the cradle-to-grave scope described in ISO 14067; not a certified footprint). The system always prefers the manufacturer's own figure, estimates only when there is none, and labels the source and an internal confidence score of every number. AI only finds similar products; it never invents a number. Without enough evidence the value stays empty.",
     chainTitle: "Calculation chain: the first step that yields a number wins",
     chain: [
       { key: "manufacturer", label: "1. Exact model", sub: "name contains a reference name (≥ 3 words)" },
@@ -144,7 +144,7 @@ export const METHOD = {
   fr: {
     title: "Comment Smart Product Finder calcule le CO₂",
     intro:
-      "Chaque produit reçoit une empreinte sur tout son cycle de vie (kg CO₂e, du berceau à la tombe selon l'ISO 14067). Le système privilégie toujours le chiffre du fabricant, n'estime que lorsqu'il n'existe pas, et indique la source et la fiabilité de chaque nombre. L'IA ne sert qu'à trouver des produits similaires ; elle n'invente jamais de chiffre. Sans éléments suffisants, la valeur reste vide.",
+      "Chaque produit reçoit une empreinte sur tout son cycle de vie (kg CO₂e du berceau à la tombe, le périmètre décrit dans l'ISO 14067 ; ce n'est pas une empreinte certifiée). Le système privilégie toujours le chiffre du fabricant, n'estime que lorsqu'il n'existe pas, et indique la source et un score de confiance interne de chaque nombre. L'IA ne sert qu'à trouver des produits similaires ; elle n'invente jamais de chiffre. Sans éléments suffisants, la valeur reste vide.",
     chainTitle: "Chaîne de calcul : la première étape qui donne un chiffre l'emporte",
     chain: [
       { key: "manufacturer", label: "1. Modèle exact", sub: "le nom contient celui d'une référence (≥ 3 mots)" },
@@ -209,5 +209,75 @@ export const METHOD = {
       "Les parts par étape (quand le fabricant ne détaille pas) et les trajets de transport sont des hypothèses illustratives.",
     ],
     gridNote: "Réseau vietnamien : 0,681 kg CO₂e/kWh (2024, Université des sciences et technologies de Hanoï avec le ministère de l'Agriculture et de l'Environnement).",
+  },
+};
+
+// Two-level page: plain answers first, then the technical sections (collapsed).
+// RESULT_SOURCE marks each results row: "repo" = re-run by scripts/research/eval_co2_methods.py,
+// "doc" = reported in docs/co2-method and not re-run here.
+export const RESULT_SOURCE = ["doc", "repo", "doc", "doc"];
+// Methods with no product in the current (electronics) catalogue.
+export const NOT_IN_CATALOGUE = ["lifecycle_formula", "eeio_price"];
+
+export const METHOD_EXTRA = {
+  en: {
+    basicTitle: "The essentials",
+    basics: [
+      ["What does the number mean?", "Kilograms of CO₂-equivalent for one unit of the product over its whole life: materials and production, transport, use and end of life. A price-based estimate covers production and delivery only, and its badge says so."],
+      ["Where does it come from?", "Each product shows one of three sources: a figure published by the manufacturer for this exact model; the average of the most similar products that have a manufacturer figure; or the typical level of the category, adjusted for brand and screen size. When none applies, no number is shown."],
+      ["How accurate is an estimate?", "In a test re-run in this repository (1,450 manufacturer figures, each product family left out in turn) the category estimate was off by 20.9 % at the median. Inside a category it ranks two products in the right order only about 55 % of the time, so it is used to break ties, not to decide between close products."],
+      ["What is the confidence percentage?", "An internal score fixed by the method (0.9 for a manufacturer figure, 0.5 for the similar-products average, 0.35 for the category level). It says how much evidence there is; it is not a measured accuracy."],
+      ["What is the green score?", "A 0–5 score inside the category: 5 means at the low-CO₂ end of the category’s plausible range, 0 at the high end."],
+      ["Does the AI make up numbers?", "No. AI is used to find similar products (OpenCLIP image-and-text similarity) and to word the explanations. The text is written with placeholders that are filled from the database; a sentence containing any other number is removed."],
+      ["Is this certified to a standard?", "No. It follows the cradle-to-grave scope described in ISO 14067, but it is not a certified product footprint."],
+    ],
+    techTitle: "Technical details",
+    techLead: "Formulas, tests and limits, for readers who want to check the figures.",
+    confidenceNote: "The number after each method name is its internal confidence score, not an accuracy.",
+    exampleNote: "Worked examples come from the method document; they illustrate the formula and are not live catalogue products.",
+    notUsed: "Not used in the current catalogue (electronics only).",
+    sourceCol: "Where the result comes from",
+    fromRepo: "Re-run in this repository",
+    fromDoc: "From the method document, not re-run here",
+  },
+  fr: {
+    basicTitle: "L’essentiel",
+    basics: [
+      ["Que signifie le chiffre ?", "Des kilogrammes d’équivalent CO₂ pour une unité du produit sur toute sa vie : matières et fabrication, transport, usage et fin de vie. Une estimation fondée sur le prix ne couvre que la fabrication et la livraison, et son badge l’indique."],
+      ["D’où vient-il ?", "Chaque produit affiche l’une de trois sources : un chiffre publié par le fabricant pour ce modèle exact ; la moyenne des produits les plus similaires ayant un chiffre du fabricant ; ou le niveau typique de la catégorie, ajusté selon la marque et la taille d’écran. Si aucune ne s’applique, aucun chiffre n’est affiché."],
+      ["Quelle est la précision d’une estimation ?", "Dans un test relancé dans ce dépôt (1 450 chiffres de fabricants, chaque famille de produits retirée tour à tour), l’estimation par catégorie s’écarte de 20,9 % en médiane. Dans une catégorie, elle ne classe deux produits dans le bon ordre qu’environ 55 % du temps : elle sert à départager, pas à trancher entre produits proches."],
+      ["Que veut dire le pourcentage de confiance ?", "Un score interne fixé par la méthode (0,9 pour un chiffre du fabricant, 0,5 pour la moyenne de produits similaires, 0,35 pour le niveau de catégorie). Il indique la quantité d’éléments disponibles ; ce n’est pas une précision mesurée."],
+      ["Qu’est-ce que le score vert ?", "Une note de 0 à 5 au sein de la catégorie : 5 correspond au bas de la fourchette plausible de CO₂ de la catégorie, 0 au haut."],
+      ["L’IA invente-t-elle des chiffres ?", "Non. L’IA sert à trouver des produits similaires (similarité image-texte OpenCLIP) et à rédiger les explications. Le texte est écrit avec des emplacements remplis depuis la base ; toute phrase contenant un autre chiffre est supprimée."],
+      ["Est-ce certifié selon une norme ?", "Non. La méthode suit le périmètre du berceau à la tombe décrit dans l’ISO 14067, mais ce n’est pas une empreinte produit certifiée."],
+    ],
+    techTitle: "Détails techniques",
+    techLead: "Formules, tests et limites, pour vérifier les chiffres.",
+    confidenceNote: "Le nombre après le nom de chaque méthode est son score de confiance interne, pas une précision.",
+    exampleNote: "Les exemples chiffrés viennent du document de méthode ; ils illustrent la formule et ne sont pas des produits du catalogue.",
+    notUsed: "Non utilisée dans le catalogue actuel (électronique uniquement).",
+    sourceCol: "Origine du résultat",
+    fromRepo: "Relancé dans ce dépôt",
+    fromDoc: "Tiré du document de méthode, non relancé ici",
+  },
+  vi: {
+    basicTitle: "Những điều cần biết",
+    basics: [
+      ["Con số nghĩa là gì?", "Số kg CO₂ tương đương cho một sản phẩm trên cả vòng đời: vật liệu và sản xuất, vận chuyển, sử dụng và thải bỏ. Ước tính theo giá bán chỉ gồm sản xuất và giao hàng, và nhãn của nó ghi rõ điều đó."],
+      ["Số lấy từ đâu?", "Mỗi sản phẩm hiện một trong ba nguồn: số hãng công bố cho đúng mẫu đó; trung bình của các sản phẩm giống nhất có số của hãng; hoặc mức điển hình của loại, điều chỉnh theo hãng và kích thước màn hình. Không có nguồn nào phù hợp thì không hiện số."],
+      ["Ước tính chính xác đến đâu?", "Trong phép thử chạy lại trong repo này (1.450 số của hãng, lần lượt bỏ ra từng dòng máy), ước tính theo loại sai 20,9 % ở trung vị. Trong cùng một loại, nó chỉ xếp đúng thứ tự hai sản phẩm khoảng 55 % số lần, nên chỉ dùng để phá thế hòa, không dùng để phân định hai sản phẩm gần nhau."],
+      ["Phần trăm tin cậy là gì?", "Một điểm nội bộ do phương pháp đặt sẵn (0,9 cho số của hãng, 0,5 cho trung bình mẫu giống, 0,35 cho mức của loại). Nó cho biết có bao nhiêu căn cứ; đây không phải độ chính xác đo được."],
+      ["Điểm xanh là gì?", "Điểm 0–5 trong cùng loại: 5 là ở đầu thấp của khoảng CO₂ hợp lý của loại, 0 là ở đầu cao."],
+      ["AI có tự bịa số không?", "Không. AI dùng để tìm sản phẩm giống nhau (độ giống ảnh-chữ OpenCLIP) và để viết lời giải thích. Câu chữ được viết bằng chỗ trống, điền số từ cơ sở dữ liệu; câu nào chứa số khác sẽ bị bỏ."],
+      ["Có được chứng nhận theo tiêu chuẩn không?", "Không. Cách tính theo phạm vi cradle-to-grave mô tả trong ISO 14067, nhưng không phải dấu chân carbon sản phẩm được chứng nhận."],
+    ],
+    techTitle: "Chi tiết kỹ thuật",
+    techLead: "Công thức, phép thử và giới hạn, cho người muốn kiểm tra con số.",
+    confidenceNote: "Số sau tên mỗi phương pháp là điểm tin cậy nội bộ, không phải độ chính xác.",
+    exampleNote: "Ví dụ tính lấy từ tài liệu phương pháp; chỉ để minh họa công thức, không phải sản phẩm đang bán.",
+    notUsed: "Chưa dùng trong danh mục hiện tại (chỉ có đồ điện tử).",
+    sourceCol: "Nguồn của kết quả",
+    fromRepo: "Đã chạy lại trong repo",
+    fromDoc: "Theo tài liệu phương pháp, chưa chạy lại ở đây",
   },
 };

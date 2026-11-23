@@ -1,19 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { LOCALES, useI18n } from "../../../i18n/LanguageContext";
+import { explore } from "../../../i18n/explore";
 
-// Browser speech recognition (Chrome / Edge / Safari). Hidden when unsupported.
+// Browser speech recognition (Chrome / Edge / Safari). When the browser has none, say so instead of hiding.
 const SpeechRecognition =
   typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
+/** States: idle → listening → idle (text added) | denied | error. "unsupported" when the API is missing. */
 export default function VoiceInput({ onTranscript, disabled }) {
-  const { t, lang } = useI18n();
-  const [listening, setListening] = useState(false);
+  const { lang } = useI18n();
+  const V = explore(lang).voice;
+  const [state, setState] = useState(SpeechRecognition ? "idle" : "unsupported");
   const recognitionRef = useRef(null);
 
   useEffect(() => () => recognitionRef.current?.abort(), []);
 
-  if (!SpeechRecognition) return null;
+  if (state === "unsupported") {
+    return <p className="text-[14px] text-[#4b5563] self-center">{V.unsupported}</p>;
+  }
 
+  const listening = state === "listening";
   const toggle = () => {
     if (listening) {
       recognitionRef.current?.stop();
@@ -23,28 +29,28 @@ export default function VoiceInput({ onTranscript, disabled }) {
     recognition.lang = LOCALES[lang] ?? "en-US";
     recognition.interimResults = false;
     recognition.onresult = (event) => {
-      const text = Array.from(event.results).map((r) => r[0].transcript).join(" ");
-      onTranscript(text);
+      const text = Array.from(event.results).map((r) => r[0].transcript).join(" ").trim();
+      if (text) onTranscript(text);
     };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setState((s) => (s === "listening" ? "idle" : s));
+    recognition.onerror = (e) => setState(e.error === "not-allowed" || e.error === "service-not-allowed" ? "denied" : e.error === "aborted" || e.error === "no-speech" ? "idle" : "error");
     recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
+    try {
+      recognition.start();
+      setState("listening");
+    } catch {
+      setState("error");
+    }
   };
 
+  const note = listening ? V.listening : state === "denied" ? V.denied : state === "error" ? V.error : null;
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      disabled={disabled}
-      title={t("assistant.voice")}
-      aria-pressed={listening}
-      className={`rounded-2xl px-4 py-2 font-semibold ${
-        listening ? "bg-red-500 text-white animate-pulse" : "bg-primary-200 text-primary-500"
-      } disabled:opacity-50`}
-    >
-      {listening ? t("assistant.voiceStop") : t("assistant.voice")}
-    </button>
+    <div className="flex flex-wrap items-center gap-2">
+      {note && <span role="status" className={`text-[14px] ${listening ? "text-[#1F5D3A]" : "text-[#92400e]"}`}>{note}</span>}
+      <button type="button" onClick={toggle} disabled={disabled} aria-pressed={listening}
+              className={listening ? "btn-secondary-active animate-pulse" : "btn-secondary"}>
+        {listening ? V.stop : V.start}
+      </button>
+    </div>
   );
 }

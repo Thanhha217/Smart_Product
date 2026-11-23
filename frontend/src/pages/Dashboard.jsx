@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { dashText } from "../i18n/dashboard";
+import { explore } from "../i18n/explore";
 import { api } from "../api/client";
 import { formatKg, formatNum } from "../lib/format";
 import Icon from "./components/ui/Icon";
 import {
-  Bar, Card, CardLink, ChartTabs, GreenCard, IconTile, MiniWorld, RangeBars, Ring, SourceStack, StatCard, StatusPill,
+  Bar, Card, CardLink, ChartTabs, GreenCard, IconTile, MiniWorld, RangeBars, Ring, SourceStack, StatCard,
 } from "./components/dashboard/DashBits";
 
 const SERVICE_ICON = { "db-search": "database", ranking: "bars", clip: "eye", assistant: "sparkles", mcp: "link", etl: "cpu", gateway: "server" };
@@ -37,32 +38,77 @@ export function useOverview() {
   return { overview, error };
 }
 
+/** Catalogue totals from /api/categories: listed products, with a CO₂ figure, manufacturer-published. */
+export function useCatalogue() {
+  const [cat, setCat] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    api.getCategories()
+      .then((r) => {
+        const rows = Array.isArray(r?.categories) ? r.categories : [];
+        const sum = (k) => rows.reduce((n, c) => n + (Number(c?.[k]) || 0), 0);
+        if (alive) setCat(rows.length ? { rows, listed: sum("products"), withCo2: sum("with_co2"), manufacturer: sum("manufacturer") } : false);
+      })
+      .catch(() => alive && setCat(false));
+    return () => { alive = false; };
+  }, []);
+  return cat;   // null = loading, false = unavailable
+}
+
 export function useHealth() {
-  const [health, setHealth] = useState(null);
+  const [health, setHealth] = useState(null);     // null until the first answer: "not checked yet"
+  const [pending, setPending] = useState(true);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let alive = true;
-    api.getHealth().then((h) => alive && setHealth(h)).catch(() => alive && setHealth({ services: [], error: true }));
+    setPending(true);
+    api.getHealth()
+      .then((h) => alive && setHealth({ ...h, services: Array.isArray(h?.services) ? h.services : [], error: false }))
+      .catch(() => alive && setHealth((prev) => ({ ...(prev || { services: [] }), error: true })))
+      .finally(() => alive && setPending(false));
     return () => { alive = false; };
   }, [tick]);
-  return { health, refresh: () => { setHealth(null); setTick((n) => n + 1); } };
+  return { health, pending, refresh: () => { if (!pending) setTick((n) => n + 1); } };
+}
+
+const STATUS_STYLE = {
+  online: ["bg-[#E4F1E6] text-[#2E7D4F]", "bg-[#2E7D4F]"],
+  degraded: ["bg-[#FEF3C7] text-[#92400e]", "bg-[#d97706]"],
+  offline: ["bg-[#FBE4E2] text-[#C2413C]", "bg-[#C2413C]"],
+  unchecked: ["bg-[#F1EEE4] text-[#4b5563]", "bg-[#9ca3af]"],
+};
+
+export function ServiceStatus({ status, lang }) {
+  const X = explore(lang);
+  const k = STATUS_STYLE[status] ? status : "unchecked";
+  return (
+    <span className={`pill ${STATUS_STYLE[k][0]}`} title={X.statusHelp[k]}>
+      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[k][1]}`} aria-hidden="true" />{X.status[k]}
+    </span>
+  );
 }
 
 export function ServiceList({ health, D, compact = false }) {
-  if (!health) return <div className="space-y-3">{[0, 1, 2, 3].map((i) => <div key={i} className="h-14 rounded-2xl bg-[#F1EEE4] animate-pulse" />)}</div>;
-  if (!health.services?.length) return <p className="text-sm text-[#6B7468]">{D.unavailable}</p>;
+  const { lang } = useI18n();
+  const X = explore(lang);
+  if (!health) return <div className="space-y-3" role="status" aria-label={X.sysChecking}>{[0, 1, 2, 3].map((i) => <div key={i} className="h-14 rounded-2xl bg-[#F1EEE4] animate-pulse" />)}</div>;
+  if (!health.services?.length) return <p className="text-[15px] text-[#7a271a]">{health.error ? X.sysError : D.unavailable}</p>;
   return (
     <ul className="divide-y divide-[#EFEBDF]">
-      {health.services.slice(0, compact ? 5 : undefined).map((s) => (
-        <li key={s.key} className="flex items-center gap-3.5 py-3.5">
-          <span className="grid place-items-center w-11 h-11 rounded-xl bg-[#F1EEE4] text-[#1F5D3A]"><Icon name={SERVICE_ICON[s.key] || "server"} size={19} /></span>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-[16.5px] truncate">{s.name}</p>
-            <p className="text-[14.5px] text-[#6B7468] truncate">{[s.detail, s.latency_ms != null ? `${s.latency_ms} ms` : null].filter(Boolean).join(" · ") || s.key}</p>
-          </div>
-          <StatusPill ok={s.status === "online"} labels={[D.online, D.offline]} />
-        </li>
-      ))}
+      {health.services.slice(0, compact ? 5 : undefined).map((s) => {
+        const detail = s.detail ? (X.aiMode[s.detail] || (s.key === "assistant" ? null : s.detail)) : null;
+        const latency = typeof s.latency_ms === "number" ? X.latency(formatNum(s.latency_ms, lang, 0)) : null;
+        return (
+          <li key={s.key} className="flex items-center gap-3.5 py-3.5">
+            <span className="grid place-items-center w-11 h-11 rounded-xl bg-[#F1EEE4] text-[#1F5D3A]"><Icon name={SERVICE_ICON[s.key] || "server"} size={19} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-[16.5px] truncate">{X.services[s.key] || s.name || s.key}</p>
+              <p className="text-[14.5px] text-[#6B7468] truncate">{[X.statusHelp[s.status] || null, latency, detail].filter(Boolean).join(" · ")}</p>
+            </div>
+            <ServiceStatus status={s.status} lang={lang} />
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -73,10 +119,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { overview: o, error } = useOverview();
   const { health } = useHealth();
+  const catalogue = useCatalogue();
   const loading = !o && !error;
   const catLabel = (c) => { const k = t(`cat.${c}`); return k === `cat.${c}` ? (c || "").replace(/_/g, " ") : k; };
   const laptop = o?.by_category?.find((c) => c.category === "laptop");
-  const coverage = o?.total_products ? (100 * o.with_co2) / o.total_products : 0;
+  const coverage = catalogue?.listed ? (100 * catalogue.withCo2) / catalogue.listed : null;
   const sourceTotal = (o?.by_source || []).reduce((n, r) => n + r.n, 0) || 1;
   const sourcePct = (key) => (100 * ((o?.by_source || []).find((r) => r.source === key)?.n || 0)) / sourceTotal;
   const greenestId = useMemo(() => {
@@ -98,10 +145,10 @@ export default function Dashboard() {
       {error && <p className="card p-4 text-sm text-[#C2413C]">{D.unavailable}</p>}
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon="leaf" tone="green" loading={loading} label={D.stats.products} value={formatNum(o?.with_co2, lang, 0)} sub={D.statSubs.products(`${formatNum(coverage, lang, 0)}%`)} />
+        <StatCard icon="leaf" tone="green" loading={loading} label={D.stats.products} value={formatNum(catalogue?.withCo2 ?? o?.with_co2, lang, 0)} sub={catalogue?.listed ? D.statSubs.products(formatNum(catalogue.listed, lang, 0)) : null} />
         <StatCard icon="book" tone="amber" loading={loading} label={D.stats.refs} value={formatNum(o?.references, lang, 0)} sub={D.statSubs.refs} />
         <StatCard icon="droplet" tone="blue" loading={loading} label={D.stats.laptop} value={formatKg(laptop?.median_kg, lang) ?? "—"} unit="kg" sub={D.statSubs.laptop} />
-        <StatCard icon="bolt" tone="red" loading={loading} label={D.stats.grid} value={formatNum(o?.grid_ef ?? 0.681, lang, 3)} sub={D.statSubs.grid} />
+        <StatCard icon="bolt" tone="red" loading={loading} label={D.stats.grid} value={o?.grid_ef != null ? formatNum(o.grid_ef, lang, 3) : "—"} sub={D.statSubs.grid} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
@@ -207,7 +254,7 @@ export default function Dashboard() {
             </div>
             <div className="rounded-2xl border border-[#EFEBDF] p-5 flex flex-col items-center">
               <p className="text-[16.5px] font-bold mb-3 text-center">{D.coverage}</p>
-              <Ring value={coverage} />
+              {coverage !== null ? <Ring value={coverage} /> : <div className="h-28 w-28 rounded-full bg-[#F1EEE4] animate-pulse" />}
               <p className="mt-3 text-[15px] text-[#6B7468] text-center flex items-center gap-1"><Icon name="check" size={14} className="text-[#2E7D4F]" />{D.coverageSub}</p>
             </div>
           </div>

@@ -2,7 +2,8 @@
 import { useI18n } from "../../../../i18n/LanguageContext";
 import { formatKg, formatNum, formatVnd } from "../../../../lib/format";
 import ChartView from "../ChartView";
-import ProductCard from "../../co2/ProductCard";
+import ProductCard from "../../common/ProductCard";
+import { explore } from "../../../../i18n/explore";
 import FormulaCard from "../../co2/FormulaCard";
 import LifecycleDiagram from "../../co2/LifecycleDiagram";
 import { SectionCard, SourceLabel } from "../../co2/Co2Bits";
@@ -13,7 +14,7 @@ export function RecommendationCards({ section, products }) {
   return (
     <SectionCard title={`⭐ ${t("page.recommendations")}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {ids.map((id, i) => (
+        {ids.filter((id) => products[id]).map((id, i) => (
           <ProductCard key={id} product={products[id]} reason={section.reasons?.[id]} highlight={i === 0} />
         ))}
       </div>
@@ -81,46 +82,54 @@ function Stat({ label, value }) {
   );
 }
 
+/** Savings contract: lifecycle difference vs the category median; horizons only when a use-phase basis exists. */
 export function SavingsPanel({ section, products }) {
   const { t, lang } = useI18n();
+  const X = explore(lang);
   const best = products[section.best_id];
+  const saved = typeof section.lifecycle_kg_saved === "number" ? section.lifecycle_kg_saved : null;
+  const horizons = Array.isArray(section.horizons) ? section.horizons.filter((h) => h && typeof h.months === "number") : [];
   return (
     <SectionCard title={`💚 ${t("savings.title")}`}>
-      <p>
-        {t("savings.intro", {
-          name: best?.name || "",
-          baseline: formatKg(section.baseline_kg, lang) ?? "–",
-        })}
-      </p>
-      <p className="text-3xl font-black text-green-700">
-        {formatKg(section.lifecycle_kg_saved, lang)} kg CO₂e <span className="text-base font-normal text-gray-600">{t("savings.less")} {t("savings.lifecycle")}</span>
-      </p>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="py-1 pr-3">{t("savings.horizon")}</th>
-              <th className="py-1 pr-3">kg CO₂e</th>
-              <th className="py-1 pr-3">kWh</th>
-              <th className="py-1">{t("savings.money")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {section.horizons?.map((h) => (
-              <tr key={h.months} className="border-t border-primary-100">
-                <td className="py-1 pr-3">{t("savings.months", { n: h.months })}</td>
-                <td className="py-1 pr-3 font-semibold">{formatKg(h.kg, lang) ?? "–"}</td>
-                <td className="py-1 pr-3">{h.kwh != null ? formatNum(h.kwh, lang) : "–"}</td>
-                <td className="py-1">{h.vnd != null ? formatVnd(h.vnd, lang) : "–"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {section.trees_year != null && (
+      {best?.name && <p className="text-[15px] text-[#374151]">{best.name} — {X.savVs}</p>}
+      {saved !== null && saved > 0 ? (
+        <p className="text-3xl font-black text-green-700">
+          {formatKg(saved, lang)} kg CO₂e <span className="text-base font-normal text-gray-600">{X.savLess}</span>
+        </p>
+      ) : <p className="text-[15px] text-[#4b5563]">{X.savNone}</p>}
+      {typeof section.baseline_kg === "number" && <p className="text-[14px] text-[#4b5563]">{X.savMedian(formatKg(section.baseline_kg, lang))}</p>}
+      {section.trees_year != null && saved > 0 && (
         <p className="text-sm">🌳 {t("savings.trees", { n: formatNum(section.trees_year, lang) })}</p>
       )}
-      {section.horizons?.every((h) => h.kwh == null) && <p className="text-xs text-gray-500">{t("savings.noKwh")}</p>}
+      {horizons.length > 0 && (
+        <div className="mt-2">
+          <h4 className="text-[15px] font-semibold">{X.savHorizonTitle}</h4>
+          <p className="text-[13.5px] text-[#6b7280]">{X.savHorizonBasis}</p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500">
+                  <th scope="col" className="py-1 pr-3">{t("savings.horizon")}</th>
+                  <th scope="col" className="py-1 pr-3">kg CO₂e</th>
+                  <th scope="col" className="py-1 pr-3">kWh</th>
+                  <th scope="col" className="py-1">{t("savings.money")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {horizons.map((h) => (
+                  <tr key={h.months} className="border-t border-primary-100">
+                    <td className="py-1 pr-3">{t("savings.months", { n: h.months })}</td>
+                    <td className="py-1 pr-3 font-semibold">{h.kg != null ? formatKg(h.kg, lang) : X.noValue}</td>
+                    <td className="py-1 pr-3">{h.kwh != null ? formatNum(h.kwh, lang) : X.noValue}</td>
+                    <td className="py-1">{h.vnd != null ? formatVnd(h.vnd, lang) : X.noValue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {horizons.length === 0 && <p className="text-xs text-gray-500">{t("savings.noKwh")}</p>}
     </SectionCard>
   );
 }
@@ -148,12 +157,12 @@ export function RelatedProducts({ section }) {
       {section.greener_alternative && (
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold text-green-700">{t("related.greener")}</p>
-          <ProductCard product={section.greener_alternative} highlight compact />
+          <ProductCard product={section.greener_alternative} highlight />
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map((p) => (
-          <ProductCard key={p.product_id} product={p} compact />
+          <ProductCard key={p.product_id} product={p} />
         ))}
       </div>
     </SectionCard>

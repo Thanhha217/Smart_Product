@@ -7,8 +7,11 @@ import LanguageSwitcher from "./components/header/LanguageSwitcher.jsx";
 import Icon from "./components/ui/Icon";
 import { Logo } from "./components/layout/AppShell";
 import { IconTile, MiniWorld, StatCard } from "./components/dashboard/DashBits";
-import { useOverview } from "./Dashboard";
-import { SUGGESTED_KEYS } from "./Assistant";
+import { useCatalogue, useOverview } from "./Dashboard";
+import { explore } from "../i18n/explore";
+
+/** A stored number, or a dash while it is loading / missing (never a made-up default). */
+const val = (v, lang, d = 0) => (typeof v === "number" ? formatNum(v, lang, d) : "—");
 
 function Hills() {
   return (
@@ -41,10 +44,10 @@ function LaptopPreview({ o, lang, D, t }) {
           <div className="flex-1 p-3 space-y-2.5 min-w-0">
             <p className="font-display text-[16px] font-bold">{D.dashTitle}</p>
             <div className="grid grid-cols-2 gap-2">
-              <MiniStat icon="leaf" tone="green" label={D.stats.products} value={formatNum(o?.with_co2 ?? 7515, lang, 0)} />
-              <MiniStat icon="bolt" tone="red" label={D.stats.grid} value={formatNum(o?.grid_ef ?? 0.681, lang, 3)} />
-              <MiniStat icon="droplet" tone="blue" label={D.stats.laptop} value={`${formatKg(laptop?.median_kg ?? 277.2, lang)} kg`} />
-              <MiniStat icon="book" tone="amber" label={D.stats.refs} value={formatNum(o?.references ?? 1450, lang, 0)} />
+              <MiniStat icon="leaf" tone="green" label={D.stats.products} value={val(o?.with_co2, lang)} />
+              <MiniStat icon="bolt" tone="red" label={D.stats.grid} value={val(o?.grid_ef, lang, 3)} />
+              <MiniStat icon="droplet" tone="blue" label={D.stats.laptop} value={typeof laptop?.median_kg === "number" ? `${formatKg(laptop.median_kg, lang)} kg` : "—"} />
+              <MiniStat icon="book" tone="amber" label={D.stats.refs} value={val(o?.references, lang)} />
             </div>
             <div className="rounded-xl overflow-hidden border border-[#E7E2D4]"><MiniWorld onClick={() => {}} /></div>
           </div>
@@ -74,12 +77,12 @@ function PhonePreview({ D, o, lang }) {
           <div className="rounded-2xl p-3 text-white" style={{ background: "linear-gradient(135deg,#2E7D4F,#6FB04A)" }}>
             <p className="text-[12px] font-bold">{D.greeting}</p>
             <p className="text-[9px] opacity-90">{D.greetingSub}</p>
-            <p className="mt-2 text-[22px] font-extrabold leading-none">{formatNum(o?.grid_ef ?? 0.681, lang, 3)}</p>
+            <p className="mt-2 text-[22px] font-extrabold leading-none">{val(o?.grid_ef, lang, 3)}</p>
             <p className="text-[9px] opacity-90">{D.gridUnit}</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            <MiniStat icon="leaf" tone="green" label={D.stats.products} value={formatNum(o?.with_co2 ?? 7515, lang, 0)} />
-            <MiniStat icon="book" tone="amber" label={D.stats.refs} value={formatNum(o?.references ?? 1450, lang, 0)} />
+            <MiniStat icon="leaf" tone="green" label={D.stats.products} value={val(o?.with_co2, lang)} />
+            <MiniStat icon="book" tone="amber" label={D.stats.refs} value={val(o?.references, lang)} />
           </div>
           <div className="rounded-xl bg-white border border-[#E7E2D4] p-2">
             <p className="text-[10px] font-bold mb-1">{D.todayTitle}</p>
@@ -102,6 +105,8 @@ export default function Home() {
   const navigate = useNavigate();
   const [question, setQuestion] = useState("");
   const { overview: o } = useOverview();
+  const catalogue = useCatalogue();
+  const X = explore(lang);
   const ask = (q) => {
     const text = (q ?? question).trim();
     if (text) navigate(`/assistant?q=${encodeURIComponent(text)}&go=1`);
@@ -136,8 +141,8 @@ export default function Home() {
                 <button type="submit" disabled={!question.trim()} className="rounded-xl bg-[#1F5D3A] text-white font-semibold px-4 py-2.5 disabled:opacity-50">{D.askCta}</button>
               </form>
               <div className="mt-3 flex flex-wrap gap-2 max-w-[560px]">
-                {SUGGESTED_KEYS.slice(0, 3).map((key) => (
-                  <button key={key} type="button" onClick={() => ask(t(key))} className="rounded-full bg-white border border-[#E7E2D4] px-3.5 py-1.5 text-[15px] hover:border-[#6FB04A]">{t(key)}</button>
+                {X.examples.slice(0, 3).map((ex) => (
+                  <button key={ex} type="button" onClick={() => setQuestion(ex)} className="rounded-full bg-white border border-[#E7E2D4] px-3.5 py-1.5 text-[15px] hover:border-[#6FB04A]">{ex}</button>
                 ))}
               </div>
               <Link to="/world" className="mt-6 inline-flex items-center gap-3 rounded-full bg-white border border-[#E7E2D4] pl-2 pr-5 py-2 font-semibold hover:border-[#6FB04A] shadow-sm">
@@ -164,11 +169,36 @@ export default function Home() {
 
       <section className="mx-auto max-w-[1320px] px-5 min-[900px]:px-10 -mt-6 relative">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon="leaf" tone="green" loading={!o} label={D.stats.products} value={formatNum(o?.with_co2, lang, 0)} sub={D.statSubs.products("100%")} />
+          <StatCard icon="leaf" tone="green" loading={catalogue === null} label={D.stats.products} value={catalogue ? formatNum(catalogue.withCo2, lang, 0) : "—"} sub={catalogue ? D.statSubs.products(formatNum(catalogue.listed, lang, 0)) : null} />
           <StatCard icon="book" tone="amber" loading={!o} label={D.stats.refs} value={formatNum(o?.references, lang, 0)} sub={D.statSubs.refs} />
           <StatCard icon="droplet" tone="blue" loading={!o} label={D.stats.laptop} value={formatKg(o?.by_category?.find((c) => c.category === "laptop")?.median_kg, lang) ?? "—"} unit="kg" sub={D.statSubs.laptop} />
-          <StatCard icon="bolt" tone="red" label={D.stats.grid} value={formatNum(o?.grid_ef ?? 0.681, lang, 3)} sub={D.statSubs.grid} />
+          <StatCard icon="bolt" tone="red" label={D.stats.grid} value={val(o?.grid_ef, lang, 3)} sub={D.statSubs.grid} />
         </div>
+      </section>
+
+      <section className="mx-auto max-w-[1320px] px-5 min-[900px]:px-10 pt-10" aria-labelledby="home-cats">
+        <h2 id="home-cats" className="font-display text-[26px] font-bold text-[#173F28]">{X.categoriesTitle}</h2>
+        <p className="mt-1 text-[16px] text-[#4B554A] max-w-3xl">{X.categoriesLead}</p>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          {(catalogue ? catalogue.rows : []).map((c) => (
+            <Link key={c.category} to={`/search?category=${encodeURIComponent(c.category)}&sort=co2_asc`}
+                  className="rounded-full bg-white border border-[#E7E2D4] px-4 py-2 text-[15.5px] font-semibold hover:border-[#6FB04A]">
+              {X.categories[c.category] || c.category} <span className="font-normal text-[#6B7468]">· {formatNum(c.products, lang, 0)}</span>
+            </Link>
+          ))}
+          {catalogue === null && [0, 1, 2, 3, 4, 5].map((i) => <span key={i} className="h-10 w-32 rounded-full bg-[#ECE8DC] animate-pulse" />)}
+          {catalogue === false && <p className="text-[15px] text-[#6B7468]">{D.unavailable}</p>}
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {X.read.map(([title, body]) => (
+            <div key={title} className="card p-4"><p className="font-semibold text-[16px]">{title}</p><p className="mt-1 text-[15px] text-[#4B554A]">{body}</p></div>
+          ))}
+        </div>
+        <p className="mt-4 flex flex-wrap gap-3">
+          <Link to="/search" className="btn-primary">{X.linkSearch}</Link>
+          <Link to="/assistant" className="btn-secondary">{D.askCta}</Link>
+          <Link to="/method" className="btn-secondary">{X.linkMethod}</Link>
+        </p>
       </section>
 
       <section className="mx-auto max-w-[1320px] px-5 min-[900px]:px-10 py-12">

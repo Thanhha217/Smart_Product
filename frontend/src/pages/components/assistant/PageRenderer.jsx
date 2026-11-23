@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "../../../i18n/LanguageContext";
+import { explore } from "../../../i18n/explore";
+import { formatPrice } from "../../../lib/data";
+import { EmptyState } from "../common/States";
 import { addToCart } from "../../../lib/cart";
 import { SECTION_COMPONENTS } from "./sections/Sections";
 import { Skeleton } from "../co2/Co2Bits";
@@ -8,7 +11,7 @@ import VoiceInput from "./VoiceInput";
 
 // Renders a hydrated page spec: every number already comes from the database.
 export default function PageRenderer({ page, onFollowUp, followUpLoading }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const products = page.products || {};
   const recIds = page.sections?.find((s) => s.type === "recommendations")?.product_ids || Object.keys(products);
   const bestId = recIds[0];
@@ -23,7 +26,18 @@ export default function PageRenderer({ page, onFollowUp, followUpLoading }) {
         <p className="text-xs text-gray-500">{t("assistant.disclaimer")}</p>
       </section>
 
-      <ActionBar recIds={recIds} best={products[bestId]} />
+      <PlanPanel plan={page.plan} />
+
+      {Object.keys(products).length === 0 && (
+        <EmptyState title={explore(lang).noResultsTitle} body={explore(lang).noResultsBody}>
+          {page.plan?.search_query && (
+            <Link className="btn-secondary" to={`/search?q=${encodeURIComponent(page.plan.search_query)}`}>{explore(lang).linkSearch}</Link>
+          )}
+          <Link className="btn-secondary" to="/assistant">{t("page.back")}</Link>
+        </EmptyState>
+      )}
+
+      {Object.keys(products).length > 0 && <ActionBar recIds={recIds} best={products[bestId]} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {(page.sections || []).map((section, i) => {
@@ -45,6 +59,35 @@ export default function PageRenderer({ page, onFollowUp, followUpLoading }) {
         </p>
       )}
     </div>
+  );
+}
+
+/** What the AI understood: the search it ran, the category and the budget (all from page.plan). */
+function PlanPanel({ plan }) {
+  const { lang } = useI18n();
+  const X = explore(lang);
+  if (!plan || (!plan.search_query && !plan.category_slug)) return null;
+  const slug = plan.category_slug;
+  const cat = slug ? (X.categories[slug] || X.unsupportedNames?.[slug] || slug.replace(/_/g, " ")) : null;
+  const budget = plan.budget_max_vnd ? formatPrice(plan.budget_max_vnd, lang) : null;
+  const rows = [
+    plan.search_query && [X.plan.search, `“${plan.search_query}”`],
+    cat && [X.plan.category, cat],
+    [X.plan.budget, budget || X.plan.none],
+  ].filter(Boolean);
+  return (
+    <section aria-labelledby="plan-title" className="rounded-2xl border border-[#ebe6d8] bg-white p-4">
+      <h2 id="plan-title" className="text-[15px] font-semibold text-[#1E2B22]">{X.understoodTitle}</h2>
+      <dl className="mt-2 flex flex-wrap gap-2">
+        {rows.map(([k, v]) => (
+          <div key={k} className="chip"><dt className="inline text-[#6b7280]">{k}: </dt><dd className="inline font-medium">{v}</dd></div>
+        ))}
+      </dl>
+      <p className="mt-2 text-[13.5px] text-[#6b7280]">{X.planSource}</p>
+      {plan.search_query && (
+        <p className="mt-1 text-[14px]"><Link className="text-[#1F5D3A] underline" to={`/search?q=${encodeURIComponent(plan.search_query)}`}>{X.linkSearch}</Link></p>
+      )}
+    </section>
   );
 }
 
@@ -113,26 +156,26 @@ function ActionBar({ recIds, best }) {
 function FollowUpBox({ onSubmit, loading }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!text.trim() || loading) return;
-    onSubmit?.(text.trim());
-    setText("");
+    const ok = await onSubmit?.(text.trim());
+    if (ok) setText("");      // on failure the text stays for a retry
   };
   return (
     <form onSubmit={submit} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2">
       <label htmlFor="follow-up" className="font-semibold">{t("page.followUp")}</label>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col md:flex-row gap-2">
         <input
           id="follow-up"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={t("page.followUpPlaceholder")}
-          className="flex-1 bg-primary-200 rounded-xl px-3 py-2"
+          className="flex-1 bg-white border border-[#E7E2D4] rounded-xl px-3 py-2 text-[16px]"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <VoiceInput disabled={loading} onTranscript={(v) => setText((m) => (m ? `${m} ${v}` : v))} />
-          <button type="submit" disabled={loading || !text.trim()} className="bg-primary-500 text-white rounded-xl px-4 py-2 font-semibold disabled:opacity-50">
+          <button type="submit" disabled={loading || !text.trim()} className="btn-primary disabled:opacity-50">
             {loading ? t("page.updating") : t("assistant.submit")}
           </button>
         </div>
