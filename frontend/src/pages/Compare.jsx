@@ -141,7 +141,13 @@ export default function Compare() {
           <p className="page-lead">{st("cmp.lead")}</p>
         </div>
         {list.length > 0 && (
-          <button type="button" className="btn-secondary" onClick={() => { clearCompare(); setNote(null); }}>{st("cmp.clear")}</button>
+          <div className="flex flex-wrap gap-2">
+            <Link className="btn-secondary"
+                  to={`/assistant?q=${encodeURIComponent(list.map((p) => p.name).join(" vs "))}`}>
+              <Icon name="sparkles" size={18} />{st("cmp.askAi")}
+            </Link>
+            <button type="button" className="btn-secondary" onClick={() => { clearCompare(); setNote(null); }}>{st("cmp.clear")}</button>
+          </div>
         )}
       </header>
 

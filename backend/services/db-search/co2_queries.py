@@ -8,13 +8,15 @@ is recomputed here, so every page shows the same figure (YC-5).
 """
 from sqlmodel import Session, text
 
+from fitness import fits_instead_of
+
 PRICE_BAND = 0.40           # "similar price" for related products
 ALTERNATIVE_BAND = 0.15     # greener alternative: price within +-15 %
 
 
 def _base(session, product_id):
     return session.exec(
-        text("SELECT id, co2e_kg, co2e_category, final_price FROM product WHERE id = :id"),
+        text("SELECT id, name, co2e_kg, co2e_category, final_price FROM product WHERE id = :id"),
         params={"id": product_id},
     ).mappings().first()
 
@@ -30,7 +32,7 @@ def related_product_ids(engine, product_id, limit=6):
             return category, [], None
         rows = session.exec(
             text("""
-                SELECT id, co2e_kg, final_price FROM product
+                SELECT id, co2e_kg, final_price, name FROM product
                 WHERE co2e_category = :cat AND co2e_kg IS NOT NULL AND id <> :id AND final_price > 0
                 ORDER BY co2e_kg ASC, final_price ASC
                 LIMIT 400
@@ -46,7 +48,10 @@ def related_product_ids(engine, product_id, limit=6):
     ids = [r["id"] for r in (near + far)[:limit]]
     alternative = None
     if kg is not None:
-        greener = [r for r in rows if in_band(r, ALTERNATIVE_BAND) and r["co2e_kg"] < kg]
+        # lower CO2 at a similar price is not enough: it has to still do the same job
+        greener = [r for r in rows
+                   if in_band(r, ALTERNATIVE_BAND) and r["co2e_kg"] < kg
+                   and fits_instead_of(r["name"], base["name"])]
         if greener:
             alternative = greener[0]["id"]   # rows are sorted by CO2 ascending
     return category, ids, alternative

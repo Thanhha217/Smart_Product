@@ -86,7 +86,8 @@ export default function WorldHeader({ d, onTopic, onChangeProduct, compact = fal
         <span className="text-[13.5px] text-[#55604F]">{t(`common.scope.${ex?.scopeKey || "cradle_to_grave"}`)}</span>
       </div>
 
-      {d.stats && product.co2e_kg !== null && (
+      {/* on a phone the card has to stay small, so the comparison moves inside the details */}
+      {d.stats && product.co2e_kg !== null && !compact && (
         <div className="mt-3">
           <GroupPosition stats={d.stats} kg={product.co2e_kg} lang={lang} L3={L3} />
         </div>
@@ -98,6 +99,9 @@ export default function WorldHeader({ d, onTopic, onChangeProduct, compact = fal
             🧮 {ex.title} <span className="font-medium normal-case tracking-normal text-[#55604F]">· {L3("bấm để xem công thức", "tap for the formula", "voir la formule")}</span>
           </summary>
           <div className="mt-1.5">
+            {compact && d.stats && product.co2e_kg !== null && (
+              <div className="mb-2"><GroupPosition stats={d.stats} kg={product.co2e_kg} lang={lang} L3={L3} /></div>
+            )}
             <Formula tokens={ex.symbolic} tones={tones} className="text-[#55604F]" />
             {ex.filled && <Formula tokens={ex.filled} tones={tones} />}
             <p className="font-mono text-[15px] font-bold text-[#1F5D3A]">= {formatKg(ex.resultKg, lang)} kg CO₂e</p>
@@ -108,7 +112,7 @@ export default function WorldHeader({ d, onTopic, onChangeProduct, compact = fal
               <Link to={`/product/${product.product_id}#co2`} className="text-[#1E5A96] underline">
                 {L3("Trang sản phẩm", "Product page", "Fiche produit")}
               </Link>
-              <Link to="/method" className="text-[#1E5A96] underline">{L3("Phương pháp", "Method", "Méthode")}</Link>
+              <Link to={`/method?product=${product.product_id}`} className="text-[#1E5A96] underline">{L3("Phương pháp", "Method", "Méthode")}</Link>
             </p>
           </div>
         </details>

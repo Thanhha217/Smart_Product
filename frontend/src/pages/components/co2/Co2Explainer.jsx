@@ -196,7 +196,7 @@ export default function Co2Explainer({ co2, example = false, open = false, compa
                 <Link to={`/world/${product.product_id}`} className="text-[15px] font-semibold text-[#1F5D3A] hover:underline">
                   {L3("Xem hành trình sản phẩm", "See the product's journey", "Voir le parcours du produit")} →
                 </Link>
-                <Link to="/method" className="text-[15px] font-semibold text-[#1F5D3A] hover:underline">
+                <Link to={`/method?product=${product.product_id}`} className="text-[15px] font-semibold text-[#1F5D3A] hover:underline">
                   {L3("Các cách tính khác", "The other methods", "Les autres méthodes")} →
                 </Link>
               </p>

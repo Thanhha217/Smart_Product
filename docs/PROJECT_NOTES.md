@@ -70,13 +70,38 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 - **Tìm kiếm thật** `GET /api/search` (db-search `search_api.py`): hiểu danh mục / hãng (kể cả iPhone→Apple) / ngân sách / "ít CO₂" từ câu (vi/en/fr, `search_query.py`), từ còn lại phải có trong tên (không dấu, Postgres `unaccent`); danh mục chưa có (điều hòa, tủ lạnh…) → `unsupported`, 0 kết quả; bộ lọc + facets có số đếm; giá 0 = chưa có giá (null), CO₂ thiếu luôn xếp cuối; 0 kết quả → `relaxations` để người dùng tự chọn; phụ kiện bị xếp nhầm danh mục (miếng dán, RAM…) ẩn mặc định kèm số lượng. `GET /api/categories`: số thật theo danh mục.
 - Frontend chuẩn hóa dữ liệu thiếu ở `src/lib/data.js`; thẻ sản phẩm chung `components/common/ProductCard.jsx`; trạng thái trống/lỗi/tải `components/common/States.jsx`; so sánh `lib/compare.js` (tối đa 4); chuỗi riêng từng nhóm trang: `i18n/shop.js`, `i18n/explore.js`.
 - `POST /api/assistant {message, lang, parent_id}` → `{id, url, page}`; `GET /api/assistant/{id}`.
-- `GET /api/products/{id}/co2` (formula + lifecycle + references có `url` + `green_score_formula` {low, high, score}), `/related`, `GET /api/categories/{cat}/stats`, `GET /api/compare?ids=`, `GET /api/method`.
+- `GET /api/products/{id}/co2` (formula + lifecycle + references có `url` + `green_score_formula` {low, high, score})
+- `GET /api/search` thêm `has_image=true` — **chỉ để chọn ảnh minh họa trên giao diện**, không đụng vào CLIP/CO₂ (xem `docs/IMAGE_REPLACEMENTS.md`).
+- Gợi ý "món xanh hơn" phải **còn dùng được cho cùng nhu cầu**: `db-search/fitness.py` loại máy không-gaming thay cho máy gaming, chip phổ thông thay cho máy thường, RAM thấp hơn, màn nhỏ hơn 2 inch., `/related`, `GET /api/categories/{cat}/stats`, `GET /api/compare?ids=`, `GET /api/method`.
 - `POST /api/orders/test` → `awaiting_confirmation`; `POST …/{id}/confirm` **bắt buộc header `X-Confirm-Source: web-ui`** (chặn theo chính sách, không phải bảo mật thật); `…/cancel`; `CHECKOUT_MODE` ≠ `test` → assistant không khởi động.
 - Trang AI (`assistant/pages.py::build_page`): plan (Claude hoặc `heuristic_plan` từ khóa) → search → `shortlist` (cùng loại, CO₂ thấp trước, thiếu số ở giữa) → stats/savings → Claude trả **layout + chữ có placeholder** `{{p1.co2e_kg}}` (`assistant_llm.compose_page`, structured output, `fallbacks="default"`) → `page_spec.fill_text` thay số thật, câu có số viết tay bị loại (`number_check_failures`) → chart Vega-Lite do server dựng (`co2_bar`, `price_vs_co2`, `lifecycle_stack`). Không có key/timeout → trang rule-based + warning.
 - Lưu trữ `assistant/store.py`: Postgres (bảng assistant_page, test_order, test_order_item, test_order_event) nếu có `POSTGRES_URL`, không thì bộ nhớ. SQLAlchemy import lười.
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Giải thích CO₂ dùng chung (2026-11-23)
+
+- `frontend/src/lib/co2Formula.js` — `co2Explanation(co2, lang)` trả về: phương pháp, công thức
+  (dạng ký hiệu + thế số, token hóa để tô màu biến), danh sách biến {nhãn, giá trị, đơn vị, ghi chú},
+  nguồn tham chiếu, giới hạn. `category_model` **bỏ hệ số cỡ màn hình** khi `slope/screen_inch` null.
+- `components/co2/Co2Explainer.jsx` — lớp 1 luôn hiện công thức + kết quả; lớp 2 (bấm "Xem cách tính"):
+  nguồn dữ liệu → giá trị → thay số → kết quả & giới hạn + điểm xanh. Dùng ở Overview, trang sản phẩm,
+  trang Phương pháp.
+- `components/co2/WhyConsider.jsx` — "Vì sao đáng cân nhắc" (`POST /api/explain` topic `insight`),
+  có nhãn khi là câu soạn từ dữ liệu (chưa có khóa AI). Dùng ở Overview, kết quả tìm, sản phẩm, so sánh.
+- `components/co2/LifecycleJourney.jsx` + `lib/lifecycleText.js` — 4 giai đoạn, mỗi giai đoạn trả lời
+  *là gì / vì sao phát thải / bạn làm được gì*. Khi `lifecycle.basis = "typical_share"` (toàn bộ catalogue
+  hiện nay) thì **chỉ hiện tỷ lệ điển hình của loại**, không gán kg cho sản phẩm.
+- `lib/needs.js` + `components/assistant/NeedPicker.jsx` — chọn nhanh thiết bị / mục đích / ngân sách /
+  ưu tiên; `composeQuery` ghép thành câu mà parser backend hiểu (3 ngôn ngữ), `toSearchParams` ghép
+  thành bộ lọc `/search`.
+- `lib/categories.js` — một thứ tự danh mục cho cả site; `searchCategory()` đổi khóa CO₂ (`computer_monitor`)
+  sang slug tìm kiếm (`monitors`). Thanh đo trong thẻ danh mục là **thang tuyến tính riêng từng loại**.
+- `components/ui/DeviceIcon.jsx` + `deviceIconPaths.js` — 48 icon 24px (2 lớp, currentColor) trích từ
+  bộ icon của dự án.
+- `components/common/ProductThumb.jsx` + `lib/standInImage.js` — ảnh thật → ảnh cùng hãng cùng loại
+  (nhãn "Ảnh minh họa") → icon thiết bị.
+
 - **Thế giới CO₂** `/world`, `/world/:id` (trải nghiệm chính): **vòng khép kín** ① Sản xuất → ② Vận chuyển → ③ Sử dụng → ④ Thu hồi & tái chế → mũi tên "vật liệu thu hồi" quay về mỏ/nhà máy. Góc trái `FormulaHud.jsx`: công thức của đúng sản phẩm (ký hiệu + thế số + dải chấm các mẫu giống, rồi điểm xanh 5·ln(U/c)/ln(U/L)); thanh dưới là phương trình Sản xuất + Vận chuyển + Sử dụng + Thải bỏ = Tổng. Bên phải `GreenPanel.jsx` (≥1280px; nhỏ hơn là nút "Sống xanh"): chọn thiết bị ít CO₂ (món xanh hơn), dùng lâu hơn (CO₂/năm = tổng ÷ số năm, mô phỏng), mang đi tái chế (cảnh tái chế), "Nhận định AI" (`POST /api/explain` topic `insight`), vòng tuần hoàn. Khung nhìn ban đầu `home()` canh vòng lặp vào vùng trống giữa các thẻ. Helper `src/lib/co2Formula.js`. Trang Overview: `components/dashboard/FormulaSteps.jsx` (4 bước tính với từng thành phần tô màu + ví dụ thật). Bản đồ SVG kéo/phóng to, 5 chặng có xe/tàu/máy bay, bong bóng CO₂ theo kg, bấm vật thể bất kỳ → khung giải thích (`POST /api/explain`, câu soạn sẵn hoặc AI), nút "❓ hỏi bất kỳ chỗ nào", mô phỏng nếu-thì (nơi sản xuất, tàu/máy bay, lưới VN/điện mặt trời, số năm, máy tân trang; tính tương đối với số chính thức), tour "▶ Xem giải thích từng bước" kết thúc bằng phép tính hiện từng số. **Đi vào cảnh** (`components/world/scenes/`): bấm vật thể → phóng vào cảnh toàn màn hình của chặng (nguyên liệu, nhà máy, vận chuyển, sử dụng, thải bỏ, công thức, so với cùng loại); vòng sáng trong cảnh → cảnh con (chip, màn hình, pin, vỏ; tàu vs máy bay; lưới điện VN với hệ số IPCC; số năm dùng; rác điện tử; tái chế); kéo/vuốt ngang hoặc ←/→ sang chặng kế bên; Esc/thanh đường dẫn để lùi; `?scene=production/chip`. Deep link: `?focus=transport`, `?ask=factory`, `?origin=VN&mode=air&grid=solar&years=6&refurb=1&sim=1`, `?tour=1&step=6`. Code: `src/pages/World.jsx`, `components/world/`. Hình minh họa AI (tùy chọn): `python scripts/demo/generate_illustrations.py --yes` → `frontend/public/illustrations/` (chưa tạo; cần OPENAI_API_KEY).
 - **Sách lật CO₂** `/story` (tìm sản phẩm) và `/story/:id` (12 trang: bìa, con số nghĩa là gì, bản đồ 5 chặng bấm được, sản xuất, vận chuyển, sử dụng, thải bỏ, công thức thế số, so với cùng loại, WEFE/đô thị thông minh, hành động, nguồn). `?p=N` mở thẳng trang N, `?auto=1` tự lật. Code: `src/pages/Story.jsx`, `components/story/` (Flipbook, Illustrations = SVG động theo dữ liệu, storyText = lời kể vi/en). Ví dụ demo: `/story/55051` (màn hình MSI 27", 544,4 kg = 491,5 × 1,108).
 - API: `src/api/client.js`; **mock**: `VITE_MOCK_API=1` → `src/api/mock.js` (chạy demo không cần backend).
@@ -100,7 +125,7 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 | `gateway`: `pytest tests` | 3 |
 | `db-search`: `pytest tests/test_search_query.py tests/test_product_specs.py tests/test_accessory.py` | 14 |
 | `mcp-server`: `pytest` | 17 |
-| `frontend`: `npm run test` (vitest: dữ liệu thiếu, giỏ, so sánh, URL tìm kiếm, công thức CO₂) + `npm run build` | 38 |
+| `frontend`: `npm run test` (vitest: dữ liệu thiếu, giỏ, so sánh, URL tìm kiếm, công thức CO₂, chọn nhanh) + `npm run build` | 44 |
 - `etl-worker/tests/test_category_matcher.py`: 4 test `TestParserIntegration` **đã hỏng từ trước** (không liên quan CO₂).
 - Đã chạy thật bằng Docker 23/11: dump 55.409 dòng → khử trùng còn 14.130, 7.389 có giá → backfill (`etl-worker/tools/backfill.py`) → 7.389/7.389 có CO₂ + FAISS. `scripts/demo/smoke_e2e.py`: 18/18 bước đạt (search, CO₂, related, stats, compare, trang AI, đơn thử, MCP).
 - `npm run lint` hỏng sẵn vì repo không có `eslint.config.js`.

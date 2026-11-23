@@ -323,7 +323,7 @@ function WorldView({ productId }) {
       {/* HUD: product, total and the CO2 formula with this product's numbers */}
       {!scene && (
         <div ref={hudRef} className="absolute z-20 left-3 top-3 right-3 md:right-auto md:w-[440px] max-h-[calc(100%-96px)] overflow-y-auto rounded-3xl">
-          <WorldHeader d={d} compact={!wide} onTopic={open} onChangeProduct={() => navigate("/world")} />
+          <WorldHeader d={d} compact={!xl} onTopic={open} onChangeProduct={() => navigate("/world")} />
           {!xl && !tour && (
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={() => { setTopic(null); setTour(true); }}
