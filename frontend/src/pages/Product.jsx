@@ -8,7 +8,7 @@ import LifecycleDiagram from "./components/co2/LifecycleDiagram";
 import ProductCard from "./components/co2/ProductCard";
 import { GATEWAY_URL } from "./utils/consts";
 import { useI18n } from "../i18n/LanguageContext";
-import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey } from "./utils/helpers";
+import { getProductHighlights, getRecommendationReason, getGreenLevel, getCo2SourceKey, localizeReason } from "./utils/helpers";
 
 
 export default function Product() {
@@ -88,7 +88,8 @@ export default function Product() {
         }
     }, [params.productId, location.state]);
 
-    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-xs px-2 py-1 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
+    const secondaryBtn = "inline-flex items-center gap-1.5 bg-white border border-[#CFE0D2] text-[#1F5D3A] text-[15px] font-semibold rounded-xl px-4 py-2.5 hover:bg-[#F1F7F2] transition";
+    const tagStyle = "bg-primary-50 rounded-2xl border border-primary-200 text-[13.5px] px-3 py-1.5 flex items-center gap-1 font-semibold text-primary-900 shadow-sm";
 
     if (loading) {
         return <div className="flex justify-center items-center p-10 min-h-full">{t("product.loading")}</div>;
@@ -99,7 +100,7 @@ export default function Product() {
     }
 
     const highlights = getProductHighlights(productInfo);
-    const reason = getRecommendationReason(productInfo, productInfo.platform_name, t, true);
+    const reason = localizeReason(getRecommendationReason(productInfo, productInfo.platform_name, t, true), lang);
     const co2Explanation = lang === "vi"
         ? (productInfo.product.co2e_explanation_vi || productInfo.product.co2e_explanation)
         : (productInfo.product.co2e_explanation || productInfo.product.co2e_explanation_vi);
@@ -145,10 +146,10 @@ export default function Product() {
                         {/* Why Recommended Callout (Explanation) */}
                         {reason && (
                             <div className="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-4 my-2 w-full">
-                                <h3 className="font-bold text-orange-950 text-sm flex items-center gap-1.5 mb-1">
+                                <h3 className="font-bold text-orange-950 text-[15.5px] flex items-center gap-1.5 mb-1.5">
                                     ✨ {t("product.whyRecommended")}
                                 </h3>
-                                <p className="text-gray-700 text-sm italic">
+                                <p className="text-gray-700 text-[15px] leading-relaxed italic">
                                     "{reason}"
                                 </p>
                             </div>
@@ -157,14 +158,14 @@ export default function Product() {
                         {/* Product Highlights / Specs (Details) */}
                         {highlights.length > 0 && (
                             <div className="flex flex-col gap-2 my-2 w-full">
-                                <h3 className="font-bold text-primary-900 text-sm">
+                                <h3 className="font-bold text-primary-900 text-[15.5px]">
                                     📋 {t("product.keyHighlights")}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     {highlights.map((hl, idx) => (
-                                        <div key={idx} className="bg-primary-50 rounded-lg p-2.5 border border-primary-150 flex items-start gap-2">
-                                            <span className="text-primary-500 font-bold text-xs">✔</span>
-                                            <span className="text-gray-700 text-xs">{hl}</span>
+                                        <div key={idx} className="bg-[#FBFAF5] rounded-xl px-3 py-2.5 border border-[#E7E2D4] flex items-start gap-2">
+                                            <span className="text-primary-500 font-bold text-[14px]">✔</span>
+                                            <span className="text-gray-700 text-[14px] leading-snug">{hl}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -172,7 +173,7 @@ export default function Product() {
                         )}
                         {productInfo.product.co2e_kg !== null && productInfo.product.co2e_kg !== undefined ? (
                             <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 bg-[#E4F1E6] text-[#1F5D3A] border border-[#cfe5d2] rounded-2xl p-3 w-fit">
+                                <div className="flex items-center gap-2 bg-[#E4F1E6] text-[#1F5D3A] border border-[#cfe5d2] rounded-2xl px-4 py-3 w-fit text-[15.5px]">
                                     <span>{t("product.estimatedGwp")}: <span className="font-bold">{productInfo.product.co2e_kg}</span> kg CO₂e</span>
                                     <div className="group relative cursor-pointer ml-1 inline-block">
                                         <span className="bg-[#2E7D4F] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">ⓘ</span>
@@ -195,36 +196,34 @@ export default function Product() {
                         )}
 
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={() => navigate(`/world/${params.productId}`)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl px-5 py-2.5 transition">
-                            🌏 {t("product.world")}
-                        </button>
-                        <button type="button" onClick={() => navigate(`/story/${params.productId}`)}
-                            className="border border-emerald-600 text-emerald-700 font-semibold rounded-2xl px-5 py-2.5 transition hover:bg-emerald-50">
-                            📖 {t("product.story")}
-                        </button>
-                        <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}
-                            className="bg-secondary-500 text-white rounded-2xl px-4 py-2 font-semibold hover:bg-secondary-700">
-                            ✨ {t("product.askAi")}
-                        </button>
-                        <Link to={`/compare?ids=${[params.productId, related?.greener_alternative?.product_id, ...(related?.items || []).slice(0, 2).map((x) => x.product_id)].filter((x, i, a) => x && a.indexOf(x) === i).slice(0, 4).join(",")}`}
-                            className="bg-white border border-primary-500 text-primary-500 rounded-2xl px-4 py-2 font-semibold hover:bg-primary-200">
-                            ⚖️ {t("action.compare")}
-                        </Link>
-                        <button type="button" onClick={() => { addToCart(co2Info?.product || toProductCard(productInfo), 1); setAdded(true); }}
-                            className="bg-white border border-primary-500 text-primary-500 rounded-2xl px-4 py-2 font-semibold hover:bg-primary-200">
-                            🛒 {added ? t("cart.added") : t("cart.addTest")}
-                        </button>
-                    </div>
-                    <div className="py-2">
-                        <a 
-                            href={productInfo.product.product_url}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-center w-full bg-primary-500 rounded-2xl text-2xl font-bold text-primary-100 px-4 py-2  p-100 cursor-pointer hover:bg-primary-800 transition duration-100 ease-in-out">
-                            {t("product.checkOnWebsite")}
-                        </a>
+                    <div className="flex flex-col gap-3 pt-1">
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => navigate(`/world/${params.productId}`)}
+                                className="inline-flex items-center gap-2 bg-[#1F5D3A] hover:bg-[#173F28] text-white text-[16px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
+                                🌏 {t("product.world")}
+                            </button>
+                            <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}
+                                className="inline-flex items-center gap-2 bg-[#6FB04A] hover:bg-[#4E8E33] text-white text-[16px] font-semibold rounded-xl px-6 py-3 shadow-sm transition">
+                                ✨ {t("product.askAi")}
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2.5">
+                            <button type="button" onClick={() => navigate(`/story/${params.productId}`)} className={secondaryBtn}>
+                                📖 {t("product.story")}
+                            </button>
+                            <Link to={`/compare?ids=${[params.productId, related?.greener_alternative?.product_id, ...(related?.items || []).slice(0, 2).map((x) => x.product_id)].filter((x, i, a) => x && a.indexOf(x) === i).slice(0, 4).join(",")}`}
+                                className={secondaryBtn}>
+                                ⚖️ {t("action.compare")}
+                            </Link>
+                            <button type="button" onClick={() => { addToCart(co2Info?.product || toProductCard(productInfo), 1); setAdded(true); }} className={secondaryBtn}>
+                                🛒 {added ? t("cart.added") : t("cart.addTest")}
+                            </button>
+                            {productInfo.product.product_url && (
+                                <a href={productInfo.product.product_url} target="_blank" rel="noopener noreferrer" className={secondaryBtn}>
+                                    ↗ {t("product.checkOnWebsite")}
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -272,8 +271,8 @@ export default function Product() {
                                 <p className="text-gray-700 text-sm">{t(getCo2SourceKey(productInfo.product.co2e_source))}</p>
                                 {productInfo.product.co2e_references?.length > 0 && (
                                     <>
-                                        <h4 className="font-semibold text-primary-900 text-xs mt-1">{t("product.co2References")}</h4>
-                                        <ul className="text-xs text-gray-600 flex flex-col gap-1">
+                                        <h4 className="font-semibold text-primary-900 text-[14.5px] mt-1">{t("product.co2References")}</h4>
+                                        <ul className="text-[14px] text-gray-600 flex flex-col gap-1.5">
                                             {productInfo.product.co2e_references.map((ref, i) => (
                                                 <li key={i} className="flex justify-between gap-2 border-b border-gray-100 pb-1">
                                                     <span className="line-clamp-1">{ref.name}</span>
@@ -305,17 +304,17 @@ export default function Product() {
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">🚗</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 4.1)} km</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqDriving")}</span>
+                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqDriving")}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">📱</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.round(productInfo.product.co2e_kg * 121)}</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqPhones")}</span>
+                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqPhones")}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col items-center text-center gap-1">
                                         <span className="text-2xl">🌳</span>
                                         <span className="text-lg font-bold text-gray-800">{Math.max(1, Math.round(productInfo.product.co2e_kg / 22))}</span>
-                                        <span className="text-[10px] text-gray-500 line-clamp-2 leading-tight">{t("product.eqTrees")}</span>
+                                        <span className="text-[13px] text-gray-600 leading-snug">{t("product.eqTrees")}</span>
                                     </div>
                                 </div>
                             </div>

@@ -298,5 +298,7 @@
   "tab.world": "World",
   "tab.search": "Search",
   "tab.ask": "Ask AI",
-  "tab.cart": "Cart"
+  "tab.cart": "Cart",
+  "filter.from": "From",
+  "filter.to": "To"
 }

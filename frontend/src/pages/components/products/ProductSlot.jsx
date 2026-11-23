@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n/LanguageContext";
 import { greenBg, greenColor } from "../../../lib/format";
-import { getProductHighlights, getRecommendationReason, getCo2SourceKey } from "../../utils/helpers";
+import { getProductHighlights, getRecommendationReason, getCo2SourceKey, localizeReason } from "../../utils/helpers";
 import Icon from "../ui/Icon";
 
 // Shown when the shop gave no picture (or it fails to load): a soft tile with the category's device.
@@ -24,9 +24,9 @@ export function ProductImage({ src, alt, className = "h-44" }) {
 
 export default function ProductSlot({ product, image_url, platform_name }) {
   const navigate = useNavigate();
-  const { t, formatNumber } = useI18n();
+  const { t, lang, formatNumber } = useI18n();
   const highlights = getProductHighlights(product);
-  const reason = getRecommendationReason(product, platform_name, t);
+  const reason = localizeReason(getRecommendationReason(product, platform_name, t), lang);
   const discount = product.original_price && product.original_price !== product.final_price
     ? 100 - Math.floor((product.final_price / product.original_price) * 100) : null;
   const hasCo2 = product.co2e_kg !== null && product.co2e_kg !== undefined;
@@ -34,22 +34,22 @@ export default function ProductSlot({ product, image_url, platform_name }) {
 
   return (
     <button type="button" onClick={() => navigate(`/product/${product.id}`, { state: { product } })}
-            className="card text-left p-3 flex flex-col gap-2.5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgba(23,63,40,.45)] hover:border-[#9ccf7d] min-w-0">
+            className="card text-left p-4 flex flex-col gap-3 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgba(23,63,40,.45)] hover:border-[#9ccf7d] min-w-0">
       <div className="relative">
         <ProductImage src={image_url} alt={product.name} />
         {platform_name && <span className="pill absolute left-2 top-2 bg-white/95 border border-[#E7E2D4] text-[#1E2B22]">{platform_name}</span>}
         {discount > 0 && <span className="pill absolute right-2 top-2 bg-[#FBE4E2] text-[#C2413C]">-{discount}%</span>}
       </div>
-      <p className="line-clamp-2 min-h-[2.6em] font-semibold text-[14px] leading-snug text-[#1E2B22]">{product.name}</p>
+      <p className="line-clamp-2 min-h-[2.7em] font-semibold text-[15.5px] leading-snug text-[#1E2B22]" title={product.name}>{product.name}</p>
       {highlights.length > 0 && (
-        <ul className="text-[11.5px] text-[#6B7468] space-y-0.5 min-h-[32px]">
+        <ul className="text-[13.5px] leading-snug text-[#6B7468] space-y-0.5 min-h-[36px]">
           {highlights.slice(0, 2).map((hl, idx) => <li key={idx} className="line-clamp-1">• {hl}</li>)}
         </ul>
       )}
-      {reason && <p className="rounded-lg bg-[#FBF0D6] text-[#8a5d10] px-2 py-1 text-[11px] font-medium line-clamp-1">✨ {reason}</p>}
+      {reason && <p className="rounded-lg bg-[#FBF0D6] text-[#8a5d10] px-2.5 py-1.5 text-[13.5px] font-medium line-clamp-2">✨ {reason}</p>}
       <div className="mt-auto flex items-end justify-between gap-2">
-        <p className="text-[19px] font-extrabold text-[#1F5D3A]">{formatNumber(product.final_price)}₫</p>
-        <p className="text-[12px] text-[#6B7468] whitespace-nowrap">★ {product.review_count ? `${(product.product_rating * 5).toFixed(1)} (${product.review_count})` : t("product.noRating")}</p>
+        <p className="text-[21px] font-extrabold text-[#1F5D3A]">{formatNumber(product.final_price)}₫</p>
+        <p className="text-[13.5px] text-[#6B7468] whitespace-nowrap">★ {product.review_count ? `${(product.product_rating * 5).toFixed(1)} (${product.review_count})` : t("product.noRating")}</p>
       </div>
       {hasCo2 ? (
         <span className="pill self-start max-w-full" style={{ color: greenColor(score), background: greenBg(score) }}

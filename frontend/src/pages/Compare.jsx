@@ -65,7 +65,7 @@ export default function Compare() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-primary-500">⚖️ {t("compare.title")}</h1>
+      <h1 className="text-[36px] font-bold text-[#1E2B22] leading-tight">⚖️ {t("compare.title")}</h1>
       <p className="text-gray-600">{t("compare.subtitle")}</p>
 
       {ids.length < MAX && <ProductPicker onPick={add} exclude={ids} />}
@@ -86,10 +86,10 @@ export default function Compare() {
                         {p.image_url && <img src={p.image_url} alt={p.name} className="h-20 object-contain" />}
                         <Link to={`/product/${p.product_id}`} className="font-semibold hover:underline line-clamp-2">{p.name}</Link>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => addToCart(p, 1)} className="text-xs text-primary-500 hover:underline">
+                          <button type="button" onClick={() => addToCart(p, 1)} className="text-[14px] font-semibold text-primary-500 hover:underline">
                             🛒 {t("cart.addTest")}
                           </button>
-                          <button type="button" onClick={() => remove(p.product_id)} className="text-xs text-red-600 hover:underline" aria-label={t("compare.remove")}>
+                          <button type="button" onClick={() => remove(p.product_id)} className="text-[14px] font-semibold text-red-600 hover:underline" aria-label={t("compare.remove")}>
                             ✕ {t("compare.remove")}
                           </button>
                         </div>
@@ -119,7 +119,7 @@ export default function Compare() {
                 <tr className="border-t border-primary-100">
                   <th scope="row" className="text-left px-3 py-2 font-medium text-gray-600">{t("compare.row.method")}</th>
                   {products.map((p) => (
-                    <td key={p.product_id} className="px-3 py-2 text-xs font-mono">
+                    <td key={p.product_id} className="px-3 py-2.5 text-[14px] leading-relaxed">
                       {p.formula ? (lang === "vi" ? p.formula.title_vi : p.formula.title_en) : "–"}
                       {p.formula?.expression && <div className="text-gray-500">{p.formula.expression}</div>}
                     </td>

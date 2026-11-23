@@ -122,7 +122,7 @@ function BottomTabs({ t }) {
     <nav className="min-[900px]:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 border-t border-[#E7E2D4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="tabs">
       {TABS.map((tab) => (
         <NavLink key={tab.to} to={tab.to}
-                 className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${isActive ? "text-[#2E7D4F]" : "text-[#8a9186]"}`}>
+                 className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[12.5px] font-semibold ${isActive ? "text-[#2E7D4F]" : "text-[#8a9186]"}`}>
           {({ isActive }) => (<>
             <span className={`grid place-items-center w-9 h-7 rounded-full ${isActive ? "bg-[#E4F1E6]" : ""}`}><Icon name={tab.icon} size={19} /></span>
             {t(tab.key)}

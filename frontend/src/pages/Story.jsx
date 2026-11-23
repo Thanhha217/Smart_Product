@@ -16,7 +16,7 @@ import { derive, txt } from "./components/story/storyText";
 function H({ children, kicker }) {
   return (
     <header className="mb-3">
-      {kicker && <p className="text-[11px] uppercase tracking-widest text-emerald-700 font-semibold">{kicker}</p>}
+      {kicker && <p className="text-[13px] uppercase tracking-widest text-emerald-700 font-semibold">{kicker}</p>}
       <h2 className="text-xl md:text-2xl font-extrabold text-[#1f3b4d] leading-tight">{children}</h2>
     </header>
   );
@@ -58,7 +58,7 @@ function Distribution({ stats, kg, T, lang }) {
         <div className="absolute -top-1 h-6 w-0.5 bg-[#1f3b4d]" style={{ left: pos(stats.median_kg) }} title={T.median} />
         <div className="absolute -top-3 -ml-3 text-xl" style={{ left: pos(kg) }} aria-label="this product">📍</div>
       </div>
-      <div className="flex justify-between text-[11px] text-gray-500 mt-1">
+      <div className="flex justify-between text-[13px] text-gray-500 mt-1">
         <span>{formatKg(lo, lang)} kg · {T.lowLabel}</span><span>{T.median} {formatKg(stats.median_kg, lang)}</span><span>{formatKg(hi, lang)} kg · {T.highLabel}</span>
       </div>
     </div>
@@ -120,7 +120,7 @@ function buildPages({ d, T, lang, go, navigate }) {
   return [
     // 0 cover
     <div key="cover" className="h-full flex flex-col">
-      <p className="text-[11px] uppercase tracking-widest text-emerald-700 font-semibold">{T.kicker}</p>
+      <p className="text-[13px] uppercase tracking-widest text-emerald-700 font-semibold">{T.kicker}</p>
       <h1 className="text-2xl md:text-3xl font-black text-[#1f3b4d] leading-tight mt-1">{p.name}</h1>
       <p className="text-sm text-gray-500 mt-1">{p.platform} · {T.price(p.price_vnd)}</p>
       <div className="my-2 mx-auto w-full max-w-[230px]"><CoverArt category={p.category} score={p.green_score} /></div>
@@ -158,7 +158,7 @@ function buildPages({ d, T, lang, go, navigate }) {
                   onClick={() => go(stagePage[i + 1])} style={{ width: `${st[key].pct}%`, background: ["#1B5B7E", "#329AD2", "#d97706", "#7AA725"][i] }} />
         ))}
       </div>
-      {x.assumed && <p className="text-[11px] text-amber-700 mt-2">⚠ {d.lifecycle?.[lang === "vi" ? "note_vi" : "note_en"]}</p>}
+      {x.assumed && <p className="text-[13px] text-amber-700 mt-2">⚠ {d.lifecycle?.[lang === "vi" ? "note_vi" : "note_en"]}</p>}
     </div>,
 
     // 3 production
@@ -176,7 +176,7 @@ function buildPages({ d, T, lang, go, navigate }) {
       <ShipScene originCode={x.route?.origin_code} distanceKm={x.route?.distance_km} mode={x.route?.mode} />
       <StagePill stage={st.transport} lang={lang} />
       <p className="text-gray-700">{T.transBody(st.transport, x.route)}</p>
-      {x.route?.assumed && <p className="text-[11px] text-amber-700 mt-2">⚠ {T.assumedRoute}</p>}
+      {x.route?.assumed && <p className="text-[13px] text-amber-700 mt-2">⚠ {T.assumedRoute}</p>}
     </div>,
 
     // 5 use
@@ -261,7 +261,7 @@ function buildPages({ d, T, lang, go, navigate }) {
         {x.trees !== null && <li>{T.wefeEco(x.trees)}</li>}
       </ul>
       <p className="mt-3 rounded-lg bg-sky-50 border border-sky-200 px-3 py-2 text-sm text-sky-900">🏙️ {T.city(x.cityTonnes, x.savedPerUnit)}</p>
-      <p className="text-[11px] text-gray-400 mt-1">{T.scenarioNote}</p>
+      <p className="text-[13px] text-gray-400 mt-1">{T.scenarioNote}</p>
     </div>,
 
     // 10 actions

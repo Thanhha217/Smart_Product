@@ -137,7 +137,7 @@ export default function Home() {
               </form>
               <div className="mt-3 flex flex-wrap gap-2 max-w-[560px]">
                 {SUGGESTED_KEYS.slice(0, 3).map((key) => (
-                  <button key={key} type="button" onClick={() => ask(t(key))} className="rounded-full bg-white border border-[#E7E2D4] px-3 py-1 text-xs hover:border-[#6FB04A]">{t(key)}</button>
+                  <button key={key} type="button" onClick={() => ask(t(key))} className="rounded-full bg-white border border-[#E7E2D4] px-3.5 py-1.5 text-[14px] hover:border-[#6FB04A]">{t(key)}</button>
                 ))}
               </div>
               <Link to="/world" className="mt-6 inline-flex items-center gap-3 rounded-full bg-white border border-[#E7E2D4] pl-2 pr-5 py-2 font-semibold hover:border-[#6FB04A] shadow-sm">
@@ -148,7 +148,7 @@ export default function Home() {
                 {D.features.map(([icon, a, b]) => (
                   <div key={a} className="flex flex-col items-center text-center gap-2">
                     <span className="grid place-items-center w-14 h-14 rounded-full bg-white border border-[#E7E2D4] text-[#2E7D4F] shadow-sm"><Icon name={icon} size={24} /></span>
-                    <span className="text-[12.5px] font-semibold leading-tight">{a}<br />{b}</span>
+                    <span className="text-[14.5px] font-semibold leading-snug">{a}<br />{b}</span>
                   </div>
                 ))}
               </div>
@@ -176,7 +176,7 @@ export default function Home() {
           {D.benefits.map(([icon, title, sub]) => (
             <div key={title} className="flex items-start gap-4">
               <span className="grid place-items-center w-14 h-14 shrink-0 rounded-full bg-white border border-[#E7E2D4] text-[#2E7D4F] shadow-sm"><Icon name={icon} size={24} /></span>
-              <div><p className="font-display text-[20px] font-bold leading-tight text-[#173F28]">{title}</p><p className="mt-1 text-sm text-[#6B7468]">{sub}</p></div>
+              <div><p className="font-display text-[20px] font-bold leading-tight text-[#173F28]">{title}</p><p className="mt-1.5 text-[15px] leading-relaxed text-[#6B7468]">{sub}</p></div>
             </div>
           ))}
         </div>

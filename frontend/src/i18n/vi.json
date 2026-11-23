@@ -298,5 +298,7 @@
   "tab.world": "Thế giới",
   "tab.search": "Tìm",
   "tab.ask": "Hỏi AI",
-  "tab.cart": "Giỏ"
+  "tab.cart": "Giỏ",
+  "filter.from": "Từ",
+  "filter.to": "Đến"
 }
