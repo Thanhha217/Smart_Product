@@ -377,22 +377,26 @@ function StageBadge({ x, y, n, label, topic }) {
   );
 }
 
-function Bubble({ x, y, kg, r, label, topic, focused, lang }) {
-  const text = kg === null || kg === undefined ? "—" : `${intlNumber(LOCALES[lang] ?? "en-US", { maximumFractionDigits: kg >= 100 ? 0 : 1 }, kg)} kg`;
+/**
+ * A stage bubble. `value` is already worded by the caller: this product's own kilograms when
+ * the backend really split them, otherwise the share a product of this category typically has.
+ */
+function Bubble({ x, y, value, r, label, topic, focused, note }) {
   return (
     <g data-explain={topic} transform={`translate(${x} ${y})`}>
       <g className="wx-bob" style={{ animationDelay: `${(x % 7) * 0.3}s` }}>
         {focused && <circle r={r + 22} fill="none" stroke="#ffd25a" strokeWidth="8" className="wx-pulse" />}
         <circle r={r} fill="url(#wx-bubble)" stroke="#8aa39a" strokeWidth="3" opacity=".96" />
-        <text textAnchor="middle" y={-r * 0.05} fontSize={Math.max(20, r * 0.36)} fontWeight="800" fill="#1d3b53">{text}</text>
-        <text textAnchor="middle" y={r * 0.4} fontSize={Math.max(15, r * 0.19)} fontWeight="600" fill="#4b6470">{label}</text>
+        <text textAnchor="middle" y={note ? -r * 0.12 : -r * 0.05} fontSize={Math.max(20, r * 0.36)} fontWeight="800" fill="#1d3b53">{value ?? "—"}</text>
+        <text textAnchor="middle" y={note ? r * 0.26 : r * 0.4} fontSize={Math.max(15, r * 0.19)} fontWeight="600" fill="#4b6470">{label}</text>
+        {note && <text textAnchor="middle" y={r * 0.56} fontSize={Math.max(13, r * 0.155)} fontWeight="600" fill="#8a9aa4">{note}</text>}
       </g>
     </g>
   );
 }
 
 /** The whole world. `sim.stages` holds the (tweened) kg per stage of the current scenario. */
-export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus, labels, ask, lang, onClick, art, leg }) {
+export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus, labels, ask, lang, onClick, art, leg, stageValue, stageNote }) {
   const local = sc.origin === "VN";
   const air = !local && sc.mode === "air";
   const flow = flowPath(sc);
@@ -453,10 +457,10 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
         </g>
       )}
 
-      <Bubble x={500} y={915} kg={st.materials_production} r={r(st.materials_production)} label={labels.stages.materials_production} topic="factory" focused={focus === "materials_production" || focus === "materials"} lang={lang} />
-      <Bubble x={tBubble[0]} y={tBubble[1]} kg={st.transport} r={r(st.transport)} label={labels.stages.transport} topic="transport" focused={focus === "transport"} lang={lang} />
-      <Bubble x={2150} y={880} kg={st.use} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} lang={lang} />
-      <Bubble x={1450} y={1120} kg={st.end_of_life} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} lang={lang} />
+      <Bubble x={500} y={915} value={stageValue("materials_production")} note={stageNote} r={r(st.materials_production)} label={labels.stages.materials_production} topic="factory" focused={focus === "materials_production" || focus === "materials"} />
+      <Bubble x={tBubble[0]} y={tBubble[1]} value={stageValue("transport")} note={stageNote} r={r(st.transport)} label={labels.stages.transport} topic="transport" focused={focus === "transport"} />
+      <Bubble x={2150} y={880} value={stageValue("use")} note={stageNote} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} />
+      <Bubble x={1450} y={1120} value={stageValue("end_of_life")} note={stageNote} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} />
 
       <StageBadge x={330} y={445} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" />
       <StageBadge x={tBubble[0]} y={tBubble[1] - r(st.transport) - 46} n={2} label={labels.loop?.move || "Transport"} topic="transport" />

@@ -14,7 +14,7 @@ function Seg({ value, options, onChange, disabled }) {
   );
 }
 
-export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T, onAsk, onReset, origins }) {
+export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T, onAsk, onReset, origins, measured = false }) {
   const total = useTween(sim?.total ?? null);
   const delta = base.total !== null && sim?.total !== undefined ? sim.total - base.total : 0;
   const changed = Math.abs(delta) > 0.05;
@@ -54,6 +54,7 @@ export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T
                 </p>
               )}
               <p className="text-[13.5px] text-gray-500 mt-1">{T.scenarioNote(formatKg(base.total, lang))}</p>
+              {!measured && <p className="text-[12.5px] text-amber-700 mt-1">⚠ {T.simOnShares}</p>}
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={onReset} disabled={!changed} className="flex-1 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-40">{T.reset}</button>

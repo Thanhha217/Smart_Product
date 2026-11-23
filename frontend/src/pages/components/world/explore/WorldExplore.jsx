@@ -10,6 +10,7 @@ import { formatKg, formatNum } from "../../../../lib/format";
 import ProductCard from "../../common/ProductCard";
 import { EmptyState, ErrorState, InlineSpinner, LoadingGrid, SampleDataNote } from "../../common/States";
 import Icon from "../../ui/Icon";
+import CategoryStrip from "../../dashboard/CategoryStrip";
 
 const PAGE_SIZE = 12;
 const PARAM_KEYS = ["q", "category", "brand", "min_price", "max_price", "co2_source", "has_co2", "sort", "page", "include_accessories"];
@@ -21,31 +22,6 @@ function readParams(sp) {
     if (v !== null && v !== "") p[k] = v;
   }
   return p;
-}
-
-function CategoryTile({ c, X, lang }) {
-  const pct = c.products ? `${formatNum((100 * c.with_co2) / c.products, lang, 0)}%` : X.noValue;   // share of listed products
-  const hasRange = c.min_kg !== null && c.max_kg !== null && c.median_kg !== null && c.max_kg > c.min_kg;
-  const pos = (v) => `${(100 * (Math.log(v) - Math.log(c.min_kg))) / (Math.log(c.max_kg) - Math.log(c.min_kg))}%`;
-  return (
-    <Link to={`/world?category=${c.category}&sort=co2_asc`}
-          className="group flex flex-col gap-2 rounded-2xl bg-white border border-[#ebe6d8] p-4 hover:border-[#2E7D4F] hover:shadow-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]">
-      <span className="text-lg font-semibold text-[#1E2B22] group-hover:text-[#1F5D3A]">{X.categories[c.category] || c.category}</span>
-      <span className="text-[14px] text-[#4b5563]">{X.catProducts(formatCount(c.products, lang))} · {X.catWithCo2(formatCount(c.with_co2, lang), pct)}</span>
-      <span className="text-[14px] text-[#4b5563]">{X.catManufacturer(formatCount(c.manufacturer, lang))}</span>
-      {hasRange ? (
-        <div className="mt-1">
-          <div className="relative h-2 rounded-full bg-gradient-to-r from-[#2e9e5b] via-[#e0a526] to-[#d64545]" aria-hidden="true">
-            <span className="absolute -top-1 h-4 w-1 rounded bg-[#1E2B22]" style={{ left: pos(c.median_kg) }} />
-          </div>
-          <div className="mt-1 flex justify-between text-[13.5px] text-[#374151]">
-            <span>{formatKg(c.min_kg, lang)}</span><b>{formatKg(c.median_kg, lang)}</b><span>{formatKg(c.max_kg, lang)}</span>
-          </div>
-          <p className="text-[13px] text-[#6b7280]">{X.catRange}</p>
-        </div>
-      ) : <p className="text-[14px] text-[#6b7280]">{X.noValue}</p>}
-    </Link>
-  );
 }
 
 function Landing({ X, lang, run }) {
@@ -63,15 +39,10 @@ function Landing({ X, lang, run }) {
   return (
     <>
       <section className="mt-8">
-        <h2 className="text-2xl font-semibold text-[#1E2B22]">{X.categoriesTitle}</h2>
-        <p className="text-[15px] text-[#4b5563] mt-1">{X.categoriesLead}</p>
-        <div className="mt-4">
-          {cats.state === "loading" && <LoadingGrid count={6} />}
-          {cats.state === "error" && <ErrorState onRetry={load} body={X.errorBody} />}
-          {cats.state === "ok" && (cats.list.length
-            ? <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">{cats.list.map((c) => <CategoryTile key={c.category} c={c} X={X} lang={lang} />)}</div>
-            : <EmptyState title={X.noValue} />)}
-        </div>
+        <CategoryStrip rows={cats.list} status={cats.state === "ok" ? "ok" : cats.state} onRetry={load} lang={lang}
+                       title={X.categoriesTitle} lead={X.categoriesLead}
+                       linkTo={(row) => `/world?category=${encodeURIComponent(row.category)}&sort=co2_asc`}
+                       allHref="/world?has_co2=true&sort=co2_asc" allLabel={X.linkSearch} />
         <p className="mt-2 text-[13.5px] text-[#6b7280]">{X.catDefinition}</p>
       </section>
 

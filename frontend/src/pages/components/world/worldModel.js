@@ -4,6 +4,8 @@
 import { formatKg, formatNum } from "../../../lib/format";
 import { derive, methodText, GRID_EF_VN, TREE_KG_PER_YEAR } from "../story/storyText";
 import { tri } from "../../../i18n/LanguageContext";
+import { lifecycle as readLifecycle } from "../../../lib/co2Formula";
+import { stageShareLine, stageText } from "../../../lib/lifecycleText";
 
 export const STAGES = ["materials", "materials_production", "transport", "use", "end_of_life"];
 
@@ -92,6 +94,23 @@ export function presetExplain(topic, d, sim, sc, lang) {
   const T = tri(lang);
   const label = (s) => (lang === "vi" ? s.label_vi : s.label_en);
   const pct = (key) => (st[key] ? n(st[key].pct, lang, 1) : "—");
+  // how big a stage is, worded by what the data actually supports
+  const lc = readLifecycle(d?.lifecycle);
+  const sizeOf = (key) => {
+    const part = lc.parts.find((x) => x.key === key);
+    const line = stageShareLine(key, {
+      measured: lc.measured,
+      kgText: lc.measured && sim?.stages?.[key] !== undefined ? k(sim.stages[key], lang) : null,
+      pctText: part ? `${n(part.pct, lang, 0)}%` : null,
+    }, lang);
+    return line ? `${line.charAt(0).toUpperCase()}${line.slice(1)}.` : "";
+  };
+  /** what it is, why it emits, what you can do — the three questions, in one answer */
+  const threeQ = (key) => {
+    const txt = stageText(key, lang, d?.lifecycle?.route);
+    if (!txt) return null;
+    return { title: txt.name, answer: `${txt.what} ${txt.why} ${sizeOf(key)}`.trim(), bullets: [txt.todo] };
+  };
   const out = {
     co2e_total: {
       title: T("Tổng CO₂ cả vòng đời", "Lifecycle CO₂ total", "CO₂ total du cycle de vie"),
@@ -125,30 +144,18 @@ export function presetExplain(topic, d, sim, sc, lang) {
       answer: T("Kim loại (đồng, nhôm, vàng, đất hiếm), nhựa và kính phải được khai thác và tinh chế trước khi làm linh kiện. Phần này được tính chung vào chặng sản xuất.",
                 "Metals (copper, aluminium, gold, rare earths), plastics and glass are mined and refined before parts are made. This is counted inside production.",
                 "Métaux (cuivre, aluminium, or, terres rares), plastiques et verre sont extraits et raffinés avant la fabrication des pièces. Cette part est comptée dans la fabrication."),
-      bullets: [],
+      bullets: [stageText("materials_production", lang, d?.lifecycle?.route).todo],
     },
-    factory: {
-      title: T("Sản xuất và lắp ráp", "Manufacturing", "Fabrication"),
-      answer: st.materials_production ? T(`Làm chip, màn hình, pin và lắp ráp${origin ? ` (giả định tại ${origin})` : ""}: ${k(sim?.stages.materials_production, lang)} kg CO₂e, khoảng ${pct("materials_production")}% vòng đời.`,
-                                          `Making chips, screens, batteries and assembly${origin ? ` (assumed in ${origin})` : ""}: ${k(sim?.stages.materials_production, lang)} kg CO₂e, about ${pct("materials_production")}% of the lifecycle.`,
-                                          `Puces, écrans, batteries et assemblage${origin ? ` (supposés en ${origin})` : ""} : ${k(sim?.stages.materials_production, lang)} kg CO₂e, environ ${pct("materials_production")} % du cycle de vie.`)
-        : T("Chưa tách được số cho chặng này.", "No split for this stage.", "Pas de répartition pour cette étape."),
-      bullets: [T("Máy tân trang tránh được khoảng 80% phát thải sản xuất.", "Refurbished devices avoid about 80% of manufacturing emissions.", "Un appareil reconditionné évite environ 80 % des émissions de fabrication.")],
-    },
+    factory: threeQ("materials_production"),
     transport: {
-      title: T("Vận chuyển về Việt Nam", "Shipping to Vietnam", "Transport vers le Vietnam"),
-      answer: T(`Từ ${origin} về tay bạn${sc?.mode === "air" ? " bằng máy bay" : ""}: ${k(sim?.stages.transport, lang)} kg CO₂e. Tàu biển phát thải khoảng 0,016 kg CO₂e cho mỗi tấn·km, máy bay khoảng 0,6 — gấp gần 40 lần.`,
-                `From ${origin} to you${sc?.mode === "air" ? " by air" : ""}: ${k(sim?.stages.transport, lang)} kg CO₂e. Ships emit about 0.016 kg CO₂e per tonne-km, planes about 0.6 — almost 40 times more.`,
-                `De ${origin} jusqu'à vous${sc?.mode === "air" ? " par avion" : ""} : ${k(sim?.stages.transport, lang)} kg CO₂e. Un navire émet environ 0,016 kg CO₂e par tonne-km, un avion environ 0,6 — près de 40 fois plus.`),
-      bullets: [T("Nơi sản xuất và quãng đường là giả định theo hãng.", "Origin and distance are assumed from the brand.", "L'origine et la distance sont supposées d'après la marque.")],
+      ...threeQ("transport"),
+      bullets: [
+        T("Nơi sản xuất và quãng đường là giả định theo hãng.", "Origin and distance are assumed from the brand.",
+          "L'origine et la distance sont supposées d'après la marque."),
+        stageText("transport", lang, d?.lifecycle?.route).todo,
+      ],
     },
-    use: {
-      title: T("Sử dụng tại Việt Nam", "Use in Vietnam", "Utilisation au Vietnam"),
-      answer: T(`Trong ${n(sc?.years, lang)} năm sử dụng, phần điện năng gây ra ${k(sim?.stages.use, lang)} kg CO₂e. Máy chạy càng lâu và càng tốn điện thì phần này càng lớn.`,
-                `Over ${n(sc?.years, lang)} years of use, electricity causes ${k(sim?.stages.use, lang)} kg CO₂e. The longer and harder it runs, the bigger this part.`,
-                `Sur ${n(sc?.years, lang)} ans d'utilisation, l'électricité représente ${k(sim?.stages.use, lang)} kg CO₂e. Plus l'appareil tourne et consomme, plus cette part grossit.`),
-      bullets: [T("Với máy lạnh, tủ lạnh, tivi, đây là phần lớn nhất.", "For air conditioners, fridges and TVs this is the largest part.", "Pour les climatiseurs, réfrigérateurs et téléviseurs, c'est la plus grosse part.")],
-    },
+    use: threeQ("use"),
     grid: {
       title: T("Lưới điện Việt Nam", "Vietnam's grid", "Le réseau vietnamien"),
       answer: T(`Mỗi kWh điện lưới Việt Nam phát thải khoảng ${n(GRID_EF_VN, lang, 3)} kg CO₂e (năm 2024) vì còn nhiều nhiệt điện than. Điện mặt trời chỉ khoảng ${n(GRIDS.solar, lang, 3)} kg/kWh (số xấp xỉ).`,
@@ -156,13 +163,7 @@ export function presetExplain(topic, d, sim, sc, lang) {
                 `Chaque kWh du réseau vietnamien émet environ ${n(GRID_EF_VN, lang, 3)} kg CO₂e (2024) à cause du charbon. Le solaire n'émet qu'environ ${n(GRIDS.solar, lang, 3)} kg/kWh (approximatif).`),
       bullets: [],
     },
-    end_of_life: {
-      title: T("Thải bỏ và tái chế", "End of life", "Fin de vie"),
-      answer: T(`Thu gom và xử lý: ${k(sim?.stages.end_of_life, lang)} kg CO₂e. Số nhỏ, nhưng rác điện tử vứt sai chỗ làm kim loại nặng ngấm vào đất và nước.`,
-                `Collection and treatment: ${k(sim?.stages.end_of_life, lang)} kg CO₂e. Small, but dumped e-waste leaks heavy metals into soil and water.`,
-                `Collecte et traitement : ${k(sim?.stages.end_of_life, lang)} kg CO₂e. C'est peu, mais les déchets électroniques abandonnés libèrent des métaux lourds dans le sol et l'eau.`),
-      bullets: [T("Mang tới điểm thu gom rác điện tử thay vì bỏ chung rác sinh hoạt.", "Bring it to an e-waste point instead of household waste.", "Déposez-le dans un point de collecte plutôt qu'avec les ordures ménagères.")],
-    },
+    end_of_life: threeQ("end_of_life"),
     formula: {
       title: T("Công thức đã dùng", "The formula used", "La formule utilisée"),
       answer: T(`Hệ thống thử 4 cách theo thứ tự và dừng ở cách đầu tiên ra số: trùng đúng mẫu của hãng → trung bình mẫu giống (≥ 66%) → công thức / mức của loại / theo giá → để trống. Sản phẩm này dùng: ${methodText(d?.formula?.method, lang)}.`,

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
-import { formatKg } from "../lib/format";
+import { formatKg, formatNum } from "../lib/format";
+import { lifecycle as readLifecycle } from "../lib/co2Formula";
 import { ErrorState } from "./components/common/States";
 import { explore } from "../i18n/explore";
 import WorldExplore from "./components/world/explore/WorldExplore";
@@ -290,6 +291,15 @@ function WorldView({ productId }) {
   const scenario = { ...sc, total_kg: sim ? Math.round(sim.total * 10) / 10 : null };
   const preset = topic ? presetExplain(topic, d, sim, sc, lang) : null;
   const leg = focus ? legPath(focus, sc) : null;
+  // The catalogue stores ONE total per product. Only lifecycle.basis === "formula" is a real
+  // per-stage split; otherwise the shares are typical for the category and are shown as such,
+  // never as this product's kilograms.
+  const lc = readLifecycle(d.lifecycle);
+  const share = Object.fromEntries(lc.parts.map((part) => [part.key, part.pct]));
+  const stageValue = (key) => (lc.measured
+    ? (simStages[key] === null || simStages[key] === undefined ? null : `${formatKg(simStages[key], lang)} kg`)
+    : (share[key] === undefined ? null : `${formatNum(share[key], lang, 0)}%`));
+  const stageNote = lc.measured ? null : L3("điển hình", "typical", "typique");
   const TOPIC_SCENE = { materials: "mine", factory: "factory", transport: sceneFor("transport", sc), use: "home", grid: sceneFor("grid", sc), end_of_life: "recycle", wefe: "city_wefe" };
   const imageFor = (t) => (TOPIC_SCENE[t] ? art[TOPIC_SCENE[t]] || null : null);
 
@@ -298,7 +308,8 @@ function WorldView({ productId }) {
          onPointerDownCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}
          onWheelCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}>
       <WorldScene svgRef={camera.svgRef} category={p.category} sc={sc} sim={{ stages: simStages }} maxStage={maxStage}
-                  focus={focus} labels={labels} ask={askMode} lang={lang} onClick={onSceneClick} art={art} leg={leg} />
+                  focus={focus} labels={labels} ask={askMode} lang={lang} onClick={onSceneClick} art={art} leg={leg}
+                  stageValue={stageValue} stageNote={stageNote} />
 
       {/* walk-in scenes (zoom / slide / drag between places) */}
       <SceneNavigator scene={scene} go={go} takeOrigin={takeOrigin} S={S} rightInset={side ? 430 : 0}
@@ -350,31 +361,34 @@ function WorldView({ productId }) {
       )}
 
       {sc && base && !scene && (
-        <SimPanel open={simOpen && !tour} onToggle={() => setSimOpen(!simOpen)} sc={sc} setSc={setSc} base={base} sim={sim} lang={lang} T={T}
+        <SimPanel open={simOpen && !tour} onToggle={() => setSimOpen(!simOpen)} sc={sc} setSc={setSc} base={base} sim={sim} lang={lang} T={T} measured={lc.measured}
                   origins={ORIGINS} onAsk={() => open("what_if")} onReset={() => setSc({ ...sc, origin: base.origin, mode: base.mode, grid: base.grid, years: base.years, refurbished: false })} />
       )}
 
-      {/* stage rail written as the split equation: production + transport + use + end of life = total */}
+      {/* bottom rail: the real equation when the stages were computed, otherwise the shape a
+          product of this category typically has, labelled as an illustration */}
       {!scene && <nav style={side ? { left: "calc(50% - 210px)", maxWidth: "calc(100% - 460px)" }
                           : xl ? { left: "calc(150px + (100% - 520px) / 2)", maxWidth: "calc(100% - 530px)" }
                           : wide ? { left: "calc(150px + (100% - 220px) / 2)", maxWidth: "calc(100% - 230px)" } : undefined}
            className="absolute z-20 left-1/2 -translate-x-1/2 bottom-3 max-w-[calc(100%-24px)] overflow-x-auto rounded-full bg-white/95 backdrop-blur shadow-xl border border-white p-1.5 flex items-center gap-0.5" aria-label="stages">
-        <span className="hidden sm:inline pl-2 pr-1 text-[13px] font-bold text-[#2E7D4F] whitespace-nowrap">③ {L3("Theo chặng", "By stage", "Par étape")}</span>
-        {RAIL.filter((s) => s !== "materials").map((s, i) => {
-          const kg = tw[s];
-          return (
-            <span key={s} className="flex items-center">
-              {i > 0 && <span className="px-0.5 text-[18px] font-bold text-[#9ca3af]" aria-hidden="true">+</span>}
-              <button type="button" data-explain={STAGE_TOPIC[s]} onClick={(e) => { e.stopPropagation(); choose(s, e.currentTarget.getBoundingClientRect()); }} aria-pressed={focus === s}
-                      className={`rounded-full px-3 py-2 text-[15px] font-semibold whitespace-nowrap transition ${focus === s ? "bg-[#16324a] text-white shadow" : "hover:bg-emerald-50 text-gray-700"}`}>
-                {T.stages[s]}{kg !== null && kg !== undefined ? <span className={`ml-1 font-bold ${focus === s ? "text-emerald-200" : "text-emerald-700"}`}>{formatKg(kg, lang)}</span> : null}
-              </button>
-            </span>
-          );
-        })}
-        <span className="px-1 text-[18px] font-bold text-[#9ca3af]" aria-hidden="true">=</span>
+        <span className="hidden sm:inline pl-2 pr-1 text-[13px] font-bold text-[#2E7D4F] whitespace-nowrap">
+          {lc.measured ? L3("Theo chặng", "By stage", "Par étape") : L3("Tỷ lệ điển hình của loại", "Typical for this category", "Typique de la catégorie")}
+        </span>
+        {RAIL.filter((s) => s !== "materials").map((s, i) => (
+          <span key={s} className="flex items-center">
+            {i > 0 && lc.measured && <span className="px-0.5 text-[18px] font-bold text-[#9ca3af]" aria-hidden="true">+</span>}
+            <button type="button" data-explain={STAGE_TOPIC[s]} onClick={(e) => { e.stopPropagation(); choose(s, e.currentTarget.getBoundingClientRect()); }} aria-pressed={focus === s}
+                    className={`rounded-full px-3 py-2 text-[15px] font-semibold whitespace-nowrap transition ${focus === s ? "bg-[#16324a] text-white shadow" : "hover:bg-emerald-50 text-gray-700"}`}>
+              {T.stages[s]}
+              {stageValue(s) && <span className={`ml-1 font-bold ${focus === s ? "text-emerald-200" : "text-emerald-700"}`}>{stageValue(s)}</span>}
+            </button>
+          </span>
+        ))}
+        {lc.measured && <span className="px-1 text-[18px] font-bold text-[#9ca3af]" aria-hidden="true">=</span>}
         <button type="button" data-explain="co2e_total" onClick={() => { setFocus(null); home(); open("co2e_total"); }}
-                className="rounded-full px-3.5 py-2 text-[15px] font-bold whitespace-nowrap bg-emerald-600 text-white">{T.total} {formatKg(sim?.total ?? p.co2e_kg, lang)} kg</button>
+                className="rounded-full px-3.5 py-2 text-[15px] font-bold whitespace-nowrap bg-emerald-600 text-white">
+          {T.total} {formatKg(p.co2e_kg, lang)} kg
+        </button>
       </nav>}
 
       {/* camera + ask controls */}

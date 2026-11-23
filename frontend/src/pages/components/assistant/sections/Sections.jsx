@@ -27,7 +27,7 @@ export function FormulaSection({ section, products }) {
 }
 
 export function LifecycleSection({ section, products }) {
-  return <LifecycleJourney lifecycle={section.lifecycle} category={products[section.product_id]?.category} compact />;
+  return <LifecycleJourney lifecycle={section.lifecycle} compact />;
 }
 
 export function Co2Chart({ section }) {

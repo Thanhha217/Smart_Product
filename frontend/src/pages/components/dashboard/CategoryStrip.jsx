@@ -36,7 +36,7 @@ function MedianBar({ row, lang, label }) {
   );
 }
 
-export default function CategoryStrip({ rows, status, onRetry, lang: langProp, title, lead }) {
+export default function CategoryStrip({ rows, status, onRetry, lang: langProp, title, lead, linkTo, allHref = "/search", allLabel }) {
   const { lang: ctx } = useI18n();
   const lang = langProp || ctx;
   const L3 = tri(lang);
@@ -55,8 +55,8 @@ export default function CategoryStrip({ rows, status, onRetry, lang: langProp, t
                         "Choisissez une catégorie pour voir ses produits et leur CO₂.")}
           </p>
         </div>
-        <Link to="/search" className="text-[15.5px] font-semibold text-[#1F5D3A] hover:underline">
-          {L3("Xem tất cả sản phẩm", "See all products", "Voir tous les produits")} →
+        <Link to={allHref} className="text-[15.5px] font-semibold text-[#1F5D3A] hover:underline">
+          {allLabel || L3("Xem tất cả sản phẩm", "See all products", "Voir tous les produits")} →
         </Link>
       </div>
 
@@ -70,7 +70,7 @@ export default function CategoryStrip({ rows, status, onRetry, lang: langProp, t
               const tone = co2Tone(row.median_kg);
               return (
                 <li key={row.category}>
-                  <Link to={`/search?category=${encodeURIComponent(row.category)}&sort=co2_asc`}
+                  <Link to={linkTo ? linkTo(row) : `/search?category=${encodeURIComponent(row.category)}&sort=co2_asc`}
                         className="group flex gap-3 rounded-2xl bg-white border border-[#EFEBDF] p-4 hover:border-[#2E7D4F] hover:shadow-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]">
                     <span className={`grid place-items-center w-12 h-12 rounded-2xl shrink-0 ${TONE_RING[tone]}`}>
                       <DeviceIcon name={key} size={28} />

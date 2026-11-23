@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
 import { tri } from "../../../i18n/LanguageContext";
 import { formatKg } from "../../../lib/format";
-import { simulate } from "./worldModel";
 
 function Option({ icon, title, sub, onClick, open, children, to }) {
   const cls = "w-full flex items-center gap-3 rounded-2xl bg-white border border-[#DCEBD9] px-3 py-2 text-left shadow-sm hover:border-[#2E7D4F] hover:shadow transition";
@@ -81,9 +80,9 @@ export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, classN
   const alt = altRaw ? (altRaw.product ? { id: altRaw.product.id, name: altRaw.product.name, kg: altRaw.product.co2e_kg } : { id: altRaw.product_id, name: altRaw.name, kg: altRaw.co2e_kg }) : null;
   const y0 = base?.years || 4;
   const y1 = y0 + 2;
-  const longer = base?.ok && base.total !== null ? simulate(base, { ...sc, years: y1 }) : null;
-  const now = base?.ok && base.total !== null ? simulate(base, { ...sc, years: y0 }) : null;
-  const perYear = (sim, yrs) => (sim ? formatKg(sim.total / yrs, lang) : null);
+  // total ÷ years: the figure the panel itself prints as the formula, nothing more
+  const total = typeof base?.total === "number" ? base.total : null;
+  const perYear = (yrs) => (total !== null && yrs > 0 ? formatKg(total / yrs, lang) : null);
   const searchTo = `/search?${new URLSearchParams({ ...(p.category ? { category: p.category } : {}), sort: "co2_asc" })}`;
   return (
     <aside className={`rounded-3xl bg-white/95 backdrop-blur shadow-xl border border-white p-3.5 space-y-2.5 overflow-y-auto ${className}`}
@@ -99,11 +98,11 @@ export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, classN
         <Option icon="🔧" title={L3("Dùng lâu hơn & bảo dưỡng", "Use longer & maintain", "Utiliser plus longtemps")}
                 sub={L3(`Giữ ${y1} năm thay vì ${y0}`, `Keep it ${y1} years instead of ${y0}`, `Le garder ${y1} ans au lieu de ${y0}`)}
                 open={openLonger} onClick={() => setOpenLonger(!openLonger)}>
-          {longer && now && (
+          {total !== null && (
             <div className="mt-1.5 rounded-2xl bg-[#F3F8F1] border border-[#DCEBD9] p-3 text-[14px] text-[#1f2937]">
               <p className="font-mono text-[13.5px]">{L3("CO₂ mỗi năm = tổng ÷ số năm dùng", "CO₂ per year = total ÷ years of use", "CO₂ par an = total ÷ années d'usage")}</p>
-              <p className="mt-1">{y0} {L3("năm", "yrs", "ans")}: <b>{perYear(now, y0)} kg/{L3("năm", "yr", "an")}</b> → {y1} {L3("năm", "yrs", "ans")}: <b className="text-[#1F5D3A]">{perYear(longer, y1)} kg/{L3("năm", "yr", "an")}</b></p>
-              <p className="mt-1 text-[12.5px] text-[#4b5563]">{L3("Mô phỏng: sản xuất đã thải một lần, chỉ phần điện tăng theo năm. Số chính thức không đổi.", "Simulation: manufacturing is emitted once, only electricity grows with the years. The official figure does not change.", "Simulation : la fabrication est émise une fois, seule l'électricité augmente avec les années. Le chiffre officiel ne change pas.")}</p>
+              <p className="mt-1">{y0} {L3("năm", "yrs", "ans")}: <b>{perYear(y0)} kg/{L3("năm", "yr", "an")}</b> → {y1} {L3("năm", "yrs", "ans")}: <b className="text-[#1F5D3A]">{perYear(y1)} kg/{L3("năm", "yr", "an")}</b></p>
+              <p className="mt-1 text-[12.5px] text-[#4b5563]">{L3("Tổng CO₂ không đổi; dùng càng nhiều năm thì chia ra mỗi năm càng nhẹ.", "The total CO₂ does not change; spread over more years, each year is lighter.", "Le CO₂ total ne change pas ; réparti sur plus d'années, chaque année pèse moins.")}</p>
               <button type="button" onClick={() => setSc({ ...sc, years: sc.years === y1 ? y0 : y1 })}
                       className="mt-2 rounded-full bg-[#1F5D3A] text-white px-3 py-1.5 text-[13.5px] font-semibold">
                 {sc.years === y1 ? L3(`Quay lại ${y0} năm`, `Back to ${y0} years`, `Revenir à ${y0} ans`) : L3(`Xem trên bản đồ với ${y1} năm`, `Show ${y1} years on the map`, `Voir ${y1} ans sur la carte`)}

@@ -192,7 +192,7 @@ export default function Product() {
       {co2 && co2.formula && kg !== null && (
         <div id="co2" className="grid gap-6 lg:grid-cols-2 items-start">
           <Co2Explainer co2={co2} compact />
-          <LifecycleJourney lifecycle={co2.lifecycle} category={product.category} />
+          <LifecycleJourney lifecycle={co2.lifecycle} />
         </div>
       )}
 

@@ -30,7 +30,7 @@ function Ring({ pct, kg, lang, color = "#2E7D4F" }) {
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center leading-tight">
         <div><p className="text-[22px] font-black text-[#16324a]">{formatNum(p, lang, 0)}%</p>
-          <p className="text-[13.5px] text-gray-500">{formatKg(kg, lang) ?? "—"} kg</p></div>
+          {formatKg(kg, lang) !== null && <p className="text-[13.5px] text-gray-500">{formatKg(kg, lang)} kg</p>}</div>
       </div>
     </div>
   );
@@ -156,6 +156,7 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
   const kids = sceneKey.includes("/") ? [] : (HOTSPOTS[top] || []);
   const painting = { materials: "mine", production: "factory", transport: sc.mode === "air" && !local ? "plane" : "ship", use: sc.grid === "solar" ? "solar" : "home", end_of_life: "recycle" }[top];
   const artData = { category: d.product.category, mode: sc.mode, local, originLabel: c.origin, solar: sc.grid === "solar", meter: c.kwh };
+  const measuredSplit = d.lifecycle?.basis === "formula";
   const stageColor = { materials_production: "#2E7D4F", transport: "#3B8FD9", use: "#E0812A", end_of_life: "#7AA725" }[stageKey] || "#2E7D4F";
   const st = storyTxt(lang);
   const chainIdx = { manufacturer: 0, neighbor_average: 1, llm_estimate: 1, lifecycle_formula: 2, category_model: 2, eeio_price: 2 }[d.formula?.method] ?? 3;
@@ -183,13 +184,27 @@ export default function SceneView({ sceneKey, d, base, sim, sc, setSc, lang, S, 
                                     overflow-y-auto rounded-3xl bg-white/95 backdrop-blur shadow-2xl border border-white p-5 md:p-6">
         <p className="text-[13.5px] uppercase tracking-[.18em] font-bold text-emerald-700">{S.names[top]}</p>
         <h2 className="font-serif text-[26px] md:text-[32px] leading-tight font-bold text-[#16324a]">{S.names[sceneKey]}</h2>
+        {/* The share of a stage. When the catalogue only stores a total, the share is what a
+            product of this category typically looks like, so the kilograms are not printed as
+            this product's own: the headline is the share, and the figure stays the total. */}
         {stageKey && (
           <div className="mt-3 flex items-center gap-4" data-explain={TOPIC_OF_SCENE[top]}>
-            <Ring pct={pct} kg={kg} lang={lang} color={stageColor} />
+            <Ring pct={pct} kg={measuredSplit ? kg : null} lang={lang} color={stageColor} />
             <div>
-              <p className="text-[30px] font-black text-[#16324a] leading-none">{c.kg} <span className="text-[16px] font-semibold text-gray-500">kg CO₂e</span></p>
-              <p className="text-[15px] text-gray-600 mt-1">{top === "materials" ? S.inProduction : `${c.pct}% ${S.ofTotal}`}</p>
-              {d.lifecycle?.basis === "typical_share" && <p className="text-[13.5px] text-amber-700 mt-1">⚠ {S.assumedSplit}</p>}
+              {measuredSplit ? (
+                <>
+                  <p className="text-[30px] font-black text-[#16324a] leading-none">{c.kg} <span className="text-[16px] font-semibold text-gray-500">kg CO₂e</span></p>
+                  <p className="text-[15px] text-gray-600 mt-1">{top === "materials" ? S.inProduction : `${c.pct}% ${S.ofTotal}`}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[30px] font-black text-[#16324a] leading-none">{c.pct}%</p>
+                  <p className="text-[15px] text-gray-600 mt-1">
+                    {top === "materials" ? S.inProduction : S.typicalShare}
+                  </p>
+                  <p className="text-[13.5px] text-amber-700 mt-1">⚠ {S.assumedSplit}</p>
+                </>
+              )}
             </div>
           </div>
         )}
