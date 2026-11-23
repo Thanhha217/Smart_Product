@@ -12,6 +12,7 @@ import uuid
 from typing import Any, Callable
 
 import data_client
+import llm_provider
 import page_spec as ps
 from green import parse_specs
 from green.co2_formula import CATEGORY_PARAMS, estimate_savings
@@ -75,7 +76,7 @@ def build_page(message: str, lang: str, store: Store, parent_id: str | None = No
         if parent:
             question = f"{parent['query']} — {message}"
     plan, plan_model = plan_fn(question)
-    if plan_model != "claude":
+    if plan_model == "rule-based":
         warnings.append("llm_unavailable")
 
     items = data_client.search(plan.search_query)
@@ -117,7 +118,7 @@ def build_page(message: str, lang: str, store: Store, parent_id: str | None = No
                        "category": cards[pid]["category"], "platform": cards[pid]["platform"]}
                       for a, pid in alias_map.items()]
         layout = compose_fn(message if not parent_id else question, lang, candidates, stats, savings, sorted(values))
-        model_used = assistant_llm.MODEL
+        model_used = llm_provider.model_label()
     except Exception as error:
         print(f"assistant: layout via rules ({error.__class__.__name__}: {error})", flush=True)
         warnings.append("explanation_timeout" if "timeout" in error.__class__.__name__.lower() else "llm_unavailable")

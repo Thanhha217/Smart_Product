@@ -1,4 +1,4 @@
-"""Claude calls for the assistant: understand the request, then write the
+"""LLM calls for the assistant (OpenAI or Claude, see llm_provider): understand the request, then write the
 chart code (Vega-Lite) and the explanation from numbers computed by our own
 CO2 formula.  The model never invents product data -- it only receives rows we
 computed and writes specs that reference them by field name.
@@ -10,22 +10,12 @@ import json
 import os
 import re
 
-import anthropic
+import llm_provider
 from pydantic import BaseModel, Field
 
 from green.co2_formula import CATEGORY_PARAMS
 
-MODEL = os.environ.get("ASSISTANT_MODEL", "claude-opus-5-5")
-TIMEOUT_S = float(os.environ.get("ASSISTANT_TIMEOUT_S", "20"))
-_client: anthropic.Anthropic | None = None
-
-
-def _get_client() -> anthropic.Anthropic:
-    """Created on first use so the service (and the rule-based page) still starts without credentials."""
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(timeout=TIMEOUT_S, max_retries=1)
-    return _client
+MODEL = llm_provider.ANTHROPIC_MODEL  # kept for callers that print it
 
 
 class Plan(BaseModel):
@@ -115,20 +105,8 @@ Produce:
 
 
 def _call(system: str, user: str, schema: dict, effort: str) -> dict:
-    response = _get_client().beta.messages.create(
-        model=MODEL,
-        max_tokens=16000,
-        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-        messages=[{"role": "user", "content": user}],
-        output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-    )
-    if response.stop_reason == "refusal":
-        raise RuntimeError("The model declined this request.")
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("The model response was truncated.")
-    return json.loads(next(b.text for b in response.content if b.type == "text"))
+    """Structured JSON from whichever provider has a key (OpenAI or Anthropic), see llm_provider."""
+    return llm_provider.structured_call(system, user, schema, name="result", effort=effort, max_tokens=8000)
 
 
 def make_plan(message: str) -> Plan:
@@ -194,9 +172,9 @@ def heuristic_plan(message: str) -> Plan:
 
 
 def plan_request(message: str) -> tuple[Plan, str]:
-    """(plan, 'claude' | 'rule-based'): the model when reachable, keywords otherwise."""
+    """(plan, model label | "rule-based"): the model when reachable, keywords otherwise."""
     try:
-        return make_plan(message), "claude"
+        return make_plan(message), llm_provider.model_label()
     except Exception as error:  # no key, timeout, refusal, invalid JSON...
         print(f"assistant: plan via rules ({error.__class__.__name__})", flush=True)
         return heuristic_plan(message), "rule-based"

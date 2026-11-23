@@ -506,6 +506,10 @@ services:
       # Secret: export it in your shell or put it in the root .env (never commit it).
       # Without it the pages are still built, with rule-based texts.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # OpenAI is used first when its key is set (LLM_PROVIDER=auto|openai|anthropic).
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
     restart: always
     depends_on:
       - db-search

@@ -257,3 +257,34 @@ def cancel_test_order(order_id: str):
         return orders.cancel_order(store, order_id)
     except orders.OrderError as e:
         return _error(e.status, e.code, e.message)
+
+
+class ExplainRequest(BaseModel):
+    product_id: str
+    topic: str = "co2e_total"
+    question: str | None = Field(default=None, max_length=300)
+    lang: str = "vi"
+    scenario: dict | None = None
+
+
+@app.post("/api/explain")
+def explain_endpoint(req: ExplainRequest):
+    """'Chọn đâu hỏi đó': explain one clicked part of a product's CO2 (docs/demo/api-explain.md)."""
+    import explain_api
+
+    if not req.product_id.isdigit():
+        return _error(400, "invalid_id", "product_id must be numeric")
+    try:
+        item = data_client.product(req.product_id)
+        if item is None:
+            return _error(404, "product_not_found", "Product not found")
+        co2 = pages.product_co2(item)
+        category = co2["product"].get("category")
+        stats = data_client.stats(category, req.product_id) if category else None
+        try:
+            related = data_client.related(req.product_id, 6)
+        except requests.RequestException:
+            related = None
+    except requests.RequestException:
+        return _error(502, "db_search_unavailable", "db-search unavailable")
+    return explain_api.explain(co2, stats, related, req.topic, req.question, req.lang, req.scenario)
