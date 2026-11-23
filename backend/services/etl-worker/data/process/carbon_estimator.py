@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import threading
 
 import faiss
@@ -13,6 +12,7 @@ from data.schemes.carbon_reference import CarbonReference
 from data.schemes.product import Product
 from data.process.data_transformer import encode_text
 from green.fallback import CategoryStats, canonical_category, estimate_without_neighbours
+from green.matching import find_exact_reference
 
 EMBED_DIM = 512          # Dimensionality of the CLIP text embedding vectors
 TOP_K = 5               # Number of candidate neighbours retrieved from the FAISS index before similarity filtering
@@ -77,42 +77,51 @@ SIMILARITY_THRESHOLD = 0.66
 # Bounds are intentionally wide.  The goal is only to catch catastrophic
 # hallucinations (e.g. 300 kg for a headset), not to constrain fine-grained
 # variation within a category.
+#
+# Nov 2026 update (same values as db-search/green_score.py, which uses them as
+# [L, U] for the 0-5 green score):
+#   • Electronics widened so every manufacturer figure in the 1,450-product seed
+#     fits (Apple Watch 7.2 kg, Mac mini 30 kg, ThinkPad P71 937 kg, Xbox Series X
+#     825 kg, Vision Pro 335 kg, Nest Hub Max 160 kg).
+#   • Appliances: roughly (lowest result of green/co2_formula.py / 4, highest x 2),
+#     because the formula includes 10+ years of electricity on the Vietnamese grid
+#     (e.g. 75" TV 1,925 kg; Samsung reports 982-2,388 kg).
 CATEGORY_BOUNDS: dict[str, tuple[float, float]] = {
     # --- Electronics & Tech ---------------------------------------------------
     "smartphone":           (10,    200),   # incl. foldables
     "feature_phone":        (5,     80),    # simpler hardware → lower footprint
-    "laptop":               (60,    800),
-    "gaming_laptop":        (80,    900),   # higher TDP, more RAM/storage
+    "laptop":               (60, 1000),
+    "gaming_laptop":        (80, 1000),   # higher TDP, more RAM/storage
     "tablet":               (20,    300),
-    "desktop":              (100,  1500),   # towers with discrete GPUs
+    "desktop":              (25, 1500),   # towers with discrete GPUs
     "computer_monitor":     (50,   2000),   # 21"–49" ultrawide
     "pc_component":         (5,    500),    # single component (GPU, RAM, SSD…)
     "computer_peripheral":  (1,    150),    # mouse, keyboard, webcam, hub…
     "networking":           (5,    200),    # routers, switches, mesh nodes
-    "smartwatch":           (10,    120),
-    "wearable":             (2,     80),    # fitness bands, trackers
+    "smartwatch":           (5, 120),
+    "wearable":             (2, 400),    # fitness bands, trackers
     "headphone":            (1,     80),    # over-ear, on-ear, earbuds, IEMs
     "speaker":              (1,    150),    # portable BT speakers → soundbars
     "phone_accessory":      (0.5,   50),    # cases, cables, chargers, screen protectors
     "camera":               (20,   300),    # body only; lens/kit sets higher
     "drone":                (10,   200),    # consumer drones; professional higher
-    "gaming_console":       (20,   250),    # current-gen home consoles + handhelds
+    "gaming_console":       (15, 900),    # current-gen home consoles + handhelds
     # --- Home Appliances ------------------------------------------------------
-    "television":           (50,   800),    # 32"–85" smart TVs
-    "refrigerator":         (200, 1500),    # single-door → side-by-side
-    "washing_machine":      (150, 1000),
+    "television":           (200, 3500),    # 32"–85" smart TVs
+    "refrigerator":         (550, 10000),    # single-door → side-by-side
+    "washing_machine":      (130, 2300),
     "clothes_dryer":        (150,  800),
-    "air_conditioner":      (100, 1200),    # split / inverter units
-    "electric_fan":         (5,   100),
-    "air_purifier":         (20,  200),
-    "water_purifier":       (20,  200),
-    "vacuum_cleaner":       (15,  200),     # incl. robot vacuums
-    "rice_cooker":          (5,   150),     # incl. air fryers, pressure cookers
-    "microwave_oven":       (20,  250),
+    "air_conditioner":      (1400, 25000),    # split / inverter units
+    "electric_fan":         (100, 2100),
+    "air_purifier":         (100, 1800),
+    "water_purifier":       (60, 1000),
+    "vacuum_cleaner":       (35, 600),     # incl. robot vacuums
+    "rice_cooker":          (80, 1500),     # incl. air fryers, pressure cookers
+    "microwave_oven":       (60, 1100),
     "blender_juicer":       (5,   100),
-    "stove":                (20,  300),     # electric / induction hobs
-    "lighting":             (1,    50),     # LED bulbs, desk lamps
-    "smart_home":           (5,   150),     # smart locks, sensors, security cams
+    "stove":                (330, 6000),     # electric / induction hobs
+    "lighting":             (15, 300),     # LED bulbs, desk lamps
+    "smart_home":           (5, 200),     # smart locks, sensors, security cams
     # --- Books & Stationery ---------------------------------------------------
     "book":                 (0.5,  10),     # per-volume; paperback < hardcover
     "stationery":           (0.1,  30),
@@ -732,24 +741,18 @@ def _round_kg(value):
     return round(value, 2) if value < 1 else round(value, 1)
 
 
+# No close neighbour: use green.fallback (formula -> category model -> price/EEIO).
+# On by default; CO2E_FALLBACK=0 leaves those products empty (the earlier final method).
+USE_FALLBACK = os.environ.get("CO2E_FALLBACK", "1") == "1"
+
+
 # Step 1 of the final method: the manufacturer published a figure for this exact model.
-USE_FALLBACK = os.environ.get("CO2E_FALLBACK", "0") == "1"
-
-
-def _tokens(text):
-    return " ".join(re.findall(r"[a-z0-9]+", (text or "").lower()))
 
 
 def _exact_reference(name):
-    """Longest reference name (>= 3 tokens) contained word-for-word in the product name."""
+    """Reference whose name appears word for word in the product name (green.matching)."""
     _build_reference_index()
-    haystack = f" {_tokens(name)} "
-    best = None
-    for ref in (_ref_by_id or {}).values():
-        key = _tokens(ref["name"])
-        if len(key.split()) >= 3 and f" {key} " in haystack and (best is None or len(key) > len(_tokens(best["name"]))):
-            best = ref
-    return best
+    return find_exact_reference(name, (_ref_by_id or {}).values())
 
 
 def estimate_product_co2e(product, product_embedding, category=None):

@@ -108,4 +108,6 @@ Khi chạy thử phát hiện và đã sửa một lỗi ở `spec_parser.py`: m
 1. Hiển thị nguồn + khoảng sai số trên trang sản phẩm.
 2. Thu kWh/năm trên nhãn năng lượng → hiệu chỉnh `CATEGORY_PARAMS` và kiểm định công thức.
 3. Thêm EPD điện gia dụng vào danh sách mẫu (mỗi loại ≥ 5).
-4. Bước 1 của bản chốt (khớp đúng model trước khi tìm láng giềng) vẫn chưa có trong code.
+4. ~~Bước 1 của bản chốt (khớp đúng model trước khi tìm láng giềng)~~ – đã có từ 22/11/2026 (`carbon_estimator.py::_exact_reference`).
+
+> Cập nhật 23/11/2026: các bước dự phòng nay **bật mặc định** (`CO2E_FALLBACK=1`); hệ số lưới điện đổi từ 0,6592 sang 0,681 (năm 2024), nên các số của công thức ở mục 3 tăng khoảng 3 % (tivi 75" 1.925 → 1.972 kg, máy lạnh Daikin 6.118 → 6.297 kg). Tổng hợp thay đổi: [co2-nhung-gi-moi.md](co2-nhung-gi-moi.md).

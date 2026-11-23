@@ -107,7 +107,7 @@
   {"name": "Asus ProArt Display PA248QV 24-inch", "category": "computer_monitor", "brand": "Asus", "co2e_kg": 342, "scope": "cradle-to-grave", "source": "ASUS Product Carbon Footprint Report PA248QV (342, SD 91), esg.asus.com"},
   {"name": "Asus BE279 Monitor 27-inch", "category": "computer_monitor", "brand": "Asus", "co2e_kg": 757, "scope": "cradle-to-grave", "source": "ASUS Product Carbon Footprint Report BE279 (Mar 2022, ISO 14040/14044), esg.asus.com"},
 
-  {"name": "Apple AirPods Pro 3", "category": "earphone", "brand": "Apple", "co2e_kg": 13, "scope": "cradle-to-grave", "source": "Apple AirPods Pro 3 Product Environmental Report (Sept 2025), apple.com/environment"},
+  {"name": "Apple AirPods Pro 3", "category": "headphone", "brand": "Apple", "co2e_kg": 13, "scope": "cradle-to-grave", "source": "Apple AirPods Pro 3 Product Environmental Report (Sept 2025), apple.com/environment"},
   {"name": "Apple iPad Pro 11-inch and 13-inch (M5)", "category": "tablet", "brand": "Apple", "co2e_kg": 120, "scope": "cradle-to-grave", "source": "Apple iPad Pro (M5) Product Environmental Report (Oct 2025), apple.com/environment"},
   {"name": "Apple iPad Pro 11-inch (M4) 256GB", "category": "tablet", "brand": "Apple", "co2e_kg": 93, "scope": "cradle-to-grave", "source": "Apple iPad Pro Product Environmental Report (May 2024), apple.com/environment"},
   {"name": "Apple iPad Pro 13-inch (M4) 256GB", "category": "tablet", "brand": "Apple", "co2e_kg": 107, "scope": "cradle-to-grave", "source": "Apple iPad Pro Product Environmental Report (May 2024), apple.com/environment"},

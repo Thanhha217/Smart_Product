@@ -123,7 +123,7 @@ $$
 $$
 
 - $AEC$ ưu tiên lấy từ **nhãn năng lượng**, sau đó công suất × giờ dùng, cuối cùng là mặc định danh mục.
-- $EF_{grid}$ = hệ số phát thải lưới điện Việt Nam (mặc định 0,6592 kg/kWh — cần xác minh công bố mới nhất).
+- $EF_{grid}$ = hệ số phát thải lưới điện Việt Nam (mặc định 0,681 kg/kWh, số năm 2024; trước đây 0,6592 của năm 2023).
 - Baseline $b$ = sản phẩm tiêu chuẩn **cùng công suất** (cùng HP/lít/kg/inch) → so sánh công bằng.
 - Có khoảng bất định theo nguồn dữ liệu (±10 % nhãn, ±25 % công suất, ±40 % mặc định).
 

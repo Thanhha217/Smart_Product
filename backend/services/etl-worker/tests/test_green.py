@@ -1,6 +1,7 @@
 import pytest
 
 from green import assess_green, estimate_co2, estimate_savings, is_in_focus, parse_specs
+from green.co2_formula import EF_GRID
 from green.focus import APPLIANCES, ELECTRONICS
 from green.spec_parser import ProductSpecs
 
@@ -44,7 +45,7 @@ class TestCO2Formula:
         r = estimate_co2("air_conditioners", ProductSpecs(cooling_hp=1.0, annual_kwh=1000))
         six, twelve = r.horizons
         assert twelve.use_kg == pytest.approx(2 * six.use_kg)
-        assert twelve.use_kg == pytest.approx(1000 * 0.6592, rel=1e-3)
+        assert twelve.use_kg == pytest.approx(1000 * EF_GRID, rel=1e-3)
         assert r.kwh_source == "label"
 
     def test_lifecycle_decomposition(self):
