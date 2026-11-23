@@ -93,7 +93,7 @@ export function SavingsPanel({ section, products }) {
         })}
       </p>
       <p className="text-3xl font-black text-green-700">
-        −{formatKg(section.lifecycle_kg_saved, lang)} kg CO₂e <span className="text-base font-normal text-gray-600">{t("savings.lifecycle")}</span>
+        {formatKg(section.lifecycle_kg_saved, lang)} kg CO₂e <span className="text-base font-normal text-gray-600">{t("savings.less")} {t("savings.lifecycle")}</span>
       </p>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">

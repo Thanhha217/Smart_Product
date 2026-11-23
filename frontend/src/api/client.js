@@ -72,7 +72,14 @@ const ids = (list) => list.map(String).filter(Boolean).join(",");
 export const api = {
   getProductCo2: (id) => (MOCK_API ? mock.getProductCo2(id) : request("GET", `/api/products/${encodeURIComponent(id)}/co2`)),
   getRelated: (id, limit = 6) =>
-    MOCK_API ? mock.getRelated(id) : request("GET", `/api/products/${encodeURIComponent(id)}/related?limit=${limit}`),
+    MOCK_API
+      ? mock.getRelated(id)
+      : request("GET", `/api/products/${encodeURIComponent(id)}/related?limit=${limit}`).then((r) => ({
+          ...r,
+          // db-search answers with its raw items; the pages expect ProductCard.
+          items: (r.items || []).map(toProductCard).filter(Boolean),
+          greener_alternative: toProductCard(r.greener_alternative),
+        })),
   getCategoryStats: (cat, productId) =>
     MOCK_API
       ? mock.getCategoryStats(cat, productId)

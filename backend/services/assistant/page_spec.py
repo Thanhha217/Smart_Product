@@ -257,7 +257,8 @@ def build_chart(kind: str, cards: list[dict], lifecycles: dict[str, dict], lang:
                      "data": {"values": rows}, "mark": {"type": "point", "filled": True, "size": 140},
                      "encoding": {"x": {"field": "price_vnd", "type": "quantitative", "title": "Giá (đ)" if vi else "Price (VND)"},
                                   "y": {"field": "co2e_kg", "type": "quantitative", "title": "kg CO₂e"},
-                                  "color": {"field": "green_score", "type": "quantitative", "scale": _GREEN_SCALE},
+                                  "color": {"field": "green_score", "type": "quantitative", "scale": _GREEN_SCALE,
+                                            "title": "Điểm xanh" if vi else "Green score"},
                                   "tooltip": [{"field": "name"}, {"field": "price_vnd"}, {"field": "co2e_kg"}]}}}
     if kind == "lifecycle_stack":
         rows = []

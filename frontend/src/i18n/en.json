@@ -83,7 +83,7 @@
   "assistant.loading": "The AI is analysing your request, querying products and drawing charts...",
   "assistant.error": "Could not process the request right now. Please try again.",
   "assistant.explanation": "Why these products fit you",
-  "assistant.disclaimer": "CO₂ figures are estimates from the system's lifecycle formula (Vietnam grid factor), not manufacturer-certified values.",
+  "assistant.disclaimer": "CO₂ figures are estimates; each one shows its source (manufacturer, similar products, formula or price) and confidence. Not certified values.",
   "assistant.green": "Green product",
   "assistant.saved": "Saves {six} kg CO₂ after 6 months · {twelve} kg after 1 year",
   "assistant.col.name": "Product",
@@ -276,5 +276,7 @@
   "order.log": "Log",
   "order.back": "Back to home",
   "product.askAi": "Ask AI about this product",
-  "product.askAiPrompt": "Analyse the CO₂ of {name} and suggest a greener alternative"
+  "product.askAiPrompt": "Analyse the CO₂ of {name} and suggest a greener alternative",
+  "lifecycle.mode.sea+road": "sea + road",
+  "savings.less": "less"
 }

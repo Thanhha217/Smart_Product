@@ -83,7 +83,7 @@
   "assistant.loading": "AI đang phân tích yêu cầu, truy vấn sản phẩm và vẽ biểu đồ...",
   "assistant.error": "Không thể xử lý yêu cầu lúc này. Vui lòng thử lại.",
   "assistant.explanation": "Vì sao các sản phẩm này phù hợp với bạn",
-  "assistant.disclaimer": "Lượng CO₂ là ước tính theo công thức vòng đời của hệ thống (hệ số lưới điện Việt Nam), không phải số liệu chứng nhận của nhà sản xuất.",
+  "assistant.disclaimer": "Số CO₂ là ước tính; mỗi số ghi rõ nguồn (số của hãng, trung bình sản phẩm giống, công thức hoặc theo giá) và độ tin cậy. Không phải số liệu chứng nhận.",
   "assistant.green": "Sản phẩm xanh",
   "assistant.saved": "Giảm {six} kg CO₂ sau 6 tháng · {twelve} kg sau 1 năm",
   "assistant.col.name": "Sản phẩm",
@@ -276,5 +276,7 @@
   "order.log": "Nhật ký",
   "order.back": "Về trang chủ",
   "product.askAi": "Hỏi AI về sản phẩm này",
-  "product.askAiPrompt": "Phân tích CO₂ của {name} và gợi ý món thay thế xanh hơn"
+  "product.askAiPrompt": "Phân tích CO₂ của {name} và gợi ý món thay thế xanh hơn",
+  "lifecycle.mode.sea+road": "đường biển + đường bộ",
+  "savings.less": "ít hơn"
 }
