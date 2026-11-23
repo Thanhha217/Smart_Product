@@ -195,6 +195,10 @@ export default function Product() {
 
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => navigate(`/story/${params.productId}`)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl px-5 py-2.5 transition">
+                            📖 {t("product.story")}
+                        </button>
                         <button type="button" onClick={() => navigate(`/assistant?q=${encodeURIComponent(t("product.askAiPrompt", { name: productInfo.product.name }))}`)}
                             className="bg-secondary-500 text-white rounded-2xl px-4 py-2 font-semibold hover:bg-secondary-700">
                             ✨ {t("product.askAi")}

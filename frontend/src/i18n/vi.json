@@ -278,5 +278,7 @@
   "product.askAi": "Hỏi AI về sản phẩm này",
   "product.askAiPrompt": "Phân tích CO₂ của {name} và gợi ý món thay thế xanh hơn",
   "lifecycle.mode.sea+road": "đường biển + đường bộ",
-  "savings.less": "ít hơn"
+  "savings.less": "ít hơn",
+  "nav.story": "Hành trình CO₂",
+  "product.story": "Xem hành trình CO₂ (sách lật)"
 }

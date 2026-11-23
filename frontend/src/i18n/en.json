@@ -278,5 +278,7 @@
   "product.askAi": "Ask AI about this product",
   "product.askAiPrompt": "Analyse the CO₂ of {name} and suggest a greener alternative",
   "lifecycle.mode.sea+road": "sea + road",
-  "savings.less": "less"
+  "savings.less": "less",
+  "nav.story": "CO₂ journey",
+  "product.story": "See the CO₂ journey (flipbook)"
 }

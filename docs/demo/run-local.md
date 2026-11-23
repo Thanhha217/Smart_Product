@@ -22,6 +22,8 @@ CREATE TEMP TABLE keep AS SELECT DISTINCT ON (product_url) id FROM product
 DELETE FROM image WHERE product_id NOT IN (SELECT id FROM keep);
 DELETE FROM product WHERE id NOT IN (SELECT id FROM keep);
 COMMIT;"
+# bảng image của dump cũ có cột image_path NOT NULL mà code hiện tại không ghi
+docker exec smart-product-finder-database psql -U postgres -d smart_product_finder -c "ALTER TABLE image ALTER COLUMN image_path DROP NOT NULL;"
 ```
 
 ## 3. Bật các dịch vụ và dựng chỉ mục + tính CO₂
@@ -43,11 +45,13 @@ docker exec airflow-scheduler airflow dags trigger dienmayxanh_scraper_dag
 Airflow UI: http://localhost:8080 · Kafka UI: http://localhost:8081. Sản phẩm mới được tính CO₂ ngay khi vào etl-worker
 (log: `docker logs -f smartproductfinder-backend-etl-worker`).
 
+Không bắt buộc cho demo: dữ liệu trong dump + dataset 10.000 dòng đã đủ. Mục này chỉ để chứng minh luồng cào → Kafka → tính CO₂ chạy thật.
+
 ## 5. Kiểm tra end-to-end
 ```bash
 python scripts/demo/smoke_e2e.py     # tìm kiếm → CO₂ → so sánh → trang AI → đơn thử → MCP
 ```
-Web: http://localhost:5173 · API: http://localhost:8000/api · MCP: http://localhost:8100/mcp
+Web: http://localhost:5173 (sách lật CO₂: http://localhost:5173/story, ví dụ `/story/55051?p=2`) · API: http://localhost:8000/api · MCP: http://localhost:8100/mcp
 
 ## Lưu ý đã gặp
 - CLIP từng chạy ở chế độ training, 8 luồng mỗi request: 6–12 s/câu. Đã sửa (eval + inference_mode + `TORCH_NUM_THREADS=4`): ~0,15 s/câu.
