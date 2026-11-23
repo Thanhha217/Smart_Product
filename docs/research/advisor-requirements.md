@@ -21,7 +21,7 @@ Chỉ có 4 nhánh chứa commit mà `develop` chưa có; mọi nhánh khác đ�
 
 | Nhánh | Hơn `develop` | Nội dung | Quan hệ |
 |---|---|---|---|
-| `paper` | 17 commit | `research_paper.tex`, hình, tài liệu tham khảo + toàn bộ `Explanation` | **Mới nhất, chứa tất cả** → dùng làm gốc cho `new-research` |
+| `paper` | 17 commit | `paper/research_paper.tex`, hình, tài liệu tham khảo + toàn bộ `Explanation` | **Mới nhất, chứa tất cả** → dùng làm gốc cho `new-research` |
 | `Explanation` | 11 commit | CO₂ bằng LLM local (Qwen 3.5 0.8B qua Ollama), giải thích xếp hạng, UI hiển thị CO₂ | Đã nằm trong `paper` |
 | `feature/LocalLLM` | 5 commit | Prompt 2 giai đoạn cho CO₂ | Đã nằm trong `Explanation` |
 | `feature/lazada_crawler` | 4 commit | Cào Lazada bằng Scrapling — **vẫn bị chặn anti-bot** | Nhánh cụt, không dùng |
@@ -33,9 +33,9 @@ Kết luận: bản code đầy đủ nhất là `origin/paper`; nhánh `new-res
 
 ## 1. Yêu cầu 1 — Database: tập trung một nhóm sản phẩm, ưu tiên sản phẩm xanh
 
-### 1.1 Hiện trạng database (đọc offline `backups/pre_category_migration.dump`)
+### 1.1 Hiện trạng database (đọc offline `data/backups/pre_category_migration.dump`)
 
-Chạy: `python scripts/research/audit_db_dump.py backups/pre_category_migration.dump`
+Chạy: `python scripts/research/audit_db_dump.py data/backups/pre_category_migration.dump`
 
 | Chỉ số | Giá trị | Nhận xét |
 |---|---|---|
@@ -103,7 +103,7 @@ Thông số được trích từ tên/mô tả tiếng Việt bằng [`green/spe
    if os.environ.get("GREEN_ONLY") == "1" and not green.is_green:
        return                      # chế độ "chỉ sản phẩm xanh"
    ```
-   và thêm cột `green_score`, `is_green` vào bảng `product` (migration SQL như `backups/migration.sql`).
+   và thêm cột `green_score`, `is_green` vào bảng `product` (migration SQL như `data/backups/migration.sql`).
 4. Loại sản phẩm `final_price = 0` khỏi FAISS thay vì chỉ lọc lúc xếp hạng.
 
 ---
@@ -129,7 +129,7 @@ $$
 
 ### 2.2 Điểm mới so với bài báo hiện tại và các công trình liên quan
 
-- Vestrum et al. và Spillo et al. (đã trích trong `research_paper.tex`) dùng LLM ước lượng **một con số tổng**; ở đây tách **pha sử dụng theo thời gian** và **so sánh với sản phẩm cùng công suất**, trả lời trực tiếp "dùng 6 tháng / 1 năm giảm bao nhiêu".
+- Vestrum et al. và Spillo et al. (đã trích trong `paper/research_paper.tex`) dùng LLM ước lượng **một con số tổng**; ở đây tách **pha sử dụng theo thời gian** và **so sánh với sản phẩm cùng công suất**, trả lời trực tiếp "dùng 6 tháng / 1 năm giảm bao nhiêu".
 - Dùng dữ liệu đặc thù Việt Nam: hệ số lưới điện VN, nhãn năng lượng TCVN, giá điện EVN.
 - Minh bạch, tái lập được, có kiểm thử; LLM chỉ còn là nguồn phụ cho $E_{emb}$ khi thiếu EPD.
 
@@ -148,7 +148,7 @@ Trong `carbon_estimator.estimate_product_co2e`: nếu danh mục có trong `CATE
 
 ### 3.1 Vì sao độ chính xác thực tế ~50 % trong khi bài báo ghi 95 %
 
-Rà soát `dataset_creator.py`, `test-CatBoostRankerMQ2008.ipynb` và `research_paper.tex`:
+Rà soát `dataset_creator.py`, `test-CatBoostRankerMQ2008.ipynb` và `paper/research_paper.tex`:
 
 1. **Rò rỉ dữ liệu**: dữ liệu được "tăng cường" bằng cách nhân bản nhóm truy vấn rồi mới `GroupShuffleSplit` → bản sao của cùng một truy vấn có thể nằm ở cả train và test.
 2. **Âm tính tổng hợp quá dễ**: 4/12 dòng mỗi truy vấn là "garbage" sinh ngẫu nhiên (`generate_garbage_mock_features`) với nhãn 0 → mô hình chỉ cần phân biệt dữ liệu giả, nâng điểm một cách giả tạo.
@@ -257,7 +257,7 @@ Vì sao sinh **Vega-Lite** thay vì để AI viết JavaScript tuỳ ý: Vega-Li
 
 ---
 
-## 5. Gợi ý cập nhật `research_paper.tex`
+## 5. Gợi ý cập nhật `paper/research_paper.tex`
 
 - **Contributions**: thay mục 4 ("two-stage local LLM") bằng "công thức CO₂ vòng đời tham số hoá, tách pha sử dụng theo thời gian, cho biết lượng CO₂ giảm thải sau T tháng so với sản phẩm cùng công suất"; thêm "trợ lý đa phương thức (giọng nói/văn bản) sinh biểu đồ".
 - **Methodology**: thêm mục công thức (mục 3 của co2-formula.md), GreenScore, và quy trình giám khảo LLM.

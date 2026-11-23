@@ -4,7 +4,7 @@ Reads the dump file directly -- no Postgres server, no container -- and reports
 row counts, duplicates, missing prices / descriptions, the category and
 platform mix, and how many products carry a "green" signal.
 
-    python scripts/research/audit_db_dump.py backups/pre_category_migration.dump
+    python scripts/research/audit_db_dump.py data/backups/pre_category_migration.dump
     python scripts/research/audit_db_dump.py <dump> --json out.json
 
 Only works for dumps made with the default zlib compression.  Column order is

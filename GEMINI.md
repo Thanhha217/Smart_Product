@@ -1,2 +1,2 @@
-Relevent documents explaining the project are in the documents folder, they include 5 different research papers, an explaination on the different possible approches to estimate CO2 emmisions, the base presentation of the project and my internship report.
+Relevent documents explaining the project are in docs/references/, they include 5 different research papers, an explaination on the different possible approches to estimate CO2 emmisions, the base presentation of the project and my internship report.
 You must NEVER directly quote or copy text from the internship report, it is only there to serve as a guide for how the whole project went

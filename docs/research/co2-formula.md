@@ -5,7 +5,7 @@
 
 ## 1. Vì sao cần một công thức thay vì hỏi LLM
 
-Phiên bản hiện tại (nhánh `paper`) hỏi thẳng mô hình Qwen 3.5 0.8B *"sản phẩm này thải bao nhiêu kg CO₂?"*. Kết quả trong `research_paper.tex`:
+Phiên bản hiện tại (nhánh `paper`) hỏi thẳng mô hình Qwen 3.5 0.8B *"sản phẩm này thải bao nhiêu kg CO₂?"*. Kết quả trong `paper/research_paper.tex`:
 
 | Phương pháp | MAE (kg) | MAPE (%) | Spearman ρ |
 |---|---|---|---|
