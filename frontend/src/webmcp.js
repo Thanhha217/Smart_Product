@@ -3,6 +3,8 @@
 // browser has no modelContext. Supports both registerTool() and provideContext({tools}).
 import { api } from "./api/client";
 import { addToCart } from "./lib/cart";
+import { DEVICE_SLUGS, planPurchase } from "./lib/aiBuyer";
+import { normalizeList } from "./lib/data";
 
 let navigateFn = null;
 export function setNavigator(fn) {
@@ -91,6 +93,43 @@ const TOOLS = [
     },
   },
 ];
+
+TOOLS.push({
+  name: "buy_for_me",
+  description:
+    "Let the site's shopping agent buy for the user in TEST mode: it searches the catalogue (with a price and a CO2 figure), compares price and lifecycle CO2, optionally works out the CO2 avoided by reselling the user's old device, and prepares ONE test order. The order waits for the human to approve it on its page: the agent cannot confirm or pay, and no real payment ever happens.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      query: { type: "string", description: "What to buy, e.g. 'macbook', 'tai nghe'" },
+      category: { type: "string", enum: ["", ...DEVICE_SLUGS], description: "Optional device type" },
+      priority: { type: "string", enum: ["co2", "price"], default: "co2" },
+      max_price_vnd: { type: "number", description: "Optional budget in VND" },
+      old_device_kg: { type: "number", description: "Optional lifecycle CO2 of the user's old device (kg CO2e)" },
+      old_device_category: { type: "string", enum: ["laptop", "smartphone", "tablet", "computer_monitor", "smartwatch", "headphone"] },
+    },
+  },
+  execute: async ({ query = "", category = "", priority = "co2", max_price_vnd, old_device_kg, old_device_category = "laptop" }) => {
+    const r = await planPurchase(
+      { query, category, priority, maxPrice: max_price_vnd ?? null, old: old_device_kg ? { name: "old device", kg: old_device_kg, category: old_device_category } : null },
+      {
+        search: async (p) => { const d = await api.search(p); return { ...d, items: normalizeList(d?.items) }; },
+        getCo2: (id) => api.getProductCo2(id),
+        createOrder: (b) => api.createTestOrder(b),
+      },
+    );
+    if (r.status !== "awaiting_confirmation") return text({ status: "failed", step: r.failedAt, reason: r.reason });
+    go(`/orders/${encodeURIComponent(r.order.id)}`);
+    return text({
+      status: "awaiting_confirmation",
+      pick: { product_id: r.pick.product_id, name: r.pick.name, price_vnd: r.pick.price_vnd, co2e_kg: r.pick.co2e_kg, url: `${site()}/product/${r.pick.product_id}` },
+      compared: r.shortlist.map((p) => ({ name: p.name, price_vnd: p.price_vnd, co2e_kg: p.co2e_kg })),
+      trade_in_co2_avoided_kg: r.trade ? Math.round(r.trade.resaleCredit * 10) / 10 : null,
+      order_url: `${site()}/orders/${r.order.id}`,
+      note: "Test mode: the user reviews and confirms the order on its page; nothing is charged.",
+    });
+  },
+});
 
 export function initWebMCP() {
   const mc = typeof navigator !== "undefined" ? navigator.modelContext : undefined;
