@@ -4,7 +4,7 @@
 // The example is a live catalogue row, not a figure typed into this file, and the walk-through
 // is the same component the Overview and the product page use, so the three never disagree.
 // The reference tables, assumptions and limits stay underneath, collapsed.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { METHOD, METHOD_EXTRA, NOT_IN_CATALOGUE, RESULT_SOURCE } from "../i18n/method";
@@ -14,39 +14,10 @@ import { normalizeList } from "../lib/data";
 import { formatKg } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import Co2Explainer from "./components/co2/Co2Explainer";
+import MethodExplorer from "./components/co2/MethodExplorer";
 import LifecycleJourney from "./components/co2/LifecycleJourney";
 import ProductThumb from "./components/common/ProductThumb";
-import DeviceIcon from "./components/ui/DeviceIcon";
 import { ErrorState, InlineSpinner } from "./components/common/States";
-
-const STEPS = [
-  { key: "pick", icon: "compare" },
-  { key: "source", icon: "low_co2" },
-  { key: "calc", icon: "energy_label" },
-  { key: "result", icon: "recycle" },
-];
-
-function stepText(lang) {
-  const L3 = tri(lang);
-  return {
-    pick: [L3("Chọn sản phẩm", "Pick a product", "Choisir un produit"),
-           L3("Mỗi con số gắn với một sản phẩm cụ thể, không có số chung chung.",
-              "Every figure belongs to one specific product; there is no generic number.",
-              "Chaque chiffre appartient à un produit précis ; il n'y a pas de chiffre générique.")],
-    source: [L3("Xác định nguồn", "Find the source", "Déterminer la source"),
-             L3("Hệ thống thử 4 cách theo thứ tự và dừng ở cách đầu tiên ra được số.",
-                "The system tries four methods in order and stops at the first that yields a number.",
-                "Le système essaie quatre méthodes dans l'ordre et s'arrête à la première qui donne un chiffre.")],
-    calc: [L3("Xem cách tính", "See the calculation", "Voir le calcul"),
-           L3("Công thức, các giá trị đầu vào và phép thay số đều hiện ra.",
-              "The formula, the values that went in and the substitution are all shown.",
-              "La formule, les valeurs utilisées et la substitution sont toutes affichées.")],
-    result: [L3("Hiểu kết quả", "Read the result", "Lire le résultat"),
-             L3("Kèm phạm vi tính, điểm xanh trong cùng loại và giới hạn của cách tính.",
-                "With its scope, the green score within the category and the limits of the method.",
-                "Avec son périmètre, le score vert dans la catégorie et les limites de la méthode.")],
-  };
-}
 
 function Details({ title, children }) {
   return (
@@ -91,7 +62,6 @@ export default function Method() {
   const m = METHOD[lang] || METHOD.en;
   const x = METHOD_EXTRA[lang] || METHOD_EXTRA.en;
   const X = explore(lang);
-  const S = useMemo(() => stepText(lang), [lang]);
   const recent = useRecent();
   const [params, setParams] = useSearchParams();
 
@@ -99,7 +69,6 @@ export default function Method() {
   const [chosen, setChosen] = useState(params.get("product") || null);
   const [co2, setCo2] = useState(null);
   const [failed, setFailed] = useState(false);
-  const [step, setStep] = useState(0);
 
   // the choices: what the visitor just looked at, plus the greenest product of each category
   useEffect(() => {
@@ -132,16 +101,16 @@ export default function Method() {
 
   const pick = (id) => {
     setChosen(id);
-    const next = new URLSearchParams(params);
+    // read the live URL: a scene may have just closed, and it must stay closed
+    const next = new URLSearchParams(window.location.search);
     next.set("product", id);
+    next.delete("scene");
     setParams(next, { replace: true });
-    setStep(1);
   };
 
-  const method = co2?.formula?.method;
 
   return (
-    <main className="page-wrap py-6 flex flex-col gap-6 max-w-5xl">
+    <main className="page-wrap py-6 flex flex-col gap-6 max-w-6xl">
       <header>
         <h1 className="page-title">{m.title}</h1>
         <p className="page-lead">
@@ -151,32 +120,14 @@ export default function Method() {
         </p>
       </header>
 
-      {/* the four steps, as a rail you can jump around in */}
-      <nav aria-label={L3("Các bước", "The steps", "Les étapes")} className="grid gap-2 sm:grid-cols-4">
-        {STEPS.map((s, i) => {
-          const [title, sub] = S[s.key];
-          const on = i === step;
-          return (
-            <button key={s.key} type="button" onClick={() => setStep(i)} aria-current={on ? "step" : undefined}
-                    className={`text-left rounded-2xl border px-3 py-2.5 transition ${on ? "border-[#2E7D4F] bg-[#F7FBF6] shadow-sm" : "border-[#EFEBDF] bg-white hover:border-[#2E7D4F]"}`}>
-              <span className="flex items-center gap-2">
-                <span className={`grid place-items-center w-8 h-8 rounded-xl shrink-0 ${on ? "bg-[#1F5D3A] text-white" : "bg-[#F1EEE4] text-[#55604F]"}`}>
-                  <DeviceIcon name={s.icon} size={18} tint={false} />
-                </span>
-                <span className="text-[15px] font-bold text-[#1E2B22]">{i + 1}. {title}</span>
-              </span>
-              <span className="mt-1 block text-[13.5px] leading-snug text-[#6B7468]">{sub}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <section className="rounded-3xl bg-[#F7FBF6] border border-[#DCEBD9] p-4 sm:p-5">
-        <h2 className="text-[19px] font-bold text-[#1E2B22]">{S.pick[0]}</h2>
-        <p className="text-[15px] text-[#6B7468]">
-          {L3("Những sản phẩm dưới đây lấy từ dữ liệu thật. Bấm một món để xem con số của nó.",
-              "These products come from the live catalogue. Tap one to follow its figure.",
-              "Ces produits viennent du catalogue réel. Touchez-en un pour suivre son chiffre.")}
+      <section className="rounded-3xl bg-white border border-[#EFEBDF] p-4 sm:p-5">
+        <h2 className="text-[17px] font-bold text-[#1E2B22]">
+          {L3("Đi theo sản phẩm nào?", "Which product shall we follow?", "Quel produit suivre ?")}
+        </h2>
+        <p className="text-[14.5px] text-[#6B7468]">
+          {L3("Sản phẩm thật trong dữ liệu. Bấm một món, sơ đồ bên dưới sẽ sáng theo đường mà con số của nó đã đi.",
+              "Real products from the catalogue. Tap one and the diagram lights up the path its figure took.",
+              "Des produits réels du catalogue. Touchez-en un : le schéma éclaire le chemin suivi par son chiffre.")}
         </p>
         <div className="mt-3">
           {options.length === 0
@@ -187,52 +138,37 @@ export default function Method() {
 
       {failed && <ErrorState body={X.errorBody} onRetry={() => setChosen((c) => c)} />}
 
+      {co2 ? (
+        <MethodExplorer co2={co2} onPickProduct={pick} onSeeCalc={() => document.getElementById("calc")?.scrollIntoView({ behavior: "smooth" })}
+                    links={(
+                      <div className="grid gap-2">
+                        <Link to={`/story/${chosen}`} className="btn-primary justify-center">📖 {L3("Đọc sách CO₂ của món này", "Read this product's CO₂ book", "Lire le livre CO₂ du produit")}</Link>
+                        <Link to={`/world/${chosen}`} className="btn-secondary justify-center">🌏 {L3("Vào thế giới CO₂", "Enter the CO₂ world", "Entrer dans le monde CO₂")}</Link>
+                      </div>
+                    )} />
+      ) : !failed && <div className="h-[520px] rounded-3xl bg-[#F1EEE4] animate-pulse" />}
+
       {co2 && (
-        <>
-          {step >= 1 && (
-            <section>
-              <h2 className="text-[20px] font-bold text-[#1E2B22]">2. {S.source[0]}</h2>
-              <p className="text-[15.5px] text-[#55604F]">{S.source[1]}</p>
-              <ol className="mt-3 grid gap-2 sm:grid-cols-4">
-                {m.chain.map((c, i) => {
-                  const on = c.key === method || (method === "llm_estimate" && c.key === "neighbor_average");
-                  return (
-                    <li key={c.key} className={`rounded-2xl border px-3 py-2.5 ${on ? "border-[#2E7D4F] bg-[#E4F1E6]" : "border-[#EFEBDF] bg-white"}`}>
-                      <p className="text-[13px] font-bold text-[#6B7468]">{i + 1}</p>
-                      <p className={`text-[15.5px] font-bold ${on ? "text-[#1F5D3A]" : "text-[#1E2B22]"}`}>{c.label}</p>
-                      <p className="text-[13.5px] leading-snug text-[#6B7468]">{c.sub}</p>
-                      {on && <p className="mt-1 text-[12.5px] font-semibold text-[#1F5D3A]">
-                        ← {L3("sản phẩm này dừng ở đây", "this product stops here", "ce produit s'arrête ici")}</p>}
-                    </li>
-                  );
-                })}
-              </ol>
-              <p className="mt-2 text-[13.5px] text-[#6B7468]">{x.confidenceNote}</p>
-            </section>
-          )}
-
-          {step >= 2 && (
-            <section>
-              <h2 className="text-[20px] font-bold text-[#1E2B22]">3. {S.calc[0]}</h2>
-              <p className="text-[15.5px] text-[#55604F]">{S.calc[1]}</p>
-              <div className="mt-3"><Co2Explainer co2={co2} open /></div>
-            </section>
-          )}
-
-          {step >= 3 && (
-            <section>
-              <h2 className="text-[20px] font-bold text-[#1E2B22]">4. {S.result[0]}</h2>
-              <p className="text-[15.5px] text-[#55604F]">{S.result[1]}</p>
-              <div className="mt-3"><LifecycleJourney lifecycle={co2.lifecycle} /></div>
-            </section>
-          )}
-
-          {step < 3 && (
-            <button type="button" onClick={() => setStep(step + 1)} className="btn-primary self-start">
-              {L3("Bước tiếp theo", "Next step", "Étape suivante")}: {S[STEPS[step + 1].key][0]} →
-            </button>
-          )}
-        </>
+        <section id="calc" className="scroll-mt-24 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-start">
+          <div>
+            <h2 className="text-[20px] font-bold text-[#1E2B22]">{L3("Phép tính đầy đủ", "The full calculation", "Le calcul complet")}</h2>
+            <p className="text-[15px] text-[#55604F] mb-3">
+              {L3("Nguồn dữ liệu, các giá trị đầu vào, phép thay số và giới hạn.",
+                  "The data source, the input values, the substitution and the limits.",
+                  "La source, les valeurs utilisées, la substitution et les limites.")}
+            </p>
+            <Co2Explainer co2={co2} open compact />
+          </div>
+          <div>
+            <h2 className="text-[20px] font-bold text-[#1E2B22]">{L3("Con số trải qua vòng đời", "Across the lifecycle", "Sur le cycle de vie")}</h2>
+            <p className="text-[15px] text-[#55604F] mb-3">
+              {L3("Mỗi giai đoạn là gì, vì sao phát thải và bạn làm được gì.",
+                  "What each stage is, why it emits and what you can do.",
+                  "Ce qu'est chaque étape, pourquoi elle émet et ce que vous pouvez faire.")}
+            </p>
+            <LifecycleJourney lifecycle={co2.lifecycle} compact />
+          </div>
+        </section>
       )}
 
       <section aria-labelledby="basics">

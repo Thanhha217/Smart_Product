@@ -11,10 +11,11 @@ import Icon from "../ui/Icon";
 const NAV = [
   { to: "/dashboard", icon: "dashboard", key: "nav.dashboard" },
   { to: "/world", icon: "globe", key: "nav.world" },
+  { to: "/story", icon: "book", key: "nav.story" },
+  { to: "/method", icon: "calculator", key: "nav.method" },
   { to: "/search", icon: "search", key: "nav.search" },
   { to: "/assistant", icon: "sparkles", key: "nav.ask" },
   { to: "/compare", icon: "scale", key: "nav.compare" },
-  { to: "/method", icon: "calculator", key: "nav.method" },
   { to: "/cart", icon: "cart", key: "nav.cartShort" },
   { to: "/system", icon: "server", key: "nav.system" },
 ];

@@ -26,10 +26,9 @@ export default function AskHero() {
 
   return (
     <section aria-labelledby="hero-title" className="rounded-3xl bg-gradient-to-br from-[#F0F7EE] to-[#FBFAF5] border border-[#DCEBD9] p-5 sm:p-7">
-      <p className="eyebrow">Smart Product Finder</p>
-      <h1 id="hero-title" className="mt-1 text-[32px] sm:text-[40px] font-bold leading-tight text-[#1E2B22]">
+      <h2 id="hero-title" className="text-[26px] sm:text-[30px] font-bold leading-tight text-[#1E2B22]">
         {L3("Tìm thiết bị phù hợp với bạn", "Find the device that fits you", "Trouvez l'appareil qui vous convient")}
-      </h1>
+      </h2>
       <p className="mt-1 text-[17px] text-[#55604F] max-w-2xl">
         {L3("Nói nhu cầu và ngân sách của bạn. Hệ thống tìm trong dữ liệu thật, kèm số CO₂ và lý do nên cân nhắc.",
             "Tell us what you need and what you can spend. The site searches the real catalogue and says why a product is worth considering, with its CO₂.",

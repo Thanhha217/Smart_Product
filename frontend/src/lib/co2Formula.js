@@ -223,7 +223,7 @@ export function co2Explanation(co2, lang = "en") {
     method,
     kind: method === "manufacturer" ? "published" : "estimated",
     resultKg: kg,
-    scopeKey: method === "eeio_price" ? "production_delivery" : "cradle_to_grave",
+    scopeKey: method === "eeio_price" ? "cradle_to_shelf" : "cradle_to_grave",
     confidence: isNum(product.co2e_confidence) ? product.co2e_confidence : null,
     sources: (co2.references || []).map((r) => ({ name: r.name, kg: r.co2e_kg, cosine: r.cosine, url: r.url, source: r.source })),
     ...out,
