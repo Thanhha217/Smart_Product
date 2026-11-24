@@ -19,7 +19,7 @@ export default function ProductCard({ product, reason, highlight = false, compac
       }`}
     >
       {product.image_url && !compact && (
-        <img src={product.image_url} alt={product.name} className="h-32 w-full object-contain bg-primary-100 rounded-xl" />
+        <img src={product.image_url} alt={product.name} referrerPolicy="no-referrer" className="h-32 w-full object-contain bg-primary-100 rounded-xl" />
       )}
       <Link to={`/product/${product.product_id}`} className="font-semibold hover:underline line-clamp-2">
         {product.name}

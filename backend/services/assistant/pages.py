@@ -123,7 +123,9 @@ def build_page(message: str, lang: str, store: Store, parent_id: str | None = No
                        "source": cards[pid]["co2e_source"], "confidence": cards[pid]["co2e_confidence"],
                        "category": cards[pid]["category"], "platform": cards[pid]["platform"]}
                       for a, pid in alias_map.items()]
-        layout = compose_fn(message if not parent_id else question, lang, candidates, stats, savings, sorted(values))
+        # name -> printed text, so the model sees which placeholder stands for which figure
+        layout = compose_fn(message if not parent_id else question, lang, candidates, stats, savings,
+                            {k: values[k] for k in sorted(values)})
         model_used = llm_provider.model_label()
     except Exception as error:
         print(f"assistant: layout via rules ({error.__class__.__name__}: {error})", flush=True)

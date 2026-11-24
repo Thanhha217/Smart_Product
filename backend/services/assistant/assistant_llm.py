@@ -216,8 +216,14 @@ Return the page layout and short texts in the user's language:
 - reasons: one short reason per recommended product.
 
 Hard rule on numbers: never write a digit yourself. Every figure, and every product name, must be written as a
-placeholder from the `placeholders` list, e.g. {{p1.name}}, {{p1.co2e_kg}} kg, {{p1.price}}, {{p1.green_score}}/5,
-{{savings.lifecycle_kg}}, {{savings.kg_12m}}, {{stats.median_kg}}, {{stats.greener_than_pct}}.
+placeholder. `placeholders` maps each placeholder name to the exact text the system will print for it, e.g.
+{"p1.co2e_kg": "278.2", "p1.price": "16,590,000 ₫"}: to mention that figure write {{p1.co2e_kg}}, never 278.2.
+The candidates' numbers are there only so you can compare them; do not copy them into the texts.
+Write units after the placeholder where needed: {{p1.co2e_kg}} kg CO₂e, {{p1.green_score}}/5. Percentages and
+prices already carry their sign: write {{stats.greener_than_pct}} and {{p1.price}} alone.
+Good: "{{p1.name}} emits {{p1.co2e_kg}} kg CO₂e, below the median of {{stats.median_kg}} kg."
+Bad (deleted): "It emits 278.2 kg, below the 277 kg median." / "one of the 3 best" / "under 20 million".
+Avoid other digits too (model numbers, budgets, counts): describe them in words or leave them out.
 A sentence containing a digit that is not a placeholder is deleted by the system. Use only placeholders that exist.
 Products without a CO2 figure have no green score: say the figure is not available rather than guessing.
 CO2 figures are estimates of different reliability (see source/confidence); do not overstate precision."""

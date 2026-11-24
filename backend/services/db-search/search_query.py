@@ -43,7 +43,9 @@ BRAND_ALIASES = {"Apple": ("apple", "iphone", "ipad", "macbook", "airpods", "ima
                  "Samsung": ("samsung", "galaxy"), "Xiaomi": ("xiaomi", "redmi", "poco"),
                  "Microsoft": ("microsoft", "surface"), "Huawei": ("huawei", "matebook", "matepad")}
 ECO_WORDS = ("it co2", "it co 2", "it phat thai", "xanh nhat", "than thien moi truong", "tiet kiem dien", "low co2",
-             "low carbon", "eco", "greenest", "green", "faible co2", "bas carbone", "ecologique", "peu d emissions")
+             "low carbon", "eco", "greenest", "green", "faible co2", "bas carbone", "ecologique", "peu d emissions",
+             # "CO₂ thấp" folds to "co2 thap": the example the Find products box shows
+             "co2 thap nhat", "co2 thap", "thap co2", "phat thai thap", "lowest co2", "co2 le plus bas", "peu de co2")
 STOP_WORDS = {"tim", "mua", "cho", "toi", "minh", "can", "muon", "goi y", "de", "hoc", "lam", "viec", "choi", "game",
               "nao", "gi", "co", "va", "la", "voi", "find", "buy", "for", "me", "a", "an", "the", "with", "best",
               "good", "cheap", "re", "tot", "nhat", "chon", "giup", "trouver", "pour", "un", "une", "le", "la", "les",

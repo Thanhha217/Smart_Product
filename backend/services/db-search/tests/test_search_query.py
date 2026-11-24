@@ -46,3 +46,9 @@ def test_brand_without_category_and_unknown_text():
 def test_empty_query():
     q = parse_query(None)
     assert q.terms == [] and q.category is None and q.raw == ""
+
+
+def test_co2_thap_is_the_low_co2_intent():
+    for text in ("laptop dưới 20 triệu, CO₂ thấp", "laptop dưới 20 triệu CO2 thấp", "laptop under 20 million, lowest CO2"):
+        q = parse_query(text)
+        assert q.eco and q.category == "laptops" and q.max_price == 20_000_000 and q.terms == [], text

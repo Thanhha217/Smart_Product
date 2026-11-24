@@ -331,5 +331,7 @@
   "spec.resolution": "{value}",
   "spec.refresh": "{value}",
   "spec.panel": "tấm nền {value}",
-  "spec.size": "mặt {value}"
+  "spec.size": "mặt {value}",
+  "tab.compare": "So sánh",
+  "find.all": "Tất cả sản phẩm"
 }
