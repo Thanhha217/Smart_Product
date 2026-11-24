@@ -2,7 +2,7 @@
 
 ## **1\. Mục đích và khái niệm**
 
-Tài liệu này mô tả đầy đủ cách Smart Product Finder (nhánh new-research) tính lượng CO₂ cho từng sản phẩm điện tử lấy từ các sàn Việt Nam, và cách dùng con số đó để xếp hạng.
+Tài liệu này mô tả đầy đủ cách CarbonSense AI (nhánh new-research) tính lượng CO₂ cho từng sản phẩm điện tử lấy từ các sàn Việt Nam, và cách dùng con số đó để xếp hạng.
 
 **Mục tiêu:** khi người dùng tìm một món đồ, những món vừa đúng nhu cầu vừa ít phát thải được đưa lên trước. Hệ thống không cần biết chính xác từng kg; nó cần biết đúng **thứ tự** món nào xanh hơn món nào trong cùng loại.
 
@@ -706,7 +706,7 @@ Nền đã có sẵn: trang /assistant và dịch vụ assistant (AI lập kế 
 
 Đặc tả kỹ thuật: cải thiện công thức CO₂ và demo
 
-*Đi kèm bản nộp "Công thức tính CO₂" (Phần 3). Dự án: Smart Product Finder, repo \`Thanhha217/Smart\_Product\`, nhánh gốc \`main\`. Cập nhật 23/11/2026.*
+*Đi kèm bản nộp "Công thức tính CO₂" (Phần 3). Dự án: CarbonSense AI, repo \`Thanhha217/Smart\_Product\`, nhánh gốc \`main\`. Cập nhật 23/11/2026.*
 
 Ký hiệu trạng thái:
 

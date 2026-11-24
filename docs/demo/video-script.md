@@ -29,7 +29,7 @@ Bộ câu hỏi dùng trong video: [scripts/research/demo_queries.txt](../../scr
 
 | # | Thời lượng | Màn hình / thao tác | Lời thoại (gợi ý) |
 |---|---|---|---|
-| 1 | 0:00–0:20 | Trang chủ `/` | "Trên sàn Việt Nam, người mua không biết món nào thải ít CO₂ hơn. Smart Product Finder tự tính con số đó cho từng sản phẩm." |
+| 1 | 0:00–0:20 | Trang chủ `/` | "Trên sàn Việt Nam, người mua không biết món nào thải ít CO₂ hơn. CarbonSense AI tự tính con số đó cho từng sản phẩm." |
 | 2 | 0:20–0:55 | Trang `/method`: sơ đồ chuỗi tính | "Hệ thống thử lần lượt: trùng đúng mẫu của hãng → trung bình mẫu giống với ngưỡng 0,66 → công thức vòng đời theo lưới điện Việt Nam 0,681 / mức giữa của loại / theo giá. Không đủ căn cứ thì để trống. AI chỉ tìm sản phẩm giống, không tự đoán số." Lướt qua bảng kết quả: sai khoảng 20 %, Spearman 0,95 với loại có mẫu, 74 % của 10.000 sản phẩm có số |
 | 3 | 0:55–1:50 | Ô "Hỏi AI", **nói bằng giọng**: "laptop dưới 20 triệu ít CO2 để học" → trang `/assistant/<id>` tải dần từng phần | Đọc phần trả lời ngắn → 3 thẻ đề xuất (kg CO₂, điểm xanh, nhãn nguồn) → **mở "Xem cách tính"**: công thức đã thế số → sơ đồ vòng đời từ nơi sản xuất đến tay người dùng (ghi rõ phần nào là giả định) → biểu đồ cột CO₂, biểu đồ giá – CO₂ → "xanh hơn X % laptop cùng loại" → tiết kiệm sau 6 và 12 tháng → nguồn và mẫu đã dùng |
 | 4 | 1:50–2:15 | Gõ hỏi tiếp trên cùng trang: "còn loại rẻ hơn không?" | Trang mới có `parent_id` và đường dẫn riêng để chia sẻ |

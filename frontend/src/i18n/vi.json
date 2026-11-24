@@ -1,5 +1,5 @@
 {
-  "app.title": "Smart Product Finder",
+  "app.title": "CarbonSense AI",
   "home.tagline": "So sánh giá và CO₂e giữa các cửa hàng tại Việt Nam",
   "lang.switchLabel": "Đổi ngôn ngữ",
   "search.placeholder": "Tìm kiếm...",
@@ -177,7 +177,7 @@
   "chart.co2_bar": "CO₂ của các ứng viên",
   "chart.price_vs_co2": "Giá và CO₂",
   "chart.lifecycle_stack": "CO₂ theo giai đoạn",
-  "chart.sourceNote": "Đơn vị kg CO₂e · Nguồn: cơ sở dữ liệu Smart Product Finder (cột co2e_kg).",
+  "chart.sourceNote": "Đơn vị kg CO₂e · Nguồn: cơ sở dữ liệu CarbonSense AI (cột co2e_kg).",
   "stats.title": "Thống kê trong loại {category}",
   "stats.greenerThan": "{name} xanh hơn {pct}% sản phẩm cùng loại.",
   "stats.n": "Số sản phẩm",

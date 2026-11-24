@@ -1,4 +1,4 @@
-# Đưa Smart Product Finder vào ChatGPT bằng MCP (B2)
+# Đưa CarbonSense AI vào ChatGPT bằng MCP (B2)
 
 Mục tiêu: người dùng hỏi ngay trong ChatGPT ("laptop nào ít CO₂ dưới 20 triệu?"), ChatGPT gọi máy chủ MCP của nhóm
 để lấy sản phẩm và số CO₂, rồi trả lời **đúng số trên web** kèm link về trang của nhóm.
@@ -107,7 +107,7 @@ Tính năng kết nối MCP tùy chỉnh phụ thuộc gói tài khoản và có
 khoản hỗ trợ** chế độ dành cho nhà phát triển:
 
 1. ChatGPT → **Settings → Apps & Connectors → Advanced → bật Developer mode**.
-2. **Create** (tạo connector/app mới): tên "Smart Product Finder", URL `https://<địa-chỉ>/mcp`, xác thực **No authentication**.
+2. **Create** (tạo connector/app mới): tên "CarbonSense AI", URL `https://<địa-chỉ>/mcp`, xác thực **No authentication**.
 3. Trong cuộc trò chuyện mới, chọn connector vừa tạo (menu "+" / Developer mode) rồi hỏi.
 
 Không có tài khoản phù hợp thì dùng ứng dụng khác hỗ trợ MCP từ xa:

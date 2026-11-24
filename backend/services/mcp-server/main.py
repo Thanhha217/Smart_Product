@@ -1,4 +1,4 @@
-"""Smart Product Finder MCP server (B2): lets ChatGPT (or any MCP client) search
+"""CarbonSense AI MCP server (B2): lets ChatGPT (or any MCP client) search
 products, read their CO2 figures, compare them and create TEST orders.
 
 Streamable HTTP, stateless, JSON responses, at  http://<host>:8100/mcp .
@@ -45,7 +45,7 @@ HTTP_TRANSPORT: httpx.AsyncBaseTransport | None = None
 limiter = tools.RateLimiter(per_minute=RATE_LIMIT_PER_MIN)
 
 INSTRUCTIONS = (
-    "Smart Product Finder: so sánh sản phẩm điện tử / điện gia dụng trên các sàn Việt Nam theo nhu cầu và lượng CO₂ vòng đời. "
+    "CarbonSense AI: so sánh sản phẩm điện tử / điện gia dụng trên các sàn Việt Nam theo nhu cầu và lượng CO₂ vòng đời. "
     "Luôn trích đúng số kg CO₂e và nhãn nguồn (số của hãng, trung bình sản phẩm giống, công thức, mức giữa của loại, theo giá) "
     "mà công cụ trả về, kèm đường link về trang web. Không tự tính hay đoán số CO₂. "
     "create_test_order chỉ tạo ĐƠN THỬ chờ người dùng xác nhận trên web; không có thanh toán thật."
@@ -133,7 +133,7 @@ def build_server() -> MCPServer:
 
     server = MCPServer(
         "smart-product-finder",
-        title="Smart Product Finder – CO₂",
+        title="CarbonSense AI – CO₂",
         instructions=INSTRUCTIONS,
         version="1.0.0",
         extensions=[apps],

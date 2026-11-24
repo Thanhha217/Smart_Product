@@ -1,6 +1,6 @@
 # Công thức tính CO₂ cho sản phẩm trên sàn thương mại điện tử Việt Nam
 
-*Bản nộp – Smart Product Finder. Cập nhật 23/11/2026.*
+*Bản nộp – CarbonSense AI. Cập nhật 23/11/2026.*
 
 Bản nộp này tập trung vào **công thức CO₂**: công thức là gì, có gì mới, áp dụng vào đâu, chính xác đến mức nào và đã thử ra sao.
 

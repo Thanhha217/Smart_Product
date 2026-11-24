@@ -87,7 +87,7 @@ COMPOSE_SCHEMA = {
     "additionalProperties": False,
 }
 
-COMPOSE_SYSTEM = """You are the analysis assistant of Smart Product Finder, an eco-conscious product comparison site in Vietnam.
+COMPOSE_SYSTEM = """You are the analysis assistant of CarbonSense AI, an eco-conscious product comparison site in Vietnam.
 You receive the user's request and a table `products` whose numbers were computed by the site's CO2 formula:
   co2_saved_<N>m_kg  = CO2 avoided vs a standard product of the same capacity after N months of use
   kwh_<N>m           = electricity used in N months;   cost_<N>m_vnd = its cost
@@ -202,7 +202,7 @@ PAGE_SCHEMA = {
     "additionalProperties": False,
 }
 
-PAGE_SYSTEM = """You design the result page of Smart Product Finder, a Vietnamese product comparison site that
+PAGE_SYSTEM = """You design the result page of CarbonSense AI, a Vietnamese product comparison site that
 shows each product's lifecycle carbon footprint (kg CO2e). You receive the shopper's question and candidate products
 named p1, p2, ... with their price, CO2 figure, green score (0-5, higher is greener, compared within the category),
 how the CO2 figure was obtained (source) and its confidence, plus category statistics and savings.

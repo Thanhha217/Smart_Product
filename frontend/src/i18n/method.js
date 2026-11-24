@@ -3,7 +3,7 @@
 
 export const METHOD = {
   vi: {
-    title: "Phương pháp tính CO₂ của Smart Product Finder",
+    title: "Phương pháp tính CO₂ của CarbonSense AI",
     intro:
       "Mỗi sản phẩm được gán lượng phát thải vòng đời (kg CO₂e cả vòng đời, theo phạm vi cradle-to-grave mô tả trong ISO 14067; không phải số được chứng nhận). Hệ thống luôn ưu tiên số thật của hãng, chỉ ước lượng khi không có, ghi rõ nguồn và điểm tin cậy nội bộ của mọi con số. AI chỉ dùng để tìm sản phẩm giống nhau, không tự đoán ra số. Không đủ căn cứ thì để trống.",
     chainTitle: "Chuỗi tính: bước nào ra số trước thì dừng",
@@ -73,7 +73,7 @@ export const METHOD = {
     gridNote: "Lưới điện Việt Nam: 0,681 kg CO₂e/kWh (2024, ĐH Bách khoa Hà Nội và Bộ Nông nghiệp và Môi trường).",
   },
   en: {
-    title: "How Smart Product Finder computes CO₂",
+    title: "How CarbonSense AI computes CO₂",
     intro:
       "Every product gets a lifecycle footprint (kg CO₂e over the whole life, the cradle-to-grave scope described in ISO 14067; not a certified footprint). The system always prefers the manufacturer's own figure, estimates only when there is none, and labels the source and an internal confidence score of every number. AI only finds similar products; it never invents a number. Without enough evidence the value stays empty.",
     chainTitle: "Calculation chain: the first step that yields a number wins",
@@ -142,7 +142,7 @@ export const METHOD = {
     gridNote: "Vietnamese grid: 0.681 kg CO₂e/kWh (2024, Hanoi University of Science and Technology with the Ministry of Agriculture and Environment).",
   },
   fr: {
-    title: "Comment Smart Product Finder calcule le CO₂",
+    title: "Comment CarbonSense AI calcule le CO₂",
     intro:
       "Chaque produit reçoit une empreinte sur tout son cycle de vie (kg CO₂e du berceau à la tombe, le périmètre décrit dans l'ISO 14067 ; ce n'est pas une empreinte certifiée). Le système privilégie toujours le chiffre du fabricant, n'estime que lorsqu'il n'existe pas, et indique la source et un score de confiance interne de chaque nombre. L'IA ne sert qu'à trouver des produits similaires ; elle n'invente jamais de chiffre. Sans éléments suffisants, la valeur reste vide.",
     chainTitle: "Chaîne de calcul : la première étape qui donne un chiffre l'emporte",

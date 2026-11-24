@@ -2,7 +2,7 @@
 
 *Đi kèm [bản nộp "Công thức tính CO₂"](01-ban-nop-cong-thuc-co2.md).*
 
-- Dự án: Smart Product Finder.
+- Dự án: CarbonSense AI.
 - Repo: `Thanhha217/Smart_Product`, nhánh gốc `main`. Các việc B1–B3 đang làm trên nhánh `feature/co2-submission-demo`.
 - Cập nhật: 23/11/2026.
 - Hợp đồng API chi tiết (kiểu dữ liệu, page spec, đơn thử): **[../demo/api-contract.md](../demo/api-contract.md)**.

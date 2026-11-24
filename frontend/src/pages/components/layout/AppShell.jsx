@@ -28,19 +28,19 @@ const TABS = [
 ];
 const inSection = (item, path) => (item.also || []).some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
-// Wordmark: leaf tile + "Smart Product Finder" in the display serif, with a short readable tagline.
+// Wordmark: leaf tile + "CarbonSense AI" in the display serif, with a short readable tagline.
 export function Logo({ light = false, compact = false, size = "md" }) {
   const { t } = useI18n();
   const big = size === "lg";
   return (
-    <Link to="/" aria-label="Smart Product Finder" className={`group flex items-center gap-3 ${light ? "text-white" : "text-[#1B4D31]"}`}>
+    <Link to="/" aria-label="CarbonSense AI" className={`group flex items-center gap-3 ${light ? "text-white" : "text-[#1B4D31]"}`}>
       <span className={`grid place-items-center shrink-0 rounded-2xl ${big ? "w-12 h-12" : "w-11 h-11"} ${light ? "bg-white/15 ring-1 ring-white/20" : "bg-[#1F5D3A] shadow-[0_6px_16px_-8px_rgba(31,93,58,.7)]"}`}>
         <Icon name="leaf" size={big ? 26 : 23} className={light ? "text-[#a8e38a]" : "text-[#bde8a5]"} />
       </span>
       {!compact && (
         <span className="flex flex-col leading-none">
           <span className={`font-display font-bold leading-[1.15] tracking-[-0.01em] ${big ? "text-[25px]" : "text-[21px]"}`}>
-            Smart Product <span className={light ? "text-[#a8e38a]" : "text-[#2E7D4F]"}>Finder</span>
+            CarbonSense <span className={light ? "text-[#a8e38a]" : "text-[#2E7D4F]"}>AI</span>
           </span>
           <span className={`mt-1.5 text-[13.5px] font-medium ${light ? "text-white/70" : "text-[#5E6B60]"}`}>{t("shell.tagline")}</span>
         </span>

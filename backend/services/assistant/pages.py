@@ -251,7 +251,7 @@ def compare(ids: list[str], lang: str = "vi") -> dict[str, Any]:
 
 
 METHOD = {
-    "title_vi": "Phương pháp tính CO₂ của Smart Product Finder",
+    "title_vi": "Phương pháp tính CO₂ của CarbonSense AI",
     "chain": [
         {"step": 1, "method": "manufacturer", "rule": "Tên sản phẩm chứa nguyên tên một mẫu (≥ 3 từ) → số của hãng", "confidence": 0.9},
         {"step": 2, "method": "neighbor_average", "rule": "OpenCLIP: 5 mẫu giống nhất, bỏ ngoài [trung vị ÷ 8; × 8], giữ cosine ≥ 0,66 → trung bình", "confidence": 0.5},

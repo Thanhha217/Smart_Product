@@ -1,4 +1,4 @@
-# Smart Product Finder
+# CarbonSense AI
 
 Search engine for Vietnamese e-commerce (FPT Shop, TGDĐ, Điện Máy Xanh, Phong Vũ, CellphoneS…) that ranks
 products by fit **and** by lifecycle carbon footprint (kg CO₂e), with an AI-generated result page, a ChatGPT/MCP
