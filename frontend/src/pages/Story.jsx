@@ -337,7 +337,11 @@ function StoryBook({ productId }) {
 
   useEffect(() => {
     if (!auto || !pages.length) return;
-    const id = setInterval(() => setIndex((i) => (i + 2 >= pages.length ? 0 : i - (i % 2) + 2)), 6500);
+    const id = setInterval(() => setIndex((i) => {
+      const step = window.innerWidth >= 900 ? 2 : 1;
+      const from = step === 2 ? i - (i % 2) : i;
+      return from + step > pages.length - 1 ? 0 : from + step;
+    }), 6500);
     return () => clearInterval(id);
   }, [auto, pages.length]);
 
