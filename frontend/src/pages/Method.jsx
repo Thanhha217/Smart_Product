@@ -15,6 +15,7 @@ import { formatKg } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import Co2Explainer from "./components/co2/Co2Explainer";
 import MethodExplorer from "./components/co2/MethodExplorer";
+import DeviceIcon from "./components/ui/DeviceIcon";
 import LifecycleJourney from "./components/co2/LifecycleJourney";
 import ProductThumb from "./components/common/ProductThumb";
 import { ErrorState, InlineSpinner } from "./components/common/States";
@@ -69,6 +70,7 @@ export default function Method() {
   const [chosen, setChosen] = useState(params.get("product") || null);
   const [co2, setCo2] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   // the choices: what the visitor just looked at, plus the greenest product of each category
   useEffect(() => {
@@ -110,42 +112,53 @@ export default function Method() {
 
 
   return (
-    <main className="page-wrap py-6 flex flex-col gap-6 max-w-6xl">
-      <header>
-        <h1 className="page-title">{m.title}</h1>
-        <p className="page-lead">
-          {L3("Con số CO₂ cho biết sản phẩm này gây ra bao nhiêu khí nhà kính, từ lúc đào nguyên liệu đến khi thải bỏ. Trang này đi theo một sản phẩm thật để bạn thấy con số đó ở đâu ra.",
-              "A CO₂ figure says how much greenhouse gas a product causes, from mining the materials to throwing it away. This page follows one real product so you can see where its figure comes from.",
-              "Un chiffre CO₂ dit combien de gaz à effet de serre un produit provoque, de l'extraction des matières à la mise au rebut. Cette page suit un produit réel pour montrer d'où vient ce chiffre.")}
-        </p>
-      </header>
-
-      <section className="rounded-3xl bg-white border border-[#EFEBDF] p-4 sm:p-5">
-        <h2 className="text-[17px] font-bold text-[#1E2B22]">
-          {L3("Đi theo sản phẩm nào?", "Which product shall we follow?", "Quel produit suivre ?")}
-        </h2>
-        <p className="text-[14.5px] text-[#6B7468]">
-          {L3("Sản phẩm thật trong dữ liệu. Bấm một món, sơ đồ bên dưới sẽ sáng theo đường mà con số của nó đã đi.",
-              "Real products from the catalogue. Tap one and the diagram lights up the path its figure took.",
-              "Des produits réels du catalogue. Touchez-en un : le schéma éclaire le chemin suivi par son chiffre.")}
-        </p>
-        <div className="mt-3">
-          {options.length === 0
-            ? <InlineSpinner label={L3("Đang tải sản phẩm", "Loading products", "Chargement des produits")} />
-            : <ProductPicker options={options} current={chosen} onPick={pick} lang={lang} />}
+    <main className="page-wrap py-7 flex flex-col gap-7 max-w-[1180px]">
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div className="max-w-[640px]">
+          <p className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
+            <span aria-hidden="true">🧮</span>{L3("Phương pháp CO₂", "CO₂ method", "Méthode CO₂")}
+          </p>
+          <h1 className="mt-1 font-display text-[38px] sm:text-[46px] font-semibold leading-[1.08] text-[#1E2B22]">
+            {L3("Một sản phẩm có con số CO₂ như thế nào", "How a product gets its CO₂ number", "Comment un produit obtient son chiffre CO₂")}
+          </h1>
+          <p className="mt-2 text-[17px] leading-relaxed text-[#55604F]">
+            {L3("Bốn nguồn, thử lần lượt. Dừng ở nguồn đầu tiên dùng được; bậc càng cao thì con số càng đáng tin. Không bao giờ đoán số.",
+                "Four sources, tried in order. We stop at the first one that works, and the higher the rung, the more we trust the number. Nothing is ever guessed.",
+                "Quatre sources, essayées dans l'ordre. On s'arrête à la première qui fonctionne ; plus l'échelon est haut, plus le chiffre est fiable. Rien n'est jamais deviné.")}
+          </p>
         </div>
-      </section>
+        <div className="relative min-w-0 max-w-full">
+          <div className="flex items-center gap-3 rounded-2xl bg-white border border-[#E8E4D8] px-3 py-2.5 shadow-sm">
+            <span className="grid shrink-0 place-items-center w-10 h-10 rounded-xl bg-[#EEF5EF] text-[#2E7D4F]">
+              <DeviceIcon name={co2?.product?.category || "other"} size={22} />
+            </span>
+            <div className="min-w-0 flex-1 max-w-[210px]">
+              <p className="text-[12.5px] text-[#6B7468]">{L3("Ví dụ minh họa", "Worked example", "Exemple")}</p>
+              <p className="text-[15px] font-semibold text-[#1E2B22] truncate">{co2?.product?.name || "…"}</p>
+            </div>
+            <button type="button" onClick={() => setPicking(!picking)} aria-expanded={picking}
+                    className="shrink-0 rounded-full border border-[#DCD7C9] px-3.5 py-1.5 text-[14.5px] font-semibold text-[#1E2B22] hover:border-[#2E7D4F]">
+              {L3("Đổi", "Change", "Changer")}
+            </button>
+          </div>
+          {picking && (
+            <div className="absolute right-0 z-30 mt-2 w-[min(92vw,560px)] rounded-2xl bg-white border border-[#E8E4D8] p-3 shadow-xl">
+              <p className="px-1 pb-2 text-[14px] text-[#6B7468]">
+                {L3("Sản phẩm thật trong dữ liệu.", "Real products from the catalogue.", "Des produits réels du catalogue.")}
+              </p>
+              {options.length === 0
+                ? <InlineSpinner label={L3("Đang tải sản phẩm", "Loading products", "Chargement des produits")} />
+                : <ProductPicker options={options} current={chosen} onPick={(id) => { pick(id); setPicking(false); }} lang={lang} />}
+            </div>
+          )}
+        </div>
+      </header>
 
       {failed && <ErrorState body={X.errorBody} onRetry={() => setChosen((c) => c)} />}
 
       {co2 ? (
         <MethodExplorer co2={co2} onPickProduct={pick} onSeeCalc={() => document.getElementById("calc")?.scrollIntoView({ behavior: "smooth" })}
-                    links={(
-                      <div className="grid gap-2">
-                        <Link to={`/story/${chosen}`} className="btn-primary justify-center">📖 {L3("Đọc sách CO₂ của món này", "Read this product's CO₂ book", "Lire le livre CO₂ du produit")}</Link>
-                        <Link to={`/world/${chosen}`} className="btn-secondary justify-center">🌏 {L3("Vào thế giới CO₂", "Enter the CO₂ world", "Entrer dans le monde CO₂")}</Link>
-                      </div>
-                    )} />
+/>
       ) : !failed && <div className="h-[520px] rounded-3xl bg-[#F1EEE4] animate-pulse" />}
 
       {co2 && (

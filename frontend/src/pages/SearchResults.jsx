@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import { useI18n } from "../i18n/LanguageContext";
+import { tri, useI18n } from "../i18n/LanguageContext";
 import { useShopText } from "../i18n/shop";
 import { formatCount, formatPrice, normalizeList } from "../lib/data";
 import { formatKg } from "../lib/format";
+import DeviceIcon, { iconKeyFor } from "./components/ui/DeviceIcon";
 import { removeFromQuery } from "../lib/queryEdit";
 import {
   activeFilters, clearFilters, isActiveSearch, PAGE_SIZE, parseSearchParams, removeFilter, SORTS, toApiParams,
@@ -28,6 +29,7 @@ function useSearch(state, explore) {
     const controller = new AbortController();
     const params = toApiParams(state);
     if (explore) Object.assign(params, { has_price: true, has_co2: true });
+    if (!state.q && (!params.sort || params.sort === "relevance")) params.sort = "complete";
     setRes((r) => ({ status: r.data ? "updating" : "loading", data: r.data, error: null }));
     api.search(params, { signal: controller.signal })
       .then((data) => { if (id === seq.current) setRes({ status: "success", data, error: null }); })
@@ -149,165 +151,205 @@ export default function SearchResults() {
   const examples = st("search.examples");
   const showMissingNote = state.sort !== "relevance" && state.sort !== "discount";
 
+  const L3 = tri(lang);
+  const sortShown = !state.q && state.sort === "relevance" ? "complete" : state.sort;
+  const sortOptions = state.q ? SORTS : SORTS.filter((x) => x !== "relevance");
+  const catFacet = (data?.facets?.category || []).filter((c) => c.value && c.count > 0);
+  const maxMedian = Math.max(1, ...(categories || []).map((c) => Number(c.median_kg) || 0));
+  const otherFilters = filters.filter((f) => f.key !== "category");
+  const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
+
   const exampleChips = (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[14px] text-[#4b5563]">{st("search.tryExamples")}</span>
+      <span className="mr-1 text-[14.5px] text-[#55604F]">{st("search.tryExamples")}</span>
       {(Array.isArray(examples) ? examples : []).map((ex) => (
-        <button key={ex} type="button" className="chip" onClick={() => go(updateState(parseSearchParams(""), { q: ex }))}>{ex}</button>
+        <button key={ex} type="button" onClick={() => go(updateState(parseSearchParams(""), { q: ex }))}
+                className="rounded-full bg-white border border-[#E1DCCD] px-3.5 py-1.5 text-[14px] text-[#1E2B22] hover:border-[#2E7D4F] transition">{ex}</button>
       ))}
     </div>
   );
 
+  const pill = (on) => `inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] transition ${on ? "bg-[#1B4D31] border-[#1B4D31] text-white font-semibold" : "bg-white border-[#E1DCCD] text-[#1E2B22] hover:border-[#2E7D4F]"}`;
+
   return (
-    <main className="page-wrap" ref={topRef}>
+    <main className="page-wrap py-7 max-w-[1240px]" ref={topRef}>
       <header className="flex flex-col gap-4">
-        <div>
-          <h1 className="page-title">{st("search.title")}</h1>
-          <p className="page-lead">{catalogueTotal ? st("search.lead", { total: formatCount(catalogueTotal, lang) }) : st("search.leadNoCount")}</p>
+        <div className="max-w-3xl">
+          <h1 className="font-display text-[40px] sm:text-[50px] font-semibold leading-[1.05] text-[#1E2B22]">{st("search.title")}</h1>
+          <p className="mt-2 text-[16.5px] leading-relaxed text-[#55604F]">{catalogueTotal ? st("search.lead", { total: formatCount(catalogueTotal, lang) }) : st("search.leadNoCount")}</p>
         </div>
-        <form role="search" onSubmit={submit} className="flex flex-col sm:flex-row gap-2 max-w-3xl">
-          <label className="relative flex-1">
+        <form role="search" onSubmit={submit} className="flex items-center gap-2 max-w-[720px] rounded-[20px] bg-white border border-[#E6E2D6] p-2 pl-4 shadow-[0_2px_10px_rgba(30,43,34,0.06)]">
+          <Icon name="search" size={20} className="shrink-0 text-[#6b7280]" />
+          <label className="relative flex-1 min-w-0">
             <span className="sr-only">{st("shell.searchLabel")}</span>
-            <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6b7280]" />
             <input type="search" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={st("search.placeholder")} enterKeyHint="search"
-                   className="w-full rounded-2xl border-2 border-[#d9d4c4] bg-white pl-12 pr-11 py-3.5 text-[16px] focus:outline-none focus:border-[#2E7D4F]" />
+                   className="w-full bg-transparent py-2.5 pr-9 text-[16px] text-[#1E2B22] placeholder:text-[#8A9186] focus:outline-none" />
             {draft && (
               <button type="button" onClick={() => { setDraft(""); go(updateState(state, { q: "" })); }} aria-label={st("search.clear")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 grid place-items-center w-8 h-8 rounded-full text-[#6b7280] hover:bg-[#f3f4f6]">
-                <Icon name="close" size={17} />
+                      className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-8 h-8 rounded-full text-[#6b7280] hover:bg-[#f3f4f6]">
+                <Icon name="close" size={16} />
               </button>
             )}
           </label>
-          <button type="submit" className="btn-primary px-6">{st("search.button")}</button>
+          <button type="submit" className="shrink-0 rounded-[14px] bg-[#1B4D31] px-5 sm:px-6 py-3 text-[15.5px] font-semibold text-white hover:bg-[#143D26] transition">{st("search.button")}</button>
         </form>
         {exampleChips}
         {data?.sample && <SampleDataNote />}
       </header>
 
       {explore && (
-        <section className="mt-8" aria-labelledby="cats">
-          <h2 id="cats" className="text-xl font-semibold text-[#1E2B22]">{st("search.categories")}</h2>
+        <section className="mt-9" aria-labelledby="cats">
+          <h2 id="cats" className="font-display text-[26px] font-semibold text-[#1E2B22]">{st("search.categories")}</h2>
           {categories === null ? (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-24 rounded-2xl bg-white border border-[#ebe6d8] animate-pulse" />)}</div>
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[118px] rounded-[20px] bg-white border border-[#ebe6d8] animate-pulse" />)}</div>
           ) : categories.length > 0 && (
             <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-              {categories.map((c) => (
-                <button key={c.category} type="button" onClick={() => change({ category: c.category })}
-                        className="text-left rounded-2xl bg-white border border-[#ebe6d8] p-4 hover:border-[#2E7D4F] hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]">
-                  <span className="block font-semibold text-[#1E2B22]">{st(`cat.${c.category}`)}</span>
-                  <span className="block text-[14px] text-[#4b5563]">{st("search.categoryCount", { n: formatCount(c.products, lang) })}</span>
-                  {c.median_kg !== null && c.median_kg !== undefined && (
-                    <span className="block text-[13.5px] text-[#1F5D3A] mt-1">{st("search.categoryCo2", { kg: formatKg(c.median_kg, lang) })}</span>
-                  )}
-                </button>
-              ))}
+              {categories.map((c) => {
+                const med = Number(c.median_kg);
+                const has = c.median_kg !== null && c.median_kg !== undefined && Number.isFinite(med);
+                return (
+                  <button key={c.category} type="button" onClick={() => change({ category: c.category })}
+                          className="flex flex-col text-left rounded-[20px] bg-white border border-[#E6E2D6] p-4 hover:border-[#2E7D4F] hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]">
+                    <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#EEF3EC] text-[#1B4D31]"><DeviceIcon name={iconKeyFor(c.category)} size={20} /></span>
+                    <span className="mt-3 block font-semibold text-[#1E2B22]">{catLabel(c.category)}</span>
+                    <span className="block text-[13px] text-[#6B7468]">{st("search.categoryCount", { n: formatCount(c.products, lang) })}</span>
+                    {has && (
+                      <>
+                        <span className="mt-2 block text-[13px] text-[#4b5563]">
+                          {L3("trung vị", "median", "médiane")} <span className="whitespace-nowrap"><b className="text-[15px] text-[#1E2B22]">{formatKg(med, lang)}</b> kg CO₂e</span>
+                        </span>
+                        <span className="mt-1.5 block h-1.5 rounded-full bg-[#ECEAE1] overflow-hidden" aria-hidden="true">
+                          <span className="block h-full rounded-full bg-[#2E7D4F]" style={{ width: `${Math.max(3, (med / maxMedian) * 100)}%` }} />
+                        </span>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden lg:block" aria-label={st("search.filters")}>
-          <div className="sticky top-[88px] rounded-2xl bg-white border border-[#ebe6d8] p-5 max-h-[calc(100vh-110px)] overflow-y-auto">
-            <h2 className="text-[17px] font-semibold mb-4">{st("search.filters")}</h2>
-            <SearchFilters state={state} facets={data?.facets} onChange={change} />
+      <section className="mt-9" aria-live="polite" aria-busy={status === "loading" || status === "updating"}>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-[26px] font-semibold text-[#1E2B22]">
+              {explore ? st("search.explore") : state.q ? st("search.resultsFor", { q: state.q }) : st("search.resultsFiltered")}
+            </h2>
+            {explore && <p className="text-[14px] text-[#55604F]">{st("search.exploreNote")}</p>}
+            {!explore && total !== null && status !== "error" && (
+              <p className="text-[14.5px] text-[#55604F]">{total === 1 ? st("search.countOne") : st("search.count", { n: formatCount(total, lang) })}</p>
+            )}
           </div>
-        </aside>
+          <label className="flex items-center gap-2 text-[14px] text-[#55604F]">
+            <span>{st("search.sort")}</span>
+            <select value={sortShown} onChange={(e) => change({ sort: e.target.value })}
+                    className="rounded-xl border border-[#DCD7C9] bg-white px-3 py-2 text-[14.5px] font-medium text-[#1E2B22] focus:outline-none focus:ring-2 focus:ring-[#2E7D4F]/40">
+              {sortOptions.map((x) => <option key={x} value={x}>{st(`search.sort.${x}`)}</option>)}
+            </select>
+          </label>
+        </div>
 
-        <section aria-live="polite" aria-busy={status === "loading" || status === "updating"}>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-[#1E2B22]">
-                {explore ? st("search.explore") : state.q ? st("search.resultsFor", { q: state.q }) : st("search.resultsFiltered")}
-              </h2>
-              {explore && <p className="text-[14px] text-[#4b5563]">{st("search.exploreNote")}</p>}
-              {!explore && total !== null && status !== "error" && (
-                <p className="text-[15px] text-[#4b5563]">{total === 1 ? st("search.countOne") : st("search.count", { n: formatCount(total, lang) })}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button type="button" className="btn-secondary lg:hidden" onClick={() => setDrawer(true)}>
-                <Icon name="menu" size={17} />{st("search.showFilters", { n: filters.length })}
+        <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={L3("Danh mục", "Category", "Catégorie")}>
+          <button type="button" className={pill(!state.category)} aria-pressed={!state.category} onClick={() => change({ category: "" })}>
+            {L3("Tất cả", "Any", "Tout")}
+          </button>
+          {catFacet.map((c) => (
+            <button key={c.value} type="button" className={pill(state.category === c.value)} aria-pressed={state.category === c.value}
+                    onClick={() => change({ category: state.category === c.value ? "" : c.value })}>
+              {catLabel(c.value)}
+              <span className={state.category === c.value ? "text-white/75" : "text-[#8A9186]"}>{formatCount(c.count, lang)}</span>
+            </button>
+          ))}
+          <button type="button" className="inline-flex items-center gap-1.5 rounded-full bg-[#ECE9DE] px-3.5 py-1.5 text-[14px] font-medium text-[#1E2B22] hover:bg-[#E2DED0] transition"
+                  onClick={() => setDrawer(true)}>
+            <Icon name="menu" size={15} />{otherFilters.length ? st("search.showFilters", { n: otherFilters.length }) : L3("Thêm bộ lọc", "More filters", "Plus de filtres")}
+          </button>
+        </div>
+
+        {otherFilters.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {otherFilters.map((f) => (
+              <button key={f.key} type="button" className="chip-active" onClick={() => go(removeFilter(state, f.key))}
+                      aria-label={st("search.removeFilter", { what: filterLabel(f) })}>
+                {filterLabel(f)}<Icon name="close" size={14} />
               </button>
-              <label className="flex items-center gap-2 text-[15px] text-[#4b5563]">
-                <span className="hidden sm:inline">{st("search.sort")}</span>
-                <select value={state.sort} onChange={(e) => change({ sort: e.target.value })}
-                        className="rounded-xl border border-[#d9d4c4] bg-white px-3 py-2.5 text-[15px] text-[#1E2B22] focus:outline-none focus:ring-2 focus:ring-[#2E7D4F]/40">
-                  {SORTS.map((s) => <option key={s} value={s}>{st(`search.sort.${s}`)}</option>)}
-                </select>
-              </label>
-            </div>
+            ))}
+            <button type="button" className="text-[14px] font-medium text-[#1F5D3A] underline px-1" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>
           </div>
+        )}
 
-          {understoodChips.length > 0 && (
-            <div className="mt-3 rounded-2xl bg-[#eef4ec] px-4 py-3">
-              <p className="text-[14px] font-medium text-[#1F5D3A]">{st("search.understood")}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {understoodChips.map((c) => c.kind === "eco"
-                  ? <span key="eco" className="chip">{c.label}</span>
-                  : <button key={`${c.kind}-${c.value}`} type="button" className="chip" onClick={() => removeUnderstood(c)}
-                            aria-label={st("search.removeFilter", { what: c.label })}>{c.label}<Icon name="close" size={14} /></button>)}
-              </div>
-              <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.understoodNote")}</p>
+        {understoodChips.length > 0 && (
+          <div className="mt-3 rounded-2xl bg-[#eef4ec] px-4 py-3">
+            <p className="text-[14px] font-medium text-[#1F5D3A]">{st("search.understood")}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {understoodChips.map((c) => c.kind === "eco"
+                ? <span key="eco" className="chip">{c.label}</span>
+                : <button key={`${c.kind}-${c.value}`} type="button" className="chip" onClick={() => removeUnderstood(c)}
+                          aria-label={st("search.removeFilter", { what: c.label })}>{c.label}<Icon name="close" size={14} /></button>)}
+            </div>
+            <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.understoodNote")}</p>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl bg-white/70 border border-[#E6E2D6] px-4 py-2.5 text-[13px] text-[#55604F]">
+          <b className="text-[#1E2B22]">{L3("Về ảnh", "About the photos", "À propos des photos")}</b>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#2E7D4F]" aria-hidden="true" />
+            {L3("Ảnh của chính sản phẩm", "The product's own photo", "La photo du produit")}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-md bg-[#FBE7B5] px-1.5 py-0.5 text-[11.5px] font-medium text-[#6B4E00]">{L3("Ảnh: mẫu khác", "Photo: other model", "Photo : autre modèle")}</span>
+            {L3("mẫu cùng hãng, cùng loại, giá gần nhất", "a model of the same brand and category, nearest price", "un modèle de même marque et catégorie, prix le plus proche")}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="grid place-items-center w-5 h-5 rounded bg-[#F1F3EE] text-[#2B3A30]"><DeviceIcon name="laptop" size={13} /></span>
+            {L3("chưa có ảnh", "no photo yet", "pas encore de photo")}
+          </span>
+        </div>
+        {showMissingNote && <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.missingLast")}</p>}
+        {status === "updating" && <div className="mt-3"><InlineSpinner label={st("search.updating")} /></div>}
+
+        <div className={`mt-5 ${status === "updating" ? "opacity-60 transition-opacity" : ""}`}>
+          {status === "loading" && <LoadingGrid count={8} />}
+          {status === "error" && (
+            <div className="flex flex-col gap-4">
+              <ErrorState title={st("search.loadError")} body={st("search.loadErrorBody")} onRetry={retry} />
+              {items.length > 0 && <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 opacity-60">{items.map((x) => <ProductCard key={x.product_id} product={x} />)}</div>}
             </div>
           )}
-
-          {filters.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {filters.map((f) => (
-                <button key={f.key} type="button" className="chip-active" onClick={() => go(removeFilter(state, f.key))}
-                        aria-label={st("search.removeFilter", { what: filterLabel(f) })}>
-                  {filterLabel(f)}<Icon name="close" size={14} />
-                </button>
+          {(status === "success" || status === "updating") && data?.unsupported && (
+            <EmptyState icon="info" title={st("search.unsupportedTitle", { what: st(`unsup.${data.unsupported}`) })} body={st("search.unsupportedBody")}>
+              <Link to="/method" className="btn-secondary">{st("search.unsupportedMethod")}</Link>
+              {(categories || []).slice(0, 4).map((c) => (
+                <button key={c.category} type="button" className="chip" onClick={() => go(updateState(parseSearchParams(""), { category: c.category }))}>{st(`cat.${c.category}`)}</button>
               ))}
-              <button type="button" className="text-[14px] font-medium text-[#1F5D3A] underline px-1" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>
-            </div>
+            </EmptyState>
           )}
-          {showMissingNote && <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.missingLast")}</p>}
-          {status === "updating" && <div className="mt-3"><InlineSpinner label={st("search.updating")} /></div>}
-
-          <div className={`mt-5 ${status === "updating" ? "opacity-60 transition-opacity" : ""}`}>
-            {status === "loading" && <LoadingGrid count={6} />}
-            {status === "error" && (
-              <div className="flex flex-col gap-4">
-                <ErrorState title={st("search.loadError")} body={st("search.loadErrorBody")} onRetry={retry} />
-                {items.length > 0 && <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 opacity-60">{items.map((p) => <ProductCard key={p.product_id} product={p} />)}</div>}
+          {(status === "success" || status === "updating") && !data?.unsupported && items.length === 0 && (
+            <EmptyState title={st("search.noResultsTitle")} body={st("search.noResultsBody")}>
+              {(data?.relaxations || []).map((r) => (
+                <button key={`${r.drop}-${r.value}`} type="button" className="btn-secondary" onClick={() => applyRelaxation(r)}>{relaxLabel(r)}</button>
+              ))}
+              {filters.length > 0 && <button type="button" className="btn-secondary" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>}
+            </EmptyState>
+          )}
+          {(status === "success" || status === "updating") && items.length > 0 && (
+            <>
+              {state.q && items[0] && <WhyConsider productId={items[0].product_id} need={state.q}
+                                                   title={st("search.whyTop", { name: items[0].name })} className="mb-4" />}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {items.map((x) => <ProductCard key={x.product_id} product={x} />)}
               </div>
-            )}
-            {(status === "success" || status === "updating") && data?.unsupported && (
-              <EmptyState icon="info" title={st("search.unsupportedTitle", { what: st(`unsup.${data.unsupported}`) })} body={st("search.unsupportedBody")}>
-                <Link to="/method" className="btn-secondary">{st("search.unsupportedMethod")}</Link>
-                {(categories || []).slice(0, 4).map((c) => (
-                  <button key={c.category} type="button" className="chip" onClick={() => go(updateState(parseSearchParams(""), { category: c.category }))}>{st(`cat.${c.category}`)}</button>
-                ))}
-              </EmptyState>
-            )}
-            {(status === "success" || status === "updating") && !data?.unsupported && items.length === 0 && (
-              <EmptyState title={st("search.noResultsTitle")} body={st("search.noResultsBody")}>
-                {(data?.relaxations || []).map((r) => (
-                  <button key={`${r.drop}-${r.value}`} type="button" className="btn-secondary" onClick={() => applyRelaxation(r)}>{relaxLabel(r)}</button>
-                ))}
-                {filters.length > 0 && <button type="button" className="btn-secondary" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>}
-              </EmptyState>
-            )}
-            {(status === "success" || status === "updating") && items.length > 0 && (
-              <>
-                {items[0] && <WhyConsider productId={items[0].product_id} need={state.q || null}
-                                          title={st("search.whyTop", { name: items[0].name })} className="mb-4" />}
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {items.map((p) => <ProductCard key={p.product_id} product={p} />)}
-                </div>
-                <Pagination page={state.page} pages={pages} onPage={onPage} st={st} />
-              </>
-            )}
-          </div>
-        </section>
-      </div>
+              <Pagination page={state.page} pages={pages} onPage={onPage} st={st} />
+            </>
+          )}
+        </div>
+      </section>
 
       {drawer && (
-        <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={st("search.filters")}>
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={st("search.filters")}>
           <button type="button" className="absolute inset-0 bg-black/40" aria-label={st("shell.closeMenu")} onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 right-0 w-[min(360px,92vw)] bg-[#F6F4EC] shadow-2xl flex flex-col">
+          <div className="absolute inset-y-0 right-0 w-[min(380px,92vw)] bg-[#F6F4EC] shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#ebe6d8]">
               <h2 className="text-[17px] font-semibold">{st("search.filters")}</h2>
               <button type="button" onClick={() => setDrawer(false)} aria-label={st("shell.closeMenu")} className="grid place-items-center w-9 h-9 rounded-full hover:bg-white"><Icon name="close" /></button>

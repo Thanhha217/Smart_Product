@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
@@ -12,7 +12,7 @@ import WorldExplore from "./components/world/explore/WorldExplore";
 import WorldScene, { WORLD_H, WORLD_W, legPath, stageTarget } from "./components/world/WorldScene";
 import ExplainPanel from "./components/world/ExplainPanel";
 import SimPanel from "./components/world/SimPanel";
-import GreenPanel from "./components/world/GreenPanel";
+import GreenPanel, { InsightCard } from "./components/world/GreenPanel";
 import Tour, { sceneFor } from "./components/world/Tour";
 import { useCamera, useTween } from "./components/world/useCamera";
 import { ORIGINS, baseline, presetExplain, simulate } from "./components/world/worldModel";
@@ -37,20 +37,20 @@ function loadArt() {
   return artPromise;
 }
 
-function useFillHeight(ref) {
-  const [h, setH] = useState(640);
-  useLayoutEffect(() => {
-    const update = () => {
-      const top = ref.current ? ref.current.getBoundingClientRect().top + window.scrollY : 120;
-      const tabBar = window.innerWidth < 900 ? 72 : 0;   // AppShell bottom tab bar on phones
-      setH(Math.max(460, window.innerHeight - top - tabBar));
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [ref]);
+/** The map band: a comfortable height in the page, taller while a scene is open. */
+function useMapHeight(scene) {
+  const calc = () => (typeof window === "undefined" ? 460
+    : scene ? Math.max(520, Math.min(760, window.innerHeight - 150)) : Math.max(380, Math.min(540, Math.round(window.innerHeight * 0.55))));
+  const [h, setH] = useState(calc);
+  useEffect(() => {
+    const on = () => setH(calc());
+    on();
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
   return h;
 }
+
 
 function Chip({ topic, children, className = "", onClick, style }) {
   return (
@@ -98,11 +98,10 @@ function WorldView({ productId }) {
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, []);
-  const [greenOpen, setGreenOpen] = useState(false);   // the Green lifestyle panel on narrow screens
   const hudRef = useRef(null);
   const [tour, setTour] = useState(params.get("tour") === "1");
   const wrap = useRef(null);
-  const height = useFillHeight(wrap);
+  const height = useMapHeight(scene);
   const camera = useCamera({ width: WORLD_W, height: WORLD_H, minW: 420, margin: 1600 });
 
   useEffect(() => { loadArt().then(setArt); }, []);
@@ -159,10 +158,9 @@ function WorldView({ productId }) {
     atHome.current = true;
     const el = wrap.current;
     const elW = el?.clientWidth || 1200, elH = el?.clientHeight || 700;
-    const box = { x0: 60, x1: 2360, y0: 415, y1: 1350 };   // down to the "Circular lifecycle" label
-    const right = xl ? 360 : 12;
-    const r = hudRef.current?.getBoundingClientRect();
-    const hudW = r ? r.width + 24 : 0, hudH = r ? r.height + 24 : 0;
+    const box = { x0: 60, x1: 2360, y0: 400, y1: 1310 };
+    const right = 12;
+    const hudW = 0, hudH = 0;   // nothing covers the map any more
     // beside the card or below it, whichever shows the loop bigger
     const fit = (f) => Math.min(Math.max(200, f.r - f.l) / (box.x1 - box.x0), Math.max(160, f.b - f.t) / (box.y1 - box.y0));
     const besideF = { l: hudW, t: 12, r: elW - right, b: elH - 70 }, belowF = { l: 12, t: hudH, r: elW - right, b: elH - 70 };
@@ -319,139 +317,133 @@ function WorldView({ productId }) {
   const TOPIC_SCENE = { materials: "mine", factory: "factory", transport: sceneFor("transport", sc), use: "home", grid: sceneFor("grid", sc), end_of_life: "recycle", wefe: "city_wefe" };
   const imageFor = (t) => (TOPIC_SCENE[t] ? art[TOPIC_SCENE[t]] || null : null);
 
+  const toolBtn = "grid place-items-center w-10 h-10 rounded-full border border-[#E3DFD3] bg-white text-[#1E2B22] hover:border-[#2E7D4F]";
   return (
-    <div ref={wrap} className="relative overflow-hidden bg-[#dff1fb]" style={{ height }} onClickCapture={onCapture}
-         onPointerDownCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}
-         onWheelCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}>
-      <WorldScene svgRef={camera.svgRef} category={p.category} sc={sc} sim={{ stages: simStages }} maxStage={maxStage}
-                  focus={focus} labels={labels} ask={askMode} lang={lang} onClick={onSceneClick} art={art} leg={leg}
-                  stageValue={stageValue} stageNote={stageNote} />
-
-      {/* walk-in scenes (zoom / slide / drag between places) */}
-      <SceneNavigator scene={scene} go={go} takeOrigin={takeOrigin} S={S} rightInset={side ? 430 : 0}
-        renderScene={(key, flourish) => (
-          <SceneView sceneKey={key} d={d} base={base} sim={sim} sc={sc} setSc={setSc} lang={lang} S={S} art={art}
-                     onDive={(k, rect) => { setTopic(null); go(k, rect); }}
-                     onAsk={(t) => setTopic(t)}
-                     onOpenProduct={(id, rect) => flourish(rect).then(() => navigate(`/world/${id}`))} />
-        )} />
-
-      {/* HUD (the approved layout): product, total, green score, confidence, formula, category */}
-      {!scene && (
-        <div ref={hudRef} className="absolute z-20 left-3 top-3 right-3 md:right-auto md:max-w-[460px] rounded-3xl bg-white/90 backdrop-blur shadow-xl border border-white p-3 md:p-4">
-          <p className="text-[13.5px] uppercase tracking-widest text-emerald-700 font-semibold">🌏 {L3("Thế giới CO₂ của sản phẩm", "The product's CO₂ world", "Le monde CO₂ du produit")}</p>
-          <h1 className="font-extrabold text-[#16324a] leading-tight text-lg md:text-xl line-clamp-2">{p.name}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-emerald-600 border-emerald-600 text-white text-[16px]">
-              {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : L3("Chưa có số CO₂", "No CO₂ figure", "Pas de chiffre CO₂")}
+    <main className="mx-auto max-w-[1320px] px-3 sm:px-5 py-4 space-y-4">
+      {/* header card (design page 3) */}
+      <section ref={hudRef} className="rounded-[24px] bg-white border border-[#E8E4D8] px-5 sm:px-6 py-5">
+        <p className="flex items-center gap-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#3FA0B8]" aria-hidden="true" />
+          {L3("Thế giới CO₂ của sản phẩm", "The product's CO₂ world", "Le monde CO₂ du produit")}
+        </p>
+        <h1 className="mt-1 font-display text-[28px] sm:text-[34px] font-semibold leading-tight text-[#1E2B22]">{p.name}</h1>
+        <p className="mt-1 text-[14.5px] text-[#55604F]">
+          {methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-[#1F5D3A] font-semibold underline">{T.book}</Link>
+          {" · "}<Link to={`/method?product=${p.product_id}`} className="text-[#1F5D3A] font-semibold underline">{T.method}</Link>
+          {" · "}<Link to="/world?explore=1" className="text-[#1F5D3A] font-semibold underline">{L3("Sản phẩm khác", "Other products", "Autres produits")}</Link>
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-[#1F6B43] border-[#1F6B43] text-white !text-[17px] !px-4 !py-2">
+            {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : L3("Chưa có số CO₂", "No CO₂ figure", "Pas de chiffre CO₂")}
+          </Chip>
+          {p.green_score !== null && p.green_score !== undefined && (
+            <Chip topic="green_score" onClick={() => open("green_score")} className="text-white border-transparent !text-[17px] !px-4 !py-2" style={{ background: greenColor(p.green_score) }}>
+              {T.greenScore} {formatNum(p.green_score, lang, 1)}/5
             </Chip>
-            {p.green_score !== null && p.green_score !== undefined && (
-              <Chip topic="green_score" onClick={() => open("green_score")} className="text-white border-transparent" style={{ background: greenColor(p.green_score) }}>
-                {T.greenScore} {formatNum(p.green_score, lang, 1)}/5
-              </Chip>
-            )}
-            {typeof d.formula?.confidence === "number" && (
-              <Chip topic="confidence" onClick={() => open("confidence")} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">
-                {T.confidence} {formatNum(d.formula.confidence * 100, lang, 0)}%
-              </Chip>
-            )}
-            <Chip topic="formula" onClick={(e) => enter("formula", e)} className="bg-white border-gray-200 text-gray-700">🧮 {T.formula}</Chip>
-            <Chip topic="category" onClick={(e) => enter("category", e)} className="bg-white border-gray-200 text-gray-700 hidden sm:inline-block">📊 {T.category}</Chip>
+          )}
+          {typeof d.formula?.confidence === "number" && (
+            <Chip topic="confidence" onClick={() => open("confidence")} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">
+              {T.confidence} {formatNum(d.formula.confidence * 100, lang, 0)}%
+            </Chip>
+          )}
+          <Chip topic="formula" onClick={(e) => enter("formula", e)} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">🧮 {T.formula}</Chip>
+          <Chip topic="category" onClick={(e) => enter("category", e)} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">📊 {T.category}</Chip>
+        </div>
+      </section>
+
+      {/* map card: toolbar, map, stage bar */}
+      <section className="rounded-[24px] bg-white border border-[#E8E4D8] overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-[#EFEBDF]">
+          <p className="text-[14.5px] font-semibold text-[#B45309]">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setSimOpen(!simOpen)} aria-expanded={simOpen}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1B2F45] px-4 py-2 text-[14.5px] font-bold text-white hover:bg-[#243e5a]">
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M4 6h12M4 14h12" /><circle cx="8" cy="6" r="2" fill="#1B2F45" /><circle cx="13" cy="14" r="2" fill="#1B2F45" />
+              </svg>
+              {String(T.sim).replace(/^[^\p{L}]+/u, "")}
+            </button>
+            <button type="button" onClick={() => { setTopic(null); setTour(true); }}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#E0700E] px-4 py-2 text-[14.5px] font-bold text-white hover:bg-[#c96209]">
+              ▶ {L3("Giải thích từng bước", "Guided explanation", "Explication pas à pas")}
+            </button>
+            <span className="mx-1 h-6 w-px bg-[#E3DFD3]" aria-hidden="true" />
+            <button type="button" onClick={() => setAskMode(!askMode)} aria-pressed={askMode} title={askMode ? T.askModeOn : T.askMode}
+                    className={`${toolBtn} ${askMode ? "!bg-amber-300 !border-amber-400" : ""} text-[#C2413C] font-bold`}>?</button>
+            <button type="button" onClick={() => { atHome.current = false; camera.zoomBy(0.7); }} aria-label={T.zoomIn} className={`${toolBtn} text-lg font-bold`}>+</button>
+            <button type="button" onClick={() => { atHome.current = false; camera.zoomBy(1.4); }} aria-label={T.zoomOut} className={`${toolBtn} text-lg font-bold`}>−</button>
+            <button type="button" onClick={() => { setFocus(null); go(null); home(); }} aria-label={T.overview} title={T.overview} className={toolBtn}>⤢</button>
           </div>
-          <p className="mt-2 text-[13.5px] text-gray-500 hidden md:block">
-            {methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-sky-700 underline">{T.book}</Link>
-            {" · "}<Link to={`/method?product=${p.product_id}`} className="text-sky-700 underline">{T.method}</Link>
-            {" · "}<Link to="/world?explore=1" className="text-sky-700 underline">{L3("Sản phẩm khác", "Other products", "Autres produits")}</Link>
-          </p>
-          <p className="mt-2 text-[13.5px] font-semibold text-amber-700">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
-          {!wide && !tour && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" onClick={() => { setTopic(null); setTour(true); }}
-                      className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-extrabold px-4 py-2 shadow-lg whitespace-nowrap">
-                ▶ {L3("Giải thích từng bước", "Guided explanation", "Explication pas à pas")}
-              </button>
-              {!side && !greenOpen && (
-                <button type="button" onClick={() => setGreenOpen(true)}
-                        className="rounded-full bg-[#1F5D3A] text-white px-4 py-2 text-[15px] font-bold shadow-lg whitespace-nowrap">
-                  🍃 {L3("Sống xanh", "Green lifestyle", "Vivre sobre")}
-                </button>
-              )}
-            </div>
+        </div>
+
+        <div ref={wrap} className="relative overflow-hidden bg-[#dff1fb]" style={{ height }} onClickCapture={onCapture}
+             onPointerDownCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}
+             onWheelCapture={(e) => { if (e.target.closest?.("svg.wx")) atHome.current = false; }}>
+          <WorldScene svgRef={camera.svgRef} category={p.category} sc={sc} sim={{ stages: simStages }} maxStage={maxStage}
+                      focus={focus} labels={labels} ask={askMode} lang={lang} onClick={onSceneClick} art={art} leg={leg}
+                      stageValue={stageValue} stageNote={stageNote} />
+
+          <SceneNavigator scene={scene} go={go} takeOrigin={takeOrigin} S={S} rightInset={side ? 430 : 0}
+            renderScene={(key, flourish) => (
+              <SceneView sceneKey={key} d={d} base={base} sim={sim} sc={sc} setSc={setSc} lang={lang} S={S} art={art}
+                         onDive={(k, rect) => { setTopic(null); go(k, rect); }}
+                         onAsk={(t) => setTopic(t)}
+                         onOpenProduct={(id, rect) => flourish(rect).then(() => navigate(`/world/${id}`))} />
+            )} />
+
+          {sc && base && !scene && (
+            <SimPanel open={simOpen && !tour} hideToggle onToggle={() => setSimOpen(!simOpen)} sc={sc} setSc={setSc} base={base} sim={sim} lang={lang} T={T} measured={lc.measured}
+                      origins={ORIGINS} onAsk={() => open("what_if")} onReset={() => setSc({ ...sc, origin: base.origin, mode: base.mode, grid: base.grid, years: base.years, refurbished: false })} />
+          )}
+          {askMode && <p className="absolute z-20 left-1/2 -translate-x-1/2 bottom-3 rounded-full bg-amber-400 text-[#16324a] text-sm font-semibold px-4 py-1.5 shadow">❓ {T.askModeOn}</p>}
+
+          {tour ? (
+            <Tour open={tour} startStep={Math.max(0, (Number(params.get("step")) || 1) - 1)} onClose={() => { setTour(false); setFocus(null); go(null, null, { replace: true }); home(0); }} art={art} lang={lang}
+                  formula={d.formula} greenScore={p.green_score}
+                  ctx={{ sc, stages: sim?.stages || {}, total: sim?.total, officialTotal: p.co2e_kg }}
+                  onStep={(stage) => { setFocus(stage === "formula" ? null : stage); go(SCENE_OF_STAGE[stage], null, { replace: true }); }} />
+          ) : (
+            <ExplainPanel open={!!topic} topic={topic} preset={preset} productId={p.product_id} lang={lang} scenario={scenario} T={T}
+                          image={topic ? imageFor(topic) : null} onClose={() => setTopic(null)} />
           )}
         </div>
-      )}
 
-      {/* Green lifestyle: low-CO2 choice, use longer, recycle + AI insight (right side) */}
-      {!scene && !side && !tour && (xl || greenOpen) && (
-        <div className={`absolute z-30 right-3 top-3 flex ${xl ? "w-[340px]" : "left-3 md:left-auto md:w-[360px]"}`} style={{ maxHeight: xl ? height - 232 : height - 100 }}>
-          <GreenPanel d={d} base={base} sc={sc} setSc={setSc} lang={lang} className="max-h-full w-full"
-                      onRecycle={(e) => choose("end_of_life", e?.currentTarget?.getBoundingClientRect?.() || null)} />
-          {!xl && <button type="button" onClick={() => setGreenOpen(false)} className="absolute -top-1 -right-1 w-9 h-9 rounded-full bg-white shadow text-lg" aria-label={L3("Đóng", "Close", "Fermer")}>✕</button>}
+        {/* footer: circular lifecycle + the stage bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-[#EFEBDF]">
+          <p className="text-[14.5px] text-[#55604F]">
+            <b className="text-[#1F5D3A]">⟳ {labels.loop.circular}</b> · {labels.loop.circularSub.charAt(0).toLowerCase() + labels.loop.circularSub.slice(1)}
+          </p>
+          <nav aria-label="stages" className="flex max-w-full overflow-x-auto rounded-full border border-[#E3DFD3] bg-white"
+               title={lc.measured ? undefined : L3("Số từng chặng = tổng × tỷ lệ điển hình của loại (ước tính)",
+                                                   "Stage figures = total × the category's typical shares (estimate)",
+                                                   "Chiffres par étape = total × parts typiques de la catégorie (estimation)")}>
+            {RAIL.map((st, i) => {
+              const kg = st === "materials" ? null : tw[st];
+              return (
+                <button key={st} type="button" data-explain={STAGE_TOPIC[st]} aria-pressed={focus === st}
+                        onClick={(e) => { e.stopPropagation(); choose(st, e.currentTarget.getBoundingClientRect()); }}
+                        className={`whitespace-nowrap px-4 py-2 text-[15px] font-semibold transition ${i > 0 ? "border-l border-[#E3DFD3]" : ""} ${focus === st ? "bg-[#1B2F45] text-white" : "text-[#33403A] hover:bg-[#F3F8F1]"}`}>
+                  {T.stages[st]}{kg !== null && kg !== undefined ? <span className={`ml-1.5 font-bold ${focus === st ? "text-emerald-200" : "text-[#1F6B43]"}`}>{formatKg(kg, lang)}</span> : null}
+                  {st === "materials" && <span className={`ml-1.5 text-[12.5px] font-normal ${focus === st ? "text-white/75" : "text-[#8A9186]"}`}>{L3("gộp trong SX →", "in production →", "inclus →")}</span>}
+                </button>
+              );
+            })}
+            <button type="button" data-explain="co2e_total" onClick={() => { setFocus(null); home(); open("co2e_total"); }}
+                    className="whitespace-nowrap border-l border-[#E3DFD3] bg-[#1F6B43] px-4 py-2 text-[15px] font-bold text-white">
+              {T.total} {formatKg(sim?.total ?? p.co2e_kg, lang)} kg
+            </button>
+          </nav>
         </div>
-      )}
+      </section>
 
-      {/* tour button */}
-      {/* on wide screens it sits in the sky between the two cards; narrower, right under the formula card */}
-      {!tour && !scene && xl && (
-        <button type="button" onClick={() => { setTopic(null); setTour(true); }}
-                className="absolute z-20 top-4 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-extrabold px-5 py-2.5 shadow-xl hover:scale-105 transition whitespace-nowrap"
-                style={{ left: "calc(470px + (100% - 830px) / 2)" }}>
-          ▶ {L3("Xem giải thích từng bước", "Guided explanation", "Explication pas à pas")}
-        </button>
-      )}
-
-      {sc && base && !scene && (
-        <SimPanel open={simOpen && !tour} onToggle={() => setSimOpen(!simOpen)} sc={sc} setSc={setSc} base={base} sim={sim} lang={lang} T={T} measured={lc.measured}
-                  origins={ORIGINS} onAsk={() => open("what_if")} onReset={() => setSc({ ...sc, origin: base.origin, mode: base.mode, grid: base.grid, years: base.years, refurbished: false })} />
-      )}
-
-      {/* stage bar (approved layout). Stage kilograms are the stored total split by the
-          category's typical shares unless the backend computed the split; the hover text says which. */}
-      {!scene && <nav style={side ? { left: "calc(50% - 210px)", maxWidth: "calc(100% - 460px)" }
-                          : xl ? { left: "calc(150px + (100% - 520px) / 2)", maxWidth: "calc(100% - 530px)" }
-                          : wide ? { left: "calc(150px + (100% - 220px) / 2)", maxWidth: "calc(100% - 230px)" } : undefined}
-           className="absolute z-20 left-1/2 -translate-x-1/2 bottom-3 max-w-[calc(100%-24px)] overflow-x-auto rounded-full bg-white/95 backdrop-blur shadow-xl border border-white p-1.5 flex items-center" aria-label="stages"
-           title={lc.measured ? undefined : L3("Số từng chặng = tổng × tỷ lệ điển hình của loại (ước tính)",
-                                               "Stage figures = total × the category's typical shares (estimate)",
-                                               "Chiffres par étape = total × parts typiques de la catégorie (estimation)")}>
-        {RAIL.map((s, i) => {
-          const kg = s === "materials" ? null : tw[s];
-          return (
-            <span key={s} className="flex items-center">
-              {i > 0 && <span className="mx-0.5 h-5 w-px bg-[#D6D0C0]" aria-hidden="true" />}
-              <button type="button" data-explain={STAGE_TOPIC[s]} onClick={(e) => { e.stopPropagation(); choose(s, e.currentTarget.getBoundingClientRect()); }} aria-pressed={focus === s}
-                      className={`rounded-full px-3.5 py-2 text-[15px] font-semibold whitespace-nowrap transition ${focus === s ? "bg-[#16324a] text-white shadow" : "hover:bg-emerald-50 text-gray-700"}`}>
-                {T.stages[s]}{kg !== null && kg !== undefined ? <span className={`ml-1.5 font-bold ${focus === s ? "text-emerald-200" : "text-emerald-700"}`}>{formatKg(kg, lang)}</span> : null}
-              </button>
-            </span>
-          );
-        })}
-        <button type="button" data-explain="co2e_total" onClick={() => { setFocus(null); home(); open("co2e_total"); }}
-                className="ml-1 rounded-full px-3.5 py-2 text-[15px] font-bold whitespace-nowrap bg-emerald-600 text-white">{T.total} {formatKg(sim?.total ?? p.co2e_kg, lang)} kg</button>
-      </nav>}
-
-      {/* camera + ask controls */}
-      <div className={`absolute ${scene ? "z-30 bottom-24 md:bottom-16" : "z-20 bottom-20 md:bottom-4"} right-3 flex flex-col gap-2`} style={side ? { right: 432 } : undefined}>
-        <button type="button" onClick={() => setAskMode(!askMode)} aria-pressed={askMode} title={askMode ? T.askModeOn : T.askMode}
-                className={`rounded-full w-11 h-11 shadow-lg text-lg font-bold ${askMode ? "bg-amber-400 text-[#16324a] ring-4 ring-amber-200" : "bg-white text-[#16324a]"}`}>❓</button>
-        {!scene && <>
-          <button type="button" onClick={() => { atHome.current = false; camera.zoomBy(0.7); }} aria-label={T.zoomIn} className="rounded-full w-11 h-11 bg-white shadow-lg text-xl font-bold">+</button>
-          <button type="button" onClick={() => { atHome.current = false; camera.zoomBy(1.4); }} aria-label={T.zoomOut} className="rounded-full w-11 h-11 bg-white shadow-lg text-xl font-bold">−</button>
-          <button type="button" onClick={() => { setFocus(null); home(); }} aria-label={T.overview} title={T.overview} className="rounded-full w-11 h-11 bg-white shadow-lg text-lg">⤢</button>
-        </>}
+      {/* Green lifestyle and the AI insight, side by side */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <GreenPanel d={d} base={base} sc={sc} setSc={setSc} lang={lang} lifestyleOnly
+                    onRecycle={(e) => { window.scrollTo({ top: 0, behavior: "smooth" }); choose("end_of_life", e?.currentTarget?.getBoundingClientRect?.() || null); }} />
+        <InsightCard productId={p.product_id} lang={lang} stats={d.stats} kg={p.co2e_kg}
+                     category={String(p.category || "").replace(/_/g, " ").replace(/^computer /, "")} />
       </div>
-      {askMode && <p className="absolute z-20 left-1/2 -translate-x-1/2 bottom-[72px] rounded-full bg-amber-400 text-[#16324a] text-sm font-semibold px-4 py-1.5 shadow">❓ {T.askModeOn}</p>}
-
-      {tour ? (
-        <Tour open={tour} startStep={Math.max(0, (Number(params.get("step")) || 1) - 1)} onClose={() => { setTour(false); setFocus(null); go(null, null, { replace: true }); home(0); }} art={art} lang={lang}
-              formula={d.formula} greenScore={p.green_score}
-              ctx={{ sc, stages: sim?.stages || {}, total: sim?.total, officialTotal: p.co2e_kg }}
-              onStep={(stage) => { setFocus(stage === "formula" ? null : stage); go(SCENE_OF_STAGE[stage], null, { replace: true }); }} />
-      ) : (
-        <ExplainPanel open={!!topic} topic={topic} preset={preset} productId={p.product_id} lang={lang} scenario={scenario} T={T}
-                      image={topic ? imageFor(topic) : null} onClose={() => setTopic(null)} />
-      )}
-    </div>
+    </main>
   );
 }
 

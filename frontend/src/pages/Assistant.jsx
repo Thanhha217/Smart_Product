@@ -7,10 +7,11 @@ import { LOCALES, tri, useI18n } from "../i18n/LanguageContext";
 import { explore } from "../i18n/explore";
 import { api, MOCK_API } from "../api/client";
 import { addHistory, getHistory } from "../lib/storage";
-import { composeQuery, toSearchParams } from "../lib/needs";
+import { composeQuery, NEED_GROUPS, toSearchParams } from "../lib/needs";
 import { useRecent } from "../lib/recent";
 import VoiceInput from "./components/assistant/VoiceInput";
-import NeedPicker, { NeedChips } from "./components/assistant/NeedPicker";
+import WhatFits from "./components/assistant/WhatFits";
+import DeviceIcon from "./components/ui/DeviceIcon";
 import { PageSkeleton } from "./components/assistant/PageRenderer";
 import { ErrorState, InlineSpinner, SampleDataNote } from "./components/common/States";
 import ProductThumb from "./components/common/ProductThumb";
@@ -41,7 +42,8 @@ export default function Assistant() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [free, setFree] = useState(params.get("q") || "");
-  const [selection, setSelection] = useState({});
+  // the design opens with a worked request so "What fits" shows real products at once; every tap can undo it
+  const [selection, setSelection] = useState(() => (params.get("q") ? {} : { device: "laptop", purpose: "study", budget: "20", priority: "co2" }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);       // null | "error" | "timeout"
   const [history, setHistory] = useState(() => dedupe(getHistory()));
@@ -87,67 +89,101 @@ export default function Assistant() {
 
   const change = (key, value) => { setSelection((s) => ({ ...s, [key]: value })); if (error) setError(null); };
 
+  const groups = Object.fromEntries(NEED_GROUPS.map((g) => [g.key, g]));
+  const title = (k) => (k === "priority" ? L3("Điều quan trọng nhất", "What matters most", "Ce qui compte le plus") : groups[k].title[lang] || groups[k].title.en);
+  const label = (o) => o.label[lang] || o.label.en;
+  const chip = (on) => `rounded-full border px-3.5 py-1.5 text-[14px] font-medium transition ${on ? "bg-[#1B4D31] border-[#1B4D31] text-white" : "bg-white border-[#E1DCCD] text-[#1E2B22] hover:border-[#2E7D4F]"}`;
+  const Step = ({ n, k }) => (
+    <p className="flex items-center gap-2 text-[14.5px] font-semibold text-[#1E2B22]">
+      <span className="grid place-items-center w-5 h-5 rounded-full bg-[#1B4332] text-[11.5px] font-bold text-white">{n}</span>{title(k)}
+    </p>
+  );
+  const chipGroup = (k) => (
+    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={title(k)}>
+      {groups[k].options.map((o) => {
+        const on = selection[k] === o.value;
+        return <button key={o.value} type="button" aria-pressed={on} className={chip(on)} onClick={() => change(k, on ? null : o.value)}>{label(o)}</button>;
+      })}
+    </div>
+  );
+  const examples3 = X.examples.slice(0, 3);
+
   return (
-    <main className="page-wrap py-6 flex flex-col gap-6 max-w-5xl">
+    <main className="page-wrap py-7 flex flex-col gap-7 max-w-[1040px]">
       <header>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="page-title">{L3("Tìm thiết bị phù hợp với bạn", "Find the device that fits you", "Trouvez l'appareil qui vous convient")}</h1>
-          {MOCK_API && <SampleDataNote />}
-        </div>
-        <p className="page-lead">
+        <p className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
+          <Icon name="sparkles" size={15} />{L3("Hỏi AI", "Ask AI", "Demander à l'IA")}
+          {MOCK_API && <span className="ml-2 normal-case tracking-normal font-normal"><SampleDataNote /></span>}
+        </p>
+        <h1 className="mt-1 font-display text-[38px] sm:text-[48px] font-semibold leading-[1.06] text-[#1E2B22]">
+          {L3("Tìm thiết bị phù hợp với bạn", "Find the device that fits you", "Trouvez l'appareil qui vous convient")}
+        </h1>
+        <p className="mt-2 max-w-2xl text-[16.5px] leading-relaxed text-[#55604F]">
           {L3("Nói nhu cầu, ngân sách và điều bạn quan tâm. Hệ thống tìm trong dữ liệu thật rồi giải thích vì sao nên cân nhắc từng món.",
               "Tell it what you need, what you can spend and what matters to you. It searches the real catalogue and explains why each product is worth considering.",
               "Dites votre besoin, votre budget et ce qui compte pour vous. Le site cherche dans le vrai catalogue et explique pourquoi chaque produit mérite attention.")}
         </p>
       </header>
 
-      <form onSubmit={(e) => { e.preventDefault(); ask(); }} className="rounded-3xl bg-white border border-[#E7E2D4] shadow-sm p-4 sm:p-5 flex flex-col gap-4" aria-busy={loading}>
-        <div>
-          <label htmlFor="ask" className="block text-[15.5px] font-semibold text-[#1E2B22] mb-2">
-            {L3("1. Mô tả bằng lời (không bắt buộc)", "1. Say it in your own words (optional)", "1. Dites-le avec vos mots (facultatif)")}
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-4 text-[#6B7468]"><Icon name="sparkles" size={20} /></span>
-              <textarea id="ask" ref={box} rows={2}
-                        className="w-full rounded-2xl border border-[#E7E2D4] bg-[#FBFAF5] pl-11 pr-3 py-3 text-[16.5px] outline-[#2E7D4F] focus:outline-2"
-                        placeholder={X.askPh} value={free}
-                        onChange={(e) => { setFree(e.target.value); if (error) setError(null); }}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); } }} />
+      <form onSubmit={(e) => { e.preventDefault(); ask(); }} aria-busy={loading}
+            className="overflow-hidden rounded-[26px] bg-white border border-[#E6E2D6] shadow-[0_6px_24px_rgba(30,43,34,0.07)]">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 p-4 sm:p-5">
+          <span className="hidden sm:grid place-items-center w-10 h-10 shrink-0 rounded-xl bg-[#EEF3EC] text-[#2E7D4F]"><Icon name="sparkles" size={19} /></span>
+          <div className="min-w-0 flex-1">
+            <label htmlFor="ask" className="block text-[13.5px] font-medium text-[#55604F]">{L3("Nói bằng lời của bạn", "Say it in your own words", "Dites-le avec vos mots")}</label>
+            <textarea id="ask" ref={box} rows={2}
+                      className="mt-1 w-full resize-none bg-transparent font-display text-[20px] sm:text-[22px] leading-snug text-[#1E2B22] placeholder:text-[#9AA096] focus:outline-none"
+                      placeholder={X.askPh} value={free}
+                      onChange={(e) => { setFree(e.target.value); if (error) setError(null); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); } }} />
+          </div>
+          <div className="shrink-0"><VoiceInput disabled={loading} onTranscript={(text) => setFree((m) => (m ? `${m} ${text}` : text))} /></div>
+        </div>
+
+        <div className="flex items-center gap-3 px-5 text-[13px] text-[#6B7468]" aria-hidden="true">
+          <span className="h-px flex-1 bg-[#ECE8DC]" />{L3("hoặc chọn nhanh vài lần chạm", "or build it in a few taps", "ou composez-la en quelques clics")}<span className="h-px flex-1 bg-[#ECE8DC]" />
+        </div>
+
+        <div className="grid gap-3 p-4 sm:p-5 md:grid-cols-2">
+          <div className="rounded-[20px] bg-[#FAF9F4] border border-[#EEEBE0] p-4">
+            <Step n={1} k="device" />
+            <div className="mt-3 grid grid-cols-3 gap-2" role="group" aria-label={title("device")}>
+              {groups.device.options.map((o) => {
+                const on = selection.device === o.value;
+                return (
+                  <button key={o.value} type="button" aria-pressed={on} onClick={() => change("device", on ? null : o.value)}
+                          className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[13.5px] font-medium transition ${on ? "bg-[#1B4332] border-[#1B4332] text-white" : "bg-white border-[#E1DCCD] text-[#1E2B22] hover:border-[#2E7D4F]"}`}>
+                    <DeviceIcon name={o.value} size={22} tint={false} />{label(o)}
+                  </button>
+                );
+              })}
             </div>
-            <VoiceInput disabled={loading} onTranscript={(text) => setFree((m) => (m ? `${m} ${text}` : text))} />
+          </div>
+          <div className="rounded-[20px] bg-[#FAF9F4] border border-[#EEEBE0] p-4 flex flex-col gap-4">
+            <div><Step n={2} k="purpose" />{chipGroup("purpose")}</div>
+            <div><Step n={3} k="budget" />{chipGroup("budget")}</div>
+            <div><Step n={4} k="priority" />{chipGroup("priority")}</div>
           </div>
         </div>
 
-        <div>
-          <p className="text-[15.5px] font-semibold text-[#1E2B22] mb-2">
-            {L3("2. Hoặc chọn nhanh", "2. Or pick in a few taps", "2. Ou choisissez en quelques clics")}
-          </p>
-          <NeedPicker selection={selection} onChange={change} lang={lang} />
-        </div>
-
-        {ready && (
-          <div className="rounded-2xl bg-[#F7FBF6] border border-[#DCEBD9] p-3 space-y-2">
-            <NeedChips selection={selection} lang={lang} onRemove={(k) => change(k, null)} />
-            <p className="text-[14.5px] text-[#55604F]">
-              {L3("Câu sẽ gửi: ", "The question that will be sent: ", "La question envoyée : ")}
-              <i className="text-[#1E2B22]">{sentence}</i>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-[#1B4332] px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-white/65">{L3("Yêu cầu của bạn", "Your request", "Votre demande")}</p>
+            <p className="mt-0.5 font-display text-[18px] sm:text-[20px] leading-snug text-white">
+              {loading ? <span className="text-white/80">{X.askPending}</span>
+                : ready ? sentence
+                : <span className="text-white/60">{X.askDisabledEmpty}</span>}
             </p>
           </div>
-        )}
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[14.5px] text-[#55604F]">
-            {loading ? <InlineSpinner label={X.askPending} /> : !ready ? X.askDisabledEmpty : ""}
-          </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {ready && (
-              <Link to={`/search?${new URLSearchParams(toSearchParams(selection, free)).toString()}`} className="btn-secondary">
-                {L3("Tự xem danh sách", "Just show the products", "Voir simplement les produits")}
+              <Link to={`/search?${new URLSearchParams(toSearchParams(selection, free)).toString()}`} className="px-2 text-[14px] text-white/80 underline hover:text-white">
+                {L3("Chỉ xem danh sách", "Just list them", "Juste la liste")}
               </Link>
             )}
-            <button type="submit" disabled={loading || !ready} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-              {X.askBtn}
+            <button type="submit" disabled={loading || !ready}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-[#1B4332] hover:bg-[#F1F5EF] disabled:opacity-50 disabled:cursor-not-allowed">
+              <Icon name="sparkles" size={16} />{L3("Tìm thiết bị cho tôi", "Find my device", "Trouver mon appareil")}
             </button>
           </div>
         </div>
@@ -155,12 +191,16 @@ export default function Assistant() {
 
       {error && <ErrorState title={X.askTitle} body={error === "timeout" ? X.askTimeout : X.askError} onRetry={() => ask()} />}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[15.5px] font-semibold text-[#374151]">{X.examplesTitle}</h2>
-        <div className="flex flex-wrap gap-2">
-          {X.examples.map((ex) => (
-            <button key={ex} type="button" disabled={loading} className="chip disabled:opacity-50"
+      {!loading && <WhatFits selection={selection} lang={lang} />}
+
+      <section className="flex flex-col gap-2.5" aria-labelledby="examples">
+        <h2 id="examples" className="text-[16px] font-semibold text-[#1E2B22]">{L3("Thử một ví dụ", "Try an example", "Essayez un exemple")}</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {examples3.map((ex) => (
+            <button key={ex} type="button" disabled={loading}
+                    className="flex items-start gap-2.5 rounded-[18px] bg-white border border-[#E6E2D6] px-4 py-3 text-left text-[14.5px] text-[#1E2B22] hover:border-[#2E7D4F] transition disabled:opacity-50"
                     onClick={() => { setFree(ex); setSelection({}); setError(null); box.current?.focus(); }}>
+              <svg width="17" height="17" viewBox="0 0 20 20" aria-hidden="true" className="mt-0.5 shrink-0 text-[#2E7D4F]"><path d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v6.5A1.5 1.5 0 0 1 16 14H9l-4 3v-3H4a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 4 4.5Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></svg>
               {ex}
             </button>
           ))}

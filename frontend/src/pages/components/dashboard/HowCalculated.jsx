@@ -8,8 +8,9 @@ import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
 import { tri, useI18n } from "../../../i18n/LanguageContext";
 import { useRecent } from "../../../lib/recent";
-import { formatNum } from "../../../lib/format";
+import { formatKg, formatNum } from "../../../lib/format";
 import Co2Explainer from "../co2/Co2Explainer";
+import ThreeSteps, { threeSteps } from "../co2/ThreeSteps";
 import DeviceIcon from "../ui/DeviceIcon";
 
 /** The chain, short: tried top to bottom, first one that yields a number wins. */
@@ -50,6 +51,14 @@ function Chain({ lang, active }) {
   );
 }
 
+function Chevron({ open }) {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" className={`transition-transform ${open ? "rotate-180" : ""}`}>
+      <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function HowCalculated({ fallbackIds = [] }) {
   const { lang } = useI18n();
   const L3 = tri(lang);
@@ -79,14 +88,22 @@ export default function HowCalculated({ fallbackIds = [] }) {
     return () => { alive = false; };
   }, [poolKey, chosenId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const steps = co2 ? threeSteps(co2, lang) : null;
+  const list = steps?.list || [];
+  const [showList, setShowList] = useState(false);
+  const refs = co2?.references || [];
+
   return (
-    <section aria-labelledby="how-title" className="rounded-3xl bg-[#F7FBF6] border border-[#DCEBD9] p-4 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <section aria-labelledby="how-title" className="rounded-[30px] bg-[#FAF8F2] border border-[#ECE7DA] p-5 sm:p-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="how-title" className="text-[24px] font-bold text-[#1E2B22]">
-            🧮 {L3("CO₂ này được tính như thế nào?", "How is this CO₂ calculated?", "Comment ce CO₂ est-il calculé ?")}
+          <p className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
+            <span aria-hidden="true">🧮</span>{L3("Phương pháp, 3 bước", "The method, in 3 steps", "La méthode, en 3 étapes")}
+          </p>
+          <h2 id="how-title" className="mt-1 font-display text-[34px] sm:text-[40px] font-semibold leading-tight text-[#1E2B22]">
+            {L3("CO₂ này được tính như thế nào?", "How is this CO₂ calculated?", "Comment ce CO₂ est-il calculé ?")}
           </h2>
-          <p className="text-[16px] text-[#6B7468]">
+          <p className="mt-1 text-[16.5px] text-[#6B7468]">
             {chosenId
               ? L3("Theo sản phẩm bạn vừa xem.", "For the product you just looked at.", "Pour le produit que vous venez de voir.")
               : L3("Chưa chọn sản phẩm nào, nên đây là một sản phẩm thật trong dữ liệu, dùng làm ví dụ.",
@@ -94,31 +111,62 @@ export default function HowCalculated({ fallbackIds = [] }) {
                    "Aucun produit choisi : voici un produit réel du catalogue, pris comme exemple.")}
           </p>
         </div>
-        <Link to="/method" className="text-[15.5px] font-semibold text-[#1F5D3A] hover:underline">
+        <Link to={co2 ? `/method?product=${co2.product.product_id}` : "/method"} className="text-[16px] font-semibold text-[#1F5D3A] hover:underline">
           {L3("Trang Phương pháp", "The method page", "La page Méthode")} →
         </Link>
       </div>
 
-      <div className="mt-4">
-        {co2
-          ? <Co2Explainer co2={co2} example={example} />
-          : <div className="rounded-3xl bg-white border border-[#EFEBDF] p-5">
-              <div className="flex items-center gap-3">
-                <span className="grid place-items-center w-12 h-12 rounded-2xl bg-[#F1EEE4] text-[#55604F]"><DeviceIcon name="other" size={28} /></span>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-2/3 rounded bg-[#F1EEE4] animate-pulse" />
-                  <div className="h-4 w-1/3 rounded bg-[#F1EEE4] animate-pulse" />
-                </div>
+      <div className="mt-5">
+        {!co2 && (
+          <div className="rounded-[26px] bg-white border border-[#EFEBDF] p-6">
+            <div className="flex items-center gap-3">
+              <span className="grid place-items-center w-14 h-14 rounded-2xl bg-[#F1EEE4] text-[#55604F]"><DeviceIcon name="other" size={28} /></span>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-2/3 rounded bg-[#F1EEE4] animate-pulse" />
+                <div className="h-4 w-1/3 rounded bg-[#F1EEE4] animate-pulse" />
               </div>
-            </div>}
+            </div>
+            <div className="mt-5 h-56 rounded-2xl bg-[#F6F3EA] animate-pulse" />
+          </div>
+        )}
+        {co2 && (steps ? <ThreeSteps co2={co2} example={example} /> : <Co2Explainer co2={co2} example={example} />)}
       </div>
 
-      <button type="button" onClick={() => setMore(!more)} aria-expanded={more}
-              className="mt-4 inline-flex items-center gap-1.5 text-[15.5px] font-semibold text-[#1F5D3A] hover:underline">
-        {more ? L3("Ẩn các cách tính khác", "Hide the other methods", "Masquer les autres méthodes")
-              : L3("Các cách tính khác và thứ tự ưu tiên", "The other methods and their order", "Les autres méthodes et leur ordre")}
-        <span aria-hidden="true" className={`transition-transform ${more ? "rotate-180" : ""}`}>▾</span>
-      </button>
+      <div className="mt-5 flex flex-wrap gap-3">
+        {list.length > 0 && (
+          <button type="button" onClick={() => setShowList(!showList)} aria-expanded={showList}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#1B4332] px-5 py-3 text-[15.5px] font-semibold text-white hover:bg-[#245740]">
+            {list.length > 1
+              ? L3(`Xem ${list.length} sản phẩm giống`, `See the ${list.length} similar products`, `Voir les ${list.length} produits proches`)
+              : L3("Xem báo cáo được dùng", "See the report used", "Voir le rapport utilisé")}
+            <Chevron open={showList} />
+          </button>
+        )}
+        <button type="button" onClick={() => setMore(!more)} aria-expanded={more}
+                className="inline-flex items-center gap-2 rounded-full bg-white border border-[#DCD7C9] px-5 py-3 text-[15.5px] font-semibold text-[#1E2B22] hover:border-[#2E7D4F]">
+          {L3("Các cách tính khác và thứ tự", "The other methods and their order", "Les autres méthodes et leur ordre")}
+          <Chevron open={more} />
+        </button>
+      </div>
+
+      {showList && list.length > 0 && (
+        <ol className="mt-3 rounded-2xl bg-white border border-[#EFEBDF] divide-y divide-[#F1EEE4]">
+          {list.map((row, i) => {
+            const ref = refs[i] || {};
+            return (
+              <li key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 text-[15px]">
+                <span className="w-24 text-[#6B7468]">{L3(`Mẫu ${i + 1}`, `Product ${i + 1}`, `Produit ${i + 1}`)}</span>
+                <span className="flex-1 min-w-[200px] font-medium text-[#1E2B22]">{ref.name || row.name || "—"}</span>
+                <b className="text-[#1F5D3A]">{formatKg(row.kg, lang)} kg</b>
+                {typeof ref.cosine === "number" && ref.cosine < 1 && (
+                  <span className="text-[#6B7468]">{L3("giống", "similarity", "similarité")} {formatNum(ref.cosine, lang, 2)}</span>
+                )}
+                {ref.url && <a href={ref.url} target="_blank" rel="noreferrer" className="text-[#1E5A96] underline">{L3("báo cáo", "report", "rapport")}</a>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
       {more && (
         <div className="mt-3 rounded-2xl bg-white border border-[#EFEBDF] p-4">
           <p className="mb-3 text-[15px] text-[#6B7468]">
