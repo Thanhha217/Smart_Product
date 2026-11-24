@@ -16,6 +16,7 @@ const NAV = [
   { to: "/search", icon: "search", key: "nav.search", also: ["/story", "/assistant"] },
   { to: "/method", icon: "calculator", key: "nav.method" },
   { to: "/compare", icon: "scale", key: "nav.compare" },
+  { to: "/trade-in", icon: "recycle", key: "nav.tradeIn" },
   { to: "/cart", icon: "cart", key: "nav.cartShort" },
   { to: "/system", icon: "server", key: "nav.system" },
 ];
@@ -92,7 +93,8 @@ function TopBar({ t, onMenu, count }) {
   const onFind = location.pathname === "/search";
   const onMethod = location.pathname === "/method";   // its own design: a plain page title, like Find products
   const onCompare = location.pathname === "/compare";
-  const plainBar = onFind || onMethod || onCompare;
+  const onTradeIn = location.pathname === "/trade-in";
+  const plainBar = onFind || onMethod || onCompare || onTradeIn;
   const findCategory = onFind ? params.get("category") : null;
   const findHere = !onFind ? null : params.get("q") ? `“${params.get("q")}”`
     : findCategory ? (st(`cat.${findCategory}`) === `cat.${findCategory}` ? findCategory : st(`cat.${findCategory}`))
@@ -103,7 +105,13 @@ function TopBar({ t, onMenu, count }) {
       <button type="button" onClick={onMenu} className="min-[900px]:hidden grid place-items-center w-10 h-10 rounded-xl bg-white border border-[#E7E2D4] shrink-0" aria-label={st("shell.menu")}>
         <Icon name="menu" />
       </button>
-      {onCompare ? (
+      {onTradeIn ? (
+        <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center gap-1.5 text-[15px]">
+          <Link to="/search" className="shrink-0 text-[#55604F] hover:underline">{t("nav.search")}</Link>
+          <span aria-hidden="true" className="text-[#8A9186]">›</span>
+          <span className="truncate font-semibold text-[#1E2B22]" aria-current="page">{t("nav.tradeIn")}</span>
+        </nav>
+      ) : onCompare ? (
         <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center gap-1.5 text-[15px]">
           <span className="shrink-0 text-[#55604F]">{t("nav.compare")}</span>
           <span aria-hidden="true" className="text-[#8A9186]">›</span>

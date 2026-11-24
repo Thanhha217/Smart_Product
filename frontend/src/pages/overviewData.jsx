@@ -6,6 +6,7 @@ import { explore } from "../i18n/explore";
 import { api } from "../api/client";
 import Icon from "./components/ui/Icon";
 import { normalizeList } from "../lib/data";
+import { formatNum } from "../lib/format";
 
 const SERVICE_ICON = { "db-search": "database", ranking: "bars", clip: "eye", assistant: "sparkles", mcp: "link", etl: "cpu", gateway: "server" };
 
