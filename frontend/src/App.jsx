@@ -8,6 +8,7 @@ import Product from './pages/Product';
 import Assistant from './pages/Assistant';
 import AssistantPage from './pages/AssistantPage';
 import Compare from './pages/Compare';
+import TradeIn from './pages/TradeIn';
 import Method from './pages/Method';
 import Story from './pages/Story';
 import World from './pages/World';
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/assistant" element={<Assistant />} />
             <Route path="/assistant/:id" element={<AssistantPage />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/method" element={<Method />} />
             <Route path="/world" element={<World />} />
             <Route path="/world/:productId" element={<World />} />
