@@ -13,7 +13,6 @@ import { formatKg, formatNum } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import { shortName } from "../lib/shortName";
 import { CAT_OF_SLUG, defaultSecondLife, LIFETIME, PRODUCTION_SHARE, REUSE_EMBODIED, tradeIn } from "../lib/tradeIn";
-import AskAiDock from "./components/find/AskAiDock";
 
 const LANG_IDX = { vi: 0, en: 1, fr: 2 };
 /** "277,2" / "277.2" / "1.234,5" / "1,234.5" -> number: the last separator is the decimal mark. */
@@ -62,7 +61,6 @@ export default function TradeIn() {
   const st = useShopText();
   const recent = useRecent();
   const compare = useCompare();
-  const [askOpen, setAskOpen] = useState(false);
 
   // ---- data: category medians, and devices to upgrade to
   const [cats, setCats] = useState([]);
@@ -162,17 +160,19 @@ export default function TradeIn() {
 
   return (
     <main className="page-wrap flex max-w-[1180px] flex-col gap-7 py-7 pb-28">
-      <section className="grid items-center gap-6 rounded-[26px] bg-[#1B4332] p-7 text-white lg:grid-cols-[1.1fr_1fr_1.15fr]">
-        <div>
+      <section className="rounded-[26px] bg-[#1B4332] p-7 text-white">
+        <div className="flex items-center justify-between gap-6">
+        <div className="min-w-0">
           <h1 className="font-display text-[38px] font-semibold leading-tight sm:text-[42px]">{L3("Thu cũ đổi mới", "Trade-in", "Reprise")}</h1>
-          <p className="mt-2 max-w-[360px] text-[17px] leading-relaxed text-white/85">
+          <p className="mt-2 max-w-[640px] text-[17px] leading-relaxed text-white/85">
             {L3("Đổi máy cũ lấy máy mới, hoặc chọn máy refurbished. Cách nào cũng bớt CO₂ hơn mua mới hoàn toàn.",
                 "Trade your old device in, or choose a refurbished one. Either way emits less CO₂ than buying brand new.",
                 "Faites reprendre l'ancien appareil ou choisissez un reconditionné : moins de CO₂ qu'un achat neuf.")}
           </p>
         </div>
-        <div className="hidden justify-center lg:flex"><Illustration /></div>
-        <div className="rounded-[18px] bg-white/[0.09] p-5">
+        <div className="hidden w-[300px] shrink-0 justify-center md:flex"><Illustration /></div>
+        </div>
+        <div className="mt-6 rounded-[18px] bg-white/[0.09] px-6 py-5">
           <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">{L3("Có thể giảm tới", "You could save up to", "Économie possible")}</p>
           {r && bestSaved > 0 ? (
             <>
@@ -342,7 +342,6 @@ export default function TradeIn() {
         </section>
       )}
 
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} />
     </main>
   );
 }

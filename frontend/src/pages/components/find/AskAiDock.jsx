@@ -1,12 +1,14 @@
-// Ask AI inside Find products: the robot button opens a small panel; the question goes to the
-// assistant service and its answer opens as a full page at /assistant/:id (same flow as the
-// Ask AI page, which stays reachable for the step-by-step builder).
+// Ask AI on every page: the robot button opens a small panel; the question goes to the assistant
+// service and its answer opens as a full page at /assistant/:id (same flow as the Ask AI page,
+// which stays reachable for the step-by-step builder).
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../../../api/client";
 import { tri, useI18n } from "../../../i18n/LanguageContext";
 import { explore } from "../../../i18n/explore";
 import { addHistory } from "../../../lib/storage";
+import { useCompare } from "../../../lib/compare";
+import { shortName } from "../../../lib/shortName";
 import VoiceInput from "../assistant/VoiceInput";
 import { InlineSpinner } from "../common/States";
 import Icon from "../ui/Icon";
@@ -27,7 +29,39 @@ function Robot({ size = 40 }) {
   );
 }
 
-export default function AskAiDock({ open, onOpen, onClose, initial = "" }) {
+/** Open the Ask AI panel from anywhere, optionally with a question already typed in. */
+export function openAskAi(text = "") {
+  window.dispatchEvent(new CustomEvent("spf:ask-ai", { detail: { text } }));
+}
+
+/**
+ * The one Ask AI button of the app, on every page (rendered once in App.jsx). It suggests a question
+ * from the page: the search on Find products, the products on Compare; openAskAi(text) presets one.
+ */
+export function GlobalAskAi() {
+  const { lang } = useI18n();
+  const L3 = tri(lang);
+  const location = useLocation();
+  const compare = useCompare();
+  const [open, setOpen] = useState(false);
+  const [preset, setPreset] = useState({ text: "", n: 0 });
+  useEffect(() => {
+    const on = (e) => { setPreset((p) => ({ text: e.detail?.text || "", n: p.n + 1 })); setOpen(true); };
+    window.addEventListener("spf:ask-ai", on);
+    return () => window.removeEventListener("spf:ask-ai", on);
+  }, []);
+  useEffect(() => { setOpen(false); setPreset((p) => ({ text: "", n: p.n })); }, [location.pathname]);
+
+  const names = compare.map((p) => shortName(p.name));
+  const fromPage = location.pathname === "/search" ? new URLSearchParams(location.search).get("q") || ""
+    : location.pathname === "/compare" && names.length >= 2
+      ? L3(`So sánh ${names.join(" và ")}: nên chọn món nào?`, `Compare ${names.join(" and ")}: which one should I choose?`, `Comparer ${names.join(" et ")} : lequel choisir ?`)
+      : "";
+  return <AskAiDock open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
+                    initial={preset.text || fromPage} prefillKey={preset.n} />;
+}
+
+export default function AskAiDock({ open, onOpen, onClose, initial = "", prefillKey = 0 }) {
   const { lang } = useI18n();
   const L3 = tri(lang);
   const X = explore(lang);
@@ -39,6 +73,8 @@ export default function AskAiDock({ open, onOpen, onClose, initial = "" }) {
   const busy = useRef(false);
 
   useEffect(() => { if (open) { setText((t) => t || initial); setTimeout(() => box.current?.focus(), 50); } }, [open, initial]);
+  // a page asked to open the panel with its own question: that question replaces what was there
+  useEffect(() => { if (prefillKey) setText(initial); }, [prefillKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === "Escape") onClose(); };

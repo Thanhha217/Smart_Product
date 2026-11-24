@@ -120,3 +120,10 @@ def test_savings_field_names_work_as_placeholders():
     text, failures = ps.fill_text("It saves {{savings.lifecycle_kg_saved}} kg, like {{savings.trees_year}} trees.", values)
     assert failures == 0
     assert values["savings.lifecycle_kg_saved"] == values["savings.lifecycle_kg"]
+
+
+def test_source_placeholder_names_the_source_in_words():
+    cards = {"1": {"name": "A", "co2e_kg": 145, "price_vnd": 1, "green_score": 3.4, "platform": "X", "co2e_source": "neighbor_average"}}
+    values = ps.placeholder_values(cards, {"p1": "1"}, None, None, "vi")
+    text, failures = ps.fill_text("Số này lấy từ {{p1.source}}.", values)
+    assert failures == 0 and text == "Số này lấy từ trung bình các sản phẩm giống có số của hãng."
