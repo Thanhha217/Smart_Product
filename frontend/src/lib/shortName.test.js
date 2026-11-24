@@ -37,6 +37,8 @@ describe("variantOf", () => {
     ["Laptop HP EliteBook 6 G1i 13 - BQ9L8PT (Ultra 5 225U, 16GB, 512GB, WUXGA)", "Ultra 5 225U, 16GB"],
     ["Apple Watch Series 11 GPS 5G 46mm Vỏ Titanium", "46mm"],
     ["Màn hình AOC 27B1H 27 inch", ""],
+    ["Laptop MacBook Air 13 inch M4 24GB/512GB", "M4 · 24GB/512GB"],
+    ["Laptop Macbook Air 13 inch M5 24GB/512GB 70W", "M5 · 24GB/512GB"],
   ])("%s -> %s", (full, v) => {
     expect(variantOf(full)).toBe(v);
   });

@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import { useI18n } from "../i18n/LanguageContext";
+import { tri, useI18n } from "../i18n/LanguageContext";
 import { useShopText } from "../i18n/shop";
 import { addToCart } from "../lib/cart";
 import { addToCompare, clearCompare, COMPARE_MAX, removeFromCompare, setCompareIds, useCompare } from "../lib/compare";
@@ -13,9 +13,12 @@ import { useRecent } from "../lib/recent";
 import SuggestedProducts from "./components/common/SuggestedProducts";
 import { qualityOf } from "../lib/searchState";
 import { ProductImage } from "./components/common/ProductCard";
-import WhyConsider from "./components/co2/WhyConsider";
 import { EmptyState, ErrorState, InlineSpinner } from "./components/common/States";
 import Icon from "./components/ui/Icon";
+import { Hero, HowWorked } from "./components/compare/CompareHero";
+import AskAiDock from "./components/find/AskAiDock";
+import { recommend } from "../lib/compareMath";
+import { shortName, variantOf } from "../lib/shortName";
 
 const CO2_CAT = { computer_monitor: "monitors", monitor: "monitors", headphone: "headphones", earphone: "headphones", smartwatch: "smartwatches", tablet: "tablets", smartphone: "smartphones", laptop: "laptops" };
 const parseIds = (s) => [...new Set(String(s || "").split(",").map((x) => x.trim()).filter((x) => /^\d+$/.test(x)))].slice(0, COMPARE_MAX);
@@ -45,6 +48,12 @@ export default function Compare() {
   const [table, setTable] = useState({ status: "idle", data: null });
   const [retry, setRetry] = useState(0);
   const [note, setNote] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [statsByCat, setStatsByCat] = useState({});
+  const [related, setRelated] = useState([]);
+  const recent = useRecent();
+  const L3 = tri(lang);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -83,6 +92,26 @@ export default function Compare() {
     setNote(r === "duplicate" ? t("compare.duplicate") : r === "full" ? t("compare.full") : null);
     return r;
   };
+
+  // the category median of every compared category (the dashed line and the "vs category" figures)
+  const catKey = list.map((p) => `${p.co2_category || ""}:${p.product_id}`).join(",");
+  useEffect(() => {
+    let alive = true;
+    const firstOf = new Map();
+    list.forEach((p) => { if (p.co2_category && !firstOf.has(p.co2_category)) firstOf.set(p.co2_category, p.product_id); });
+    Promise.all([...firstOf].map(([cat, id]) => api.getCategoryStats(cat, id).then((d) => [cat, d]).catch(() => [cat, null])))
+      .then((pairs) => alive && setStatsByCat(Object.fromEntries(pairs)));
+    return () => { alive = false; };
+  }, [catKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // products to suggest: similar ones to the first compared product
+  const firstId = list[0]?.product_id || null;
+  useEffect(() => {
+    let alive = true;
+    if (!firstId) { setRelated([]); return undefined; }
+    api.getRelated(firstId, 6).then((d) => alive && setRelated(normalizeList(d?.items))).catch(() => alive && setRelated([]));
+    return () => { alive = false; };
+  }, [firstId]);
 
   // Rows read from the table response, kept in the order of the list.
   const extra = new Map((table.data?.products || []).map((p) => [String(p.product_id), p]));
@@ -131,38 +160,72 @@ export default function Compare() {
   ];
   const conclusion = !mixed && sameScope ? text(table.data?.conclusion) : null;
   // the row the table marks as the lowest CO2; only meaningful when the products compare at all
-  const bestCo2Id = !mixed && sameScope ? [...(best.co2 || [])][0] || null : null;
+  const medianOf = (p) => (p ? statsByCat[p.co2_category]?.median_kg ?? null : null);
+  const statsOf = (p) => (p ? statsByCat[p.co2_category] || null : null);
+  const withCo2 = products.filter((p) => p.co2e_kg !== null).length;
+  const rec = !mixed && sameScope ? recommend(products, medianOf(products.find((p) => p.co2e_kg !== null))) : null;
+  const noPick = mixed ? L3("Các món thuộc loại khác nhau. CO₂ chỉ nên so trong cùng loại, nên trang không chọn hộ.",
+                             "These products are of different types. CO₂ only compares within a type, so no product is picked.",
+                             "Ces produits sont de types différents : le CO₂ ne se compare qu'au sein d'un type.")
+    : !sameScope ? L3("Các số CO₂ không cùng phạm vi (cả vòng đời và chỉ sản xuất), nên không so trực tiếp.",
+                      "The CO₂ figures cover different scopes (whole lifecycle and production only), so they are not compared directly.",
+                      "Les chiffres CO₂ n'ont pas la même portée : pas de comparaison directe.")
+    : withCo2 < 2 ? L3("Cần ít nhất hai món có số CO₂ để chọn.", "At least two products need a CO₂ figure to pick one.", "Il faut au moins deux produits avec un chiffre CO₂.")
+    : null;
+  const catName = (() => { const c = rec?.best; if (!c) return ""; const l = catLabel(c); return l ? l.toLowerCase() : ""; })();
+  // suggestions: not already compared, and not the same model sold by another store (same full name)
+  const inList = new Set(list.map((p) => p.product_id));
+  const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+  const suggestions = [];
+  for (const p of [...recent, ...related]) {
+    if (!p || inList.has(p.product_id) || list.some((x) => sameName(x.name, p.name))) continue;
+    if (!suggestions.some((x) => x.product_id === p.product_id || sameName(x.name, p.name))) suggestions.push(p);
+  }
+  // a suggestion with the same short name as a compared product shows its configuration too
+  const listShort = new Set(list.map((p) => shortName(p.name)));
+  const chipName = (p) => { const n = shortName(p.name); const v = variantOf(p.name); return listShort.has(n) && v ? `${n} · ${v}` : n; };
+  const askText = list.length >= 2 ? L3(`So sánh ${list.map((p) => shortName(p.name)).join(" và ")}: nên chọn món nào?`,
+                                      `Compare ${list.map((p) => shortName(p.name)).join(" and ")}: which one should I choose?`,
+                                      `Comparer ${list.map((p) => shortName(p.name)).join(" et ")} : lequel choisir ?`) : "";
 
   return (
-    <main className="page-wrap flex flex-col gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="page-title">{st("cmp.title")}</h1>
-          <p className="page-lead">{st("cmp.lead")}</p>
-        </div>
+    <main className="page-wrap flex max-w-[1180px] flex-col gap-6 py-7 pb-28">
+      <header className="flex flex-wrap items-center gap-3">
+        <h1 className="font-display text-[40px] font-semibold leading-none text-[#1E2B22] sm:text-[44px]">{L3("So sánh", "Compare", "Comparer")}</h1>
+        <span className="text-[16px] font-semibold text-[#55604F]" aria-label={st("cmp.slotsLeft", { n: COMPARE_MAX - list.length })}>{list.length}/{COMPARE_MAX}</span>
+        {list.length < COMPARE_MAX && suggestions.slice(0, 3).map((p) => (
+          <button key={p.product_id} type="button" onClick={() => add(p)} title={`${st("cmp.addThis")}: ${p.name}`}
+                  className="inline-flex h-[44px] max-w-[220px] items-center rounded-full border border-[#DCD7C9] bg-white px-4 text-[15.5px] text-[#1E2B22] hover:border-[#2E7D4F]">
+            <span className="truncate">+ {chipName(p)}</span>
+          </button>
+        ))}
+        {list.length < COMPARE_MAX && (
+          <button type="button" onClick={() => setAdding(!adding)} aria-expanded={adding}
+                  className="inline-flex h-[44px] items-center gap-1.5 rounded-full border border-dashed border-[#B9B29E] px-4 text-[15px] text-[#55604F] hover:border-[#2E7D4F]">
+            <Icon name="search" size={16} />{L3("Tìm thêm", "Find more", "Chercher")}
+          </button>
+        )}
         {list.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary"
-                  to={`/assistant?q=${encodeURIComponent(list.map((p) => p.name).join(" vs "))}`}>
-              <Icon name="sparkles" size={18} />{st("cmp.askAi")}
-            </Link>
-            <button type="button" className="btn-secondary" onClick={() => { clearCompare(); setNote(null); }}>{st("cmp.clear")}</button>
-          </div>
+          <button type="button" onClick={() => { clearCompare(); setNote(null); }}
+                  className="ml-auto h-[44px] rounded-[12px] border border-[#1B4332] bg-white px-5 text-[15.5px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
+            {L3("Xóa tất cả", "Remove all", "Tout retirer")}
+          </button>
         )}
       </header>
 
       {adopting ? <InlineSpinner label={t("common.loading")} /> : (
         <>
-          {list.length < COMPARE_MAX
-            ? <AddBox onAdd={add} exclude={list.map((p) => p.product_id)} slots={COMPARE_MAX - list.length} />
-            : <p className="text-[15px] text-[#4b5563]" role="status">{t("compare.full")}</p>}
+          {(adding || list.length === 0) && list.length < COMPARE_MAX && (
+            <AddBox onAdd={add} exclude={list.map((p) => p.product_id)} slots={COMPARE_MAX - list.length} />
+          )}
+          {list.length >= COMPARE_MAX && adding && <p className="text-[15px] text-[#4b5563]" role="status">{t("compare.full")}</p>}
           {note && <p role="status" className="text-[15px] text-[#92400e]">{note}</p>}
 
           {list.length === 0 && <HowTo />}
           {list.length === 0 && <SuggestedProducts />}
 
           {list.length === 1 && (
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr] items-start">
+            <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
               <HeaderCard product={products[0]} />
               <EmptyState compact icon="scale" title={st("cmp.oneMore")}><Link to="/search" className="btn-primary">{st("cmp.goSearch")}</Link></EmptyState>
             </div>
@@ -170,52 +233,55 @@ export default function Compare() {
 
           {list.length >= 2 && (
             <>
-              {mixed && (
-                <div role="note" className="rounded-2xl border border-[#f3d9a4] bg-[#fff8eb] p-4">
-                  <p className="font-semibold text-[#7c4a03]">{st("cmp.mixedTitle")}</p>
-                  <p className="text-[15px] text-[#7c4a03]">{st("cmp.mixedBody")}</p>
-                </div>
-              )}
-              {!sameScope && <p role="note" className="text-[15px] text-[#4b5563]">{st("cmp.scopeNote")}</p>}
-              {table.status === "error" && <ErrorState compact title={st("cmp.tableError")} onRetry={() => setRetry((n) => n + 1)} />}
-              {(table.status === "loading" || table.status === "updating") && <InlineSpinner label={t("common.loading")} />}
+              <Hero rec={rec} reason={noPick} catName={catName} />
+              <HowWorked products={products} rec={rec} medianOf={medianOf} statsOf={statsOf} sameCategory={!mixed} />
 
-              <div className="overflow-x-auto rounded-2xl bg-white border border-[#ebe6d8]" tabIndex={0} aria-label={st("cmp.title")}>
-                <table className="w-full min-w-[640px] text-[15px] border-collapse">
-                  <thead>
-                    <tr>
-                      <th scope="col" className="w-44 p-3 text-left align-bottom text-[14px] font-medium text-[#6b7280]"><span className="sr-only">{st("cmp.row.price")}</span></th>
-                      {products.map((p) => (
-                        <th key={p.product_id} scope="col" className="p-3 text-left align-top font-normal min-w-[180px]"><HeaderCard product={p} compact /></th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.key} className="border-t border-[#efece2]">
-                        <th scope="row" className="p-3 text-left font-medium text-[#374151] bg-[#faf8f2]">{row.label}</th>
-                        {products.map((p) => {
-                          const v = row.cell(p);
-                          const isBest = Boolean(v) && best[row.key]?.has(p.product_id);
-                          return (
-                            <td key={p.product_id} className={`p-3 align-top ${isBest ? "bg-[#E4F1E6] font-semibold text-[#1F5D3A]" : ""}`}>
-                              {v || noData}
-                              {isBest && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-[12.5px] font-semibold text-[#1F5D3A]"><Icon name="check" size={13} />{st("cmp.best")}</span>}
-                            </td>
-                          );
-                        })}
+              <section aria-labelledby="table" className="flex flex-col gap-3">
+                <h2 id="table" className="flex items-center gap-3 font-display text-[26px] font-semibold text-[#1E2B22]">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-[#1B4332] font-sans text-[15px] font-bold text-white">2</span>
+                  {L3("Bảng so sánh chi tiết", "The detailed table", "Le tableau détaillé")}
+                </h2>
+                {!sameScope && <p role="note" className="text-[15px] text-[#4b5563]">{st("cmp.scopeNote")}</p>}
+                {table.status === "error" && <ErrorState compact title={st("cmp.tableError")} onRetry={() => setRetry((n) => n + 1)} />}
+                {(table.status === "loading" || table.status === "updating") && <InlineSpinner label={t("common.loading")} />}
+                <div className="overflow-x-auto rounded-[20px] border border-[#E8E4D8] bg-white" tabIndex={0} aria-label={st("cmp.title")}>
+                  <table className="w-full min-w-[640px] border-collapse text-[15px]">
+                    <thead>
+                      <tr>
+                        <th scope="col" className="w-44 p-3 text-left align-bottom text-[14px] font-medium text-[#6b7280]"><span className="sr-only">{st("cmp.row.price")}</span></th>
+                        {products.map((p) => (
+                          <th key={p.product_id} scope="col" className="min-w-[180px] p-3 text-left align-top font-normal"><HeaderCard product={p} compact /></th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
-              {conclusion && <p className="rounded-xl bg-[#f6f3ea] px-4 py-3 text-[15.5px] text-[#1E2B22]">{conclusion}</p>}
-              {!mixed && sameScope && bestCo2Id && <WhyConsider productId={bestCo2Id} />}
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.key} className="border-t border-[#efece2]">
+                          <th scope="row" className="bg-[#faf8f2] p-3 text-left font-medium text-[#374151]">{row.label}</th>
+                          {products.map((p) => {
+                            const v = row.cell(p);
+                            const isBest = Boolean(v) && best[row.key]?.has(p.product_id);
+                            return (
+                              <td key={p.product_id} className={`p-3 align-top ${isBest ? "bg-[#E4F1E6] font-semibold text-[#1F5D3A]" : ""}`}>
+                                {v || noData}
+                                {isBest && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-[12.5px] font-semibold text-[#1F5D3A]"><Icon name="check" size={13} />{st("cmp.best")}</span>}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
+                {conclusion && <p className="rounded-xl bg-[#f6f3ea] px-4 py-3 text-[15.5px] text-[#1E2B22]">{conclusion}</p>}
+              </section>
             </>
           )}
         </>
       )}
+
+      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} initial={askText} />
     </main>
   );
 }

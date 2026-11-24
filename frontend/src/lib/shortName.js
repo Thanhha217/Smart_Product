@@ -35,7 +35,9 @@ export function variantOf(name) {
     return inBrackets[1].split(",").slice(0, 2).map((x) => x.trim()).filter(Boolean).join(", ");
   }
   const mem = s.match(/\d+\s?GB\s?\/\s?\d+\s?(GB|TB)/i) || s.match(/\b\d+\s?(GB|TB)\b/i);
-  if (mem) return mem[0].replace(/\s+/g, "");
+  // Apple's chip generation tells two MacBooks of the same size apart (M4 vs M5)
+  const chip = s.match(/\bM[1-9]( Pro| Max)?\b/);
+  if (mem) return chip ? `${chip[0]} · ${mem[0].replace(/\s+/g, "")}` : mem[0].replace(/\s+/g, "");
   const mm = s.match(/\b\d{2}\s?mm\b/i);
   return mm ? mm[0].replace(/\s+/g, "") : "";
 }
