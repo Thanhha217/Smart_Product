@@ -79,6 +79,19 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Ô tìm thông minh và đổi ngôn ngữ không giật (2026-11-24)
+
+- `components/common/DevicePicker.jsx` (dùng ở `/trade-in` "Máy cũ của bạn" và giỏ → AI mua giúp): gõ vài chữ, lọc ngay; nhóm
+  "Loại máy" (trung vị loại, ≈kg) và "Sản phẩm" (`/api/search`, có số CO₂); không dấu, hiểu tên dòng máy (`lib/deviceMatch.js`:
+  mac → laptop, iphone/galaxy → điện thoại, airpods → tai nghe…, có test); ↑ ↓ Enter Esc; bỏ bản trùng tên, trùng tên ngắn thì ghi
+  cấu hình (`variantOf`) hoặc nơi bán; "Dùng '…', tự nhập số CO₂". Danh sách không còn chữ "(trung vị danh mục)".
+- AI mua giúp: ô "Gõ điều bạn cần" đọc câu bằng bộ hiểu câu của `/api/search` (`understood`) khi đang gõ → tự chọn loại, ngân
+  sách, ưu tiên (CO₂ thấp / "rẻ" → giá); bỏ lựa chọn tự động khi câu không còn nói tới; hiện "Đã hiểu", số sản phẩm khớp, 3 gợi ý.
+- Đổi ngôn ngữ không giật (đo bằng script vị trí khối, 1280/1440/1920): khối "Khách" ở thanh trên rộng cố định (cụm EN/FR/VI
+  trước lệch 49 px → 0); tab giỏ, nút đầu trang So sánh rộng cố định; thẻ AI insight (CO₂ world) và "Vì sao đáng cân nhắc" giữ
+  chiều cao khi tải lại; gợi ý trên bản đồ một dòng; nhãn ô số liệu CO₂ world một dòng (tiếng Pháp ngắn lại); đầu trang Phương
+  pháp không xuống dòng; `html { scrollbar-gutter: stable }`. Chênh lệch còn lại chỉ do đoạn văn dài ngắn khác nhau ở phần dưới.
+
 ### Giỏ hàng + AI mua giúp `/cart` (2026-11-24, bản thiết kế "Giỏ hàng và ví AI")
 
 - Hai tab (`?tab=ai`): "Giỏ của tôi" (thẻ món: ảnh, giá, ≈kg · điểm xanh, − n + Xóa; gợi ý món xanh hơn; "Tóm tắt" tổng tiền / CO₂
