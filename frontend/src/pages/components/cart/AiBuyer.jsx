@@ -10,78 +10,16 @@ import { useShopText } from "../../../i18n/shop";
 import { BUDGETS, DEVICE_SLUGS, planPurchase, STEPS } from "../../../lib/aiBuyer";
 import { formatPrice, normalizeList } from "../../../lib/data";
 import { formatKg, formatNum } from "../../../lib/format";
-import { shortName } from "../../../lib/shortName";
-import { CAT_OF_SLUG, PRODUCTION_SHARE } from "../../../lib/tradeIn";
+import { shortName, variantOf } from "../../../lib/shortName";
+import { fold } from "../../../lib/deviceMatch";
 import ProductThumb from "../common/ProductThumb";
+import DevicePicker from "../common/DevicePicker";
 import Icon from "../ui/Icon";
 
 const kicker = "text-[13px] font-bold uppercase tracking-[0.12em] text-[#2E7D4F]";
 const label = "mt-4 block text-[15px] font-semibold text-[#1E2B22]";
 const input = "mt-1.5 h-12 w-full rounded-[12px] border border-[#DCD7C9] bg-white px-4 text-[16px] text-[#1E2B22] placeholder:text-[#8A9186] focus:border-[#2E7D4F] focus:outline-none";
 const chip = (on) => `h-[44px] rounded-full border px-4 text-[15.5px] font-medium transition ${on ? "border-[#1B4332] bg-[#1B4332] text-white" : "border-[#DCD7C9] bg-white text-[#1E2B22] hover:border-[#2E7D4F]"}`;
-
-/** Old device box: type a model or a type; pick a category median or a catalogue product. */
-function OldDevice({ value, onChange }) {
-  const { lang } = useI18n();
-  const L3 = tri(lang);
-  const st = useShopText();
-  const [q, setQ] = useState("");
-  const [cats, setCats] = useState([]);
-  const [hits, setHits] = useState([]);
-  const [open, setOpen] = useState(false);
-  useEffect(() => { api.getCategories().then((d) => setCats((d?.categories || []).filter((c) => CAT_OF_SLUG[c.category] && typeof c.median_kg === "number"))).catch(() => {}); }, []);
-  useEffect(() => {
-    const v = q.trim();
-    if (v.length < 2) { setHits([]); return undefined; }
-    const ctrl = new AbortController();
-    const t = setTimeout(() => {
-      api.search({ q: v, has_co2: true, page_size: 5 }, { signal: ctrl.signal })
-        .then((d) => setHits(normalizeList(d?.items).filter((p) => p.co2e_kg !== null && PRODUCTION_SHARE[p.co2_category] !== undefined)))
-        .catch(() => {});
-    }, 250);
-    return () => { clearTimeout(t); ctrl.abort(); };
-  }, [q]);
-  const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
-  const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const catHits = cats.filter((c) => !q.trim() || fold(catLabel(c.category)).includes(fold(q.trim())) || fold(c.category).includes(fold(q.trim())));
-
-  if (value) {
-    return (
-      <div className="mt-2 flex items-center justify-between gap-3 rounded-[14px] border border-[#2E7D4F] bg-[#F3F8F1] px-4 py-3">
-        <div className="min-w-0">
-          <p className="truncate text-[16px] font-semibold text-[#1E2B22]">{value.name}</p>
-          <p className="text-[14px] text-[#55604F]">≈{formatKg(value.kg, lang)} kg CO₂e · {value.median ? L3("trung vị danh mục", "category median", "médiane") : L3("số của sản phẩm", "the product's figure", "chiffre du produit")}</p>
-        </div>
-        <button type="button" onClick={() => { onChange(null); setQ(""); }} className="shrink-0 text-[14.5px] font-medium text-[#1B4332] underline">{L3("Đổi", "Change", "Changer")}</button>
-      </div>
-    );
-  }
-  return (
-    <div className="relative">
-      <input value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
-             placeholder={L3("Ví dụ: laptop, iPhone 12, Dell XPS…", "e.g. laptop, iPhone 12, Dell XPS…", "ex. portable, iPhone 12, Dell XPS…")} className={input}
-             role="combobox" aria-expanded={open} aria-controls="old-list" aria-autocomplete="list" />
-      {open && (catHits.length > 0 || hits.length > 0) && (
-        <ul id="old-list" role="listbox" className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-[12px] border border-[#E6E2D6] bg-white py-1 shadow-lg">
-          {catHits.map((c) => (
-            <li key={c.category} role="option" aria-selected="false" onMouseDown={(e) => { e.preventDefault(); onChange({ name: catLabel(c.category), kg: c.median_kg, category: CAT_OF_SLUG[c.category], median: true }); }}
-                className="flex cursor-pointer justify-between gap-3 px-4 py-2 hover:bg-[#F3F8F1]">
-              <span className="text-[15px]">{catLabel(c.category)} <span className="text-[#6B7468]">({L3("trung vị danh mục", "category median", "médiane")})</span></span>
-              <span className="text-[14px] text-[#55604F]">≈{formatKg(c.median_kg, lang)} kg</span>
-            </li>
-          ))}
-          {hits.map((p) => (
-            <li key={p.product_id} role="option" aria-selected="false" onMouseDown={(e) => { e.preventDefault(); onChange({ name: shortName(p.name), kg: p.co2e_kg, category: p.co2_category, median: false }); }}
-                className="flex cursor-pointer justify-between gap-3 px-4 py-2 hover:bg-[#F3F8F1]" title={p.name}>
-              <span className="truncate text-[15px]">{shortName(p.name)}</span>
-              <span className="shrink-0 text-[14px] text-[#55604F]">≈{formatKg(p.co2e_kg, lang)} kg</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export default function AiBuyer() {
   const { lang } = useI18n();
@@ -98,6 +36,40 @@ export default function AiBuyer() {
   const stepsRef = useRef(null);
 
   const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
+
+  // what the search understands from the words, refreshed while typing; it fills the choices below
+  const [hint, setHint] = useState({ q: "", total: null, items: [], understood: null, loading: false });
+  const applied = useRef({});
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setHint({ q, total: null, items: [], understood: null, loading: false }); applied.current = {}; return undefined; }
+    const ctrl = new AbortController();
+    setHint((h) => ({ ...h, loading: true }));
+    const t = setTimeout(() => {
+      api.search({ q, has_price: true, has_co2: true, sort: priority === "price" ? "price_asc" : "co2_asc", page_size: 3 }, { signal: ctrl.signal })
+        .then((d) => {
+          const und = d?.understood || {};
+          const cheapWords = /(^| )(re|gia re|gia thap|re nhat|cheap|cheapest|budget|pas cher)( |$)/.test(fold(q));
+          setHint({ q, total: typeof d?.total === "number" ? d.total : null, items: normalizeList(d?.items), understood: und, cheap: cheapWords, loading: false });
+          // fill a choice only when the words changed it, so a later tap on a chip is not overridden;
+          // when the words no longer say it, a choice the words had made is undone
+          if (und.category && und.category !== applied.current.category) { applied.current.category = und.category; setCategory(und.category); }
+          else if (!und.category && applied.current.category) { const was = applied.current.category; applied.current.category = undefined; setCategory((c) => (c === was ? "" : c)); }
+          if (und.max_price && und.max_price !== applied.current.max) { applied.current.max = und.max_price; setBudget(String(und.max_price)); }
+          else if (!und.max_price && applied.current.max) { const was = String(applied.current.max); applied.current.max = undefined; setBudget((b) => (b === was ? "" : b)); }
+          if (und.eco && !applied.current.eco) { applied.current.eco = true; setPriority("co2"); }
+          const cheap = /(^| )(re|gia re|gia thap|re nhat|cheap|cheapest|budget|pas cher)( |$)/.test(fold(q));
+          if (cheap && !applied.current.cheap) { applied.current.cheap = true; setPriority("price"); }
+          else if (!cheap && applied.current.cheap) { applied.current.cheap = false; setPriority("co2"); }
+          if (!und.eco) applied.current.eco = false;
+        })
+        .catch((e) => { if (e?.code !== "cancelled" && e?.name !== "AbortError") setHint((h) => ({ ...h, loading: false })); });
+    }, 300);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
+  const budgetOptions = BUDGETS.includes(budget ? Number(budget) : null) || !budget ? BUDGETS : [...BUDGETS, Number(budget)].sort((a, b) => (a ?? 0) - (b ?? 0));
+  const millions = (v) => formatNum(v / 1e6, lang, v % 1e6 ? 1 : 0);
+
   const run = async () => {
     if (running) return;
     setRunning(true); setResult(null); setSteps({});
@@ -152,13 +124,50 @@ export default function AiBuyer() {
         <section className="rounded-[22px] border border-[#E8E4D8] bg-white p-6" aria-labelledby="want">
           <p id="want" className={kicker}>{L3("Bạn muốn AI mua gì?", "What should the AI buy?", "Que doit acheter l'IA ?")}</p>
           <label className={label}>{L3("Gõ điều bạn cần", "Type what you need", "Ce dont vous avez besoin")}
-            <input value={query} onChange={(e) => setQuery(e.target.value)} className={input}
-                   placeholder={L3("Ví dụ: macbook, tai nghe, iphone…", "e.g. macbook, headphones, iphone…", "ex. macbook, casque, iphone…")} />
+            <span className="relative mt-1.5 block">
+              <Icon name="sparkles" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#2E7D4F]" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} className={`${input} !mt-0 pl-11`}
+                     placeholder={L3("Ví dụ: laptop dưới 20 triệu ít CO₂, tai nghe rẻ, iphone…", "e.g. laptop under 20 million low CO₂, cheap headphones…", "ex. portable moins de 20 millions peu de CO₂…")} />
+            </span>
           </label>
+          {query.trim().length >= 2 && (
+            <div className="mt-2 rounded-[14px] bg-[#F6F8F3] px-3.5 py-2.5 text-[14px] text-[#33403A]" aria-live="polite">
+              {hint.loading && hint.total === null ? <span className="text-[#8A9186]">{L3("Đang hiểu yêu cầu…", "Reading your request…", "Lecture…")}</span> : (
+                <>
+                  <p className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-semibold">{L3("Đã hiểu:", "Understood:", "Compris :")}</span>
+                    {hint.understood?.category && <span className="rounded-full bg-white px-2.5 py-0.5">{catLabel(hint.understood.category)}</span>}
+                    {hint.understood?.brand && <span className="rounded-full bg-white px-2.5 py-0.5">{hint.understood.brand}</span>}
+                    {hint.understood?.max_price && <span className="rounded-full bg-white px-2.5 py-0.5">{L3(`dưới ${millions(hint.understood.max_price)} triệu`, `under ${millions(hint.understood.max_price)} million ₫`, `moins de ${millions(hint.understood.max_price)} millions ₫`)}</span>}
+                    {hint.understood?.eco && <span className="rounded-full bg-white px-2.5 py-0.5">{L3("CO₂ thấp", "low CO₂", "CO₂ bas")}</span>}
+                    {hint.cheap && <span className="rounded-full bg-white px-2.5 py-0.5">{L3("giá thấp", "low price", "prix bas")}</span>}
+                    {(hint.understood?.terms || []).map((term) => <span key={term} className="rounded-full bg-white px-2.5 py-0.5">“{term}”</span>)}
+                    {hint.total !== null && <span className="ml-auto text-[#55604F]">{L3(`${formatNum(hint.total, lang, 0)} sản phẩm khớp`, `${formatNum(hint.total, lang, 0)} match`, `${formatNum(hint.total, lang, 0)} produits`)}</span>}
+                  </p>
+                  {hint.items.length > 0 && (
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {hint.items.map((p, i, all) => {
+                        // look-alike names show their configuration, or the store when that is the only difference
+                        const same = all.filter((x) => shortName(x.name) === shortName(p.name)).length > 1;
+                        const label = same ? `${shortName(p.name)} · ${variantOf(p.name) || p.platform || ""}`.replace(/ · $/, "") : shortName(p.name);
+                        return (
+                        <li key={p.product_id} className="flex items-center justify-between gap-3">
+                          <button type="button" onClick={() => setQuery(shortName(p.name))} className="min-w-0 truncate text-left hover:underline" title={p.name}>{label}</button>
+                          <span className="shrink-0 text-[13px] text-[#55604F]">≈{formatKg(p.co2e_kg, lang)} kg · {formatPrice(p.price_vnd, lang)}</span>
+                        </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {hint.total === 0 && <p className="mt-1 text-[#92400e]">{L3("Chưa có sản phẩm khớp; thử bỏ bớt chữ.", "Nothing matches yet; try fewer words.", "Rien ne correspond ; moins de mots.")}</p>}
+                </>
+              )}
+            </div>
+          )}
           <p className={label}>{L3("Loại thiết bị", "Device type", "Type d'appareil")}</p>
           <div className="mt-2 flex flex-wrap gap-2" role="group">
             <button type="button" className={chip(!category)} aria-pressed={!category} onClick={() => setCategory("")}>{L3("Tất cả", "All", "Tout")}</button>
-            {DEVICE_SLUGS.map((s) => <button key={s} type="button" className={chip(category === s)} aria-pressed={category === s} onClick={() => setCategory(s)}>{catLabel(s)}</button>)}
+            {[...DEVICE_SLUGS, ...(category && !DEVICE_SLUGS.includes(category) ? [category] : [])].map((s) => <button key={s} type="button" className={chip(category === s)} aria-pressed={category === s} onClick={() => setCategory(s)}>{catLabel(s)}</button>)}
           </div>
           <p className={label}>{L3("Ưu tiên", "Priority", "Priorité")}</p>
           <div className="mt-2 flex flex-wrap gap-2" role="group">
@@ -167,14 +176,22 @@ export default function AiBuyer() {
           </div>
           <label className={label}>{L3("Ngân sách", "Budget", "Budget")}
             <select value={budget} onChange={(e) => setBudget(e.target.value)} className={`${input} pr-3`}>
-              {BUDGETS.map((b) => <option key={String(b)} value={b ?? ""}>{b ? L3(`Dưới ${b / 1e6} triệu`, `Under ${b / 1e6} million ₫`, `Moins de ${b / 1e6} millions ₫`) : L3("Mọi mức giá", "Any price", "Tous les prix")}</option>)}
+              {budgetOptions.map((b) => <option key={String(b)} value={b ?? ""}>{b ? L3(`Dưới ${millions(b)} triệu`, `Under ${millions(b)} million ₫`, `Moins de ${millions(b)} millions ₫`) : L3("Mọi mức giá", "Any price", "Tous les prix")}</option>)}
             </select>
           </label>
         </section>
         <section className="rounded-[22px] border border-[#E8E4D8] bg-white p-6" aria-labelledby="old">
           <p id="old" className={kicker}>{L3("Máy cũ của bạn (tùy chọn)", "Your old device (optional)", "Votre ancien appareil (facultatif)")}</p>
           <p className={label}>{L3("Tìm máy hoặc loại máy của bạn", "Find your device or its type", "Cherchez votre appareil ou son type")}</p>
-          <OldDevice value={old} onChange={setOld} />
+          <div className="mt-1.5">
+            <DevicePicker value={old} onChange={(d) => setOld(d && d.kg != null ? d : d ? { ...d, kg: null } : null)}
+                          placeholder={L3("Gõ vài chữ: laptop, iPhone 12, Dell XPS…", "Type a few letters: laptop, iPhone 12, Dell XPS…", "Tapez : portable, iPhone 12, Dell XPS…")} />
+          </div>
+          {old?.kind === "typed" && (
+            <p className="mt-2 text-[14px] text-[#92400e]">{L3("Máy này chưa có số CO₂ nên AI sẽ bỏ qua bước bán lại. Hãy chọn một loại máy trong danh sách để dùng trung vị.",
+              "This device has no CO₂ figure, so the AI skips the resale step. Pick a type from the list to use its median.",
+              "Pas de chiffre CO₂ : l'IA ignore la revente. Choisissez un type pour sa médiane.")}</p>
+          )}
           <p className="mt-4 text-[15px] leading-relaxed text-[#55604F]">{L3("Có máy cũ thì AI tính thêm mức CO₂ giảm khi bạn bán lại.", "With an old device, the AI also works out the CO₂ saved by reselling it.", "Avec un ancien appareil, l'IA calcule aussi le CO₂ évité en le revendant.")}</p>
         </section>
       </div>
