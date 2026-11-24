@@ -154,11 +154,12 @@ function TopBar({ t, onMenu, count }) {
           <Icon name="bell" size={19} />
           {health.state === "issues" && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#b45309] text-white text-[12.5px] font-bold grid place-items-center">{health.issues}</span>}
         </Link>
-        <div className="hidden xl:flex items-center gap-2.5 pl-1" title={st("shell.guestNote")}>
-          <span className="grid place-items-center w-10 h-10 rounded-full bg-[#E4F1E6] text-[#1F5D3A]"><Icon name="user" size={19} /></span>
-          <span className="leading-tight">
-            <span className="block text-[15px] font-semibold">{st("shell.guestName")}</span>
-            <span className="block text-[13.5px] text-[#5E6B60]">{st("shell.guestNote")}</span>
+        {/* a fixed width: the guest text differs by language and would push the language switcher */}
+        <div className="hidden xl:flex w-[196px] shrink-0 items-center gap-2.5 pl-1" title={st("shell.guestNote")}>
+          <span className="grid place-items-center w-10 h-10 shrink-0 rounded-full bg-[#E4F1E6] text-[#1F5D3A]"><Icon name="user" size={19} /></span>
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-[15px] font-semibold">{st("shell.guestName")}</span>
+            <span className="block truncate text-[13.5px] text-[#5E6B60]">{st("shell.guestNote")}</span>
           </span>
         </div>
       </div>
