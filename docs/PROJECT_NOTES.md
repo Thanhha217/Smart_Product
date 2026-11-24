@@ -79,7 +79,30 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
-### Giao diện đã được duyệt — không thiết kế lại (2026-11-24)
+### Bản thiết kế "CO₂ formula redesign (4).pdf" trang 2–9 (2026-11-24) — bố cục hiện hành
+
+Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản vẽ được điền bằng dữ liệu thật.
+- **Font/khung**: tiêu đề serif Fraunces (`--font-display`), chữ Be Vietnam Pro; nút ngôn ngữ EN/FR/VI không cờ.
+- **p2 Overview `HowCalculated`**: `components/co2/ThreeSteps.jsx` (tìm mẫu giống → cộng → chia, ô kết quả xanh đậm),
+  nút "See the N similar products" / "The other methods and their order". Ký hiệu toán: `co2/MathBits.jsx`.
+- **p3 CO₂ world `/world/:id`**: thẻ đầu (tên serif, chip kg/điểm xanh/độ tin cậy/công thức/so với loại, link Book mode · Method),
+  thẻ bản đồ (thanh công cụ What if / Guided explanation / ? + − ⤢, chân thẻ là thanh chặng), dưới là
+  `GreenPanel lifestyleOnly` + `InsightCard`. Cảnh đi vào và ‹ › vẫn như cũ. Thay cho bố cục cũ ở mục dưới.
+- **p4 Sách CO₂ `/story`**: `components/story/BookShelf.jsx` — tìm kiếm, kệ 3 cuốn của sản phẩm thật (xanh nhất mỗi loại,
+  huy hiệu "Lowest CO₂ of N" khi greener_than_pct ≥ 99,5), ô danh mục. Flipbook `/story/:id` giữ nguyên.
+- **p5 Phương pháp `/method`**: `MethodFlow.jsx` là thang 4 bậc (1/2/3/∅, Yes/No/Not needed, thanh độ tin cậy, bậc của sản phẩm
+  mở ra với số thật), cột phải: Result, Green score, "Step into each stage", Read book / Enter world. Đầu trang: "Worked example · Change".
+- **p6 Find products `/search`**: không còn cột lọc bên trái; chip danh mục có số đếm + "More filters" (ngăn kéo `SearchFilters`),
+  chú thích "About the photos". Không gõ chữ thì sắp xếp `complete` (db-search `SORTS["complete"]`: đủ giá + CO₂ + ảnh riêng trước,
+  rồi lần lượt món CO₂ thấp nhất của từng loại — `row_number() OVER (PARTITION BY category)`; chỉ sắp xếp, không lọc).
+  Thẻ `common/ProductCard.jsx`: vùng ảnh xám, nhãn "Full info" (`hasFullInfo`: giá + CO₂ + ảnh riêng), nơi bán, viên CO₂ + nguồn ngắn,
+  giá, nút so sánh/giỏ tròn. `ProductThumb tone="soft"`: ảnh thay thế ghi "Photo: <mẫu>" (cùng hãng, cùng loại, giá gần nhất).
+- **p7 Ask AI `/assistant`**: ô "Say it in your own words" + Speak, lưới thiết bị, chip What for / Budget / What matters most,
+  thanh "YOUR REQUEST" + "Find my device" (vẫn gọi `/api/assistant` → `/assistant/:id`). Mở sẵn yêu cầu mẫu
+  (laptop · học/văn phòng · <20 triệu · CO₂ thấp) trừ khi có `?q=`. `components/assistant/WhatFits.jsx`: 3 món từ `/api/search`
+  (CO₂ thấp trước, hoặc giá nếu chọn Low price); "Why it fits" chỉ ghi điều dữ liệu chứng minh (đúng loại, hạng CO₂, trong ngân sách).
+
+### Giao diện đã được duyệt — không thiết kế lại (2026-11-24, phần world đã thay bằng p3 ở trên)
 
 - **CO₂ world** giữ đúng bố cục người dùng duyệt (bản gốc: `git show 31fd3bc:frontend/src/pages/World.jsx`):
   thẻ trái (tên, chip kg/điểm xanh/độ tin cậy/công thức/so với loại, "Book mode · Method", gợi ý bấm),
