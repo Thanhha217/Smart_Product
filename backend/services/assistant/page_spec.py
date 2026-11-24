@@ -90,6 +90,18 @@ def aliases(product_ids: Iterable[str]) -> dict[str, str]:
     return {f"p{i}": pid for i, pid in enumerate(product_ids, start=1)}
 
 
+# Where a product's CO2 figure comes from, in words (the model may cite it as {{pN.source}}; no digits)
+SOURCE_LABEL = {
+    "manufacturer": {"vi": "số do hãng công bố", "en": "the manufacturer's published figure", "fr": "le chiffre publié par le fabricant"},
+    "neighbor_average": {"vi": "trung bình các sản phẩm giống có số của hãng", "en": "the average of similar products with published figures",
+                         "fr": "la moyenne de produits similaires avec chiffres publiés"},
+    "category_model": {"vi": "mức điển hình của loại", "en": "the typical level of the category", "fr": "le niveau typique de la catégorie"},
+    "lifecycle_formula": {"vi": "công thức theo điện năng", "en": "the electricity-based formula", "fr": "la formule basée sur l'électricité"},
+    "eeio_price": {"vi": "ước tính thô theo giá bán", "en": "a rough estimate from the price", "fr": "une estimation grossière par le prix"},
+    "llm_estimate": {"vi": "ước tính có AI chỉnh", "en": "an AI-adjusted estimate", "fr": "une estimation ajustée par IA"},
+}
+
+
 def placeholder_values(cards: dict[str, dict], alias_map: dict[str, str], savings: dict | None,
                        stats: dict | None, lang: str = "vi") -> dict[str, str]:
     """Every value the model may cite, already formatted for the page language."""
@@ -101,6 +113,8 @@ def placeholder_values(cards: dict[str, dict], alias_map: dict[str, str], saving
         values[f"{alias}.price"] = fmt_price(c.get("price_vnd"), lang)
         values[f"{alias}.green_score"] = fmt_number(c.get("green_score"), lang, 1)
         values[f"{alias}.platform"] = c.get("platform") or ""
+        src = SOURCE_LABEL.get(c.get("co2e_source") or "", {})
+        values[f"{alias}.source"] = src.get(lang) or src.get("en") or ""
     if savings:
         values["savings.lifecycle_kg"] = fmt_kg(savings.get("lifecycle_kg_saved"), lang)
         values["savings.trees"] = fmt_number(savings.get("trees_year"), lang, 1)
