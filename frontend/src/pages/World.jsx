@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
 import { formatKg, formatNum, greenColor } from "../lib/format";
+import { useRecent } from "../lib/recent";
 import { lifecycle as readLifecycle } from "../lib/co2Formula";
 import { ErrorState } from "./components/common/States";
 import { explore } from "../i18n/explore";
@@ -260,7 +261,7 @@ function WorldView({ productId }) {
         <ErrorState title={missing ? T.notFound : X.worldErrorTitle} body={missing ? X.worldNotFoundBody : X.worldErrorBody}
                     onRetry={missing ? null : () => setNonce((n) => n + 1)} />
         <p className="mt-4 flex flex-wrap gap-3">
-          <Link to="/world" className="btn-secondary">{X.worldBack}</Link>
+          <Link to="/world?explore=1" className="btn-secondary">{X.worldBack}</Link>
           <Link to="/search" className="btn-secondary">{X.linkSearch}</Link>
         </p>
       </div>
@@ -360,6 +361,7 @@ function WorldView({ productId }) {
           <p className="mt-2 text-[13.5px] text-gray-500 hidden md:block">
             {methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-sky-700 underline">{T.book}</Link>
             {" · "}<Link to={`/method?product=${p.product_id}`} className="text-sky-700 underline">{T.method}</Link>
+            {" · "}<Link to="/world?explore=1" className="text-sky-700 underline">{L3("Sản phẩm khác", "Other products", "Autres produits")}</Link>
           </p>
           <p className="mt-2 text-[13.5px] font-semibold text-amber-700">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
           {!wide && !tour && (
@@ -453,8 +455,45 @@ function WorldView({ productId }) {
   );
 }
 
+/** Search params that mean "I want to explore the catalogue", not "show me the map". */
+const EXPLORE_KEYS = ["explore", "q", "category", "brand", "min_price", "max_price", "co2_source", "has_co2", "sort", "page", "include_accessories"];
+
+/** /world with no product: jump into the map of the last product seen, or the greenest laptop. */
+function WorldHome() {
+  const { lang } = useI18n();
+  const L3 = tri(lang);
+  const recent = useRecent();
+  const [target, setTarget] = useState(recent[0]?.product_id || null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (target) return undefined;
+    let alive = true;
+    api.getOverview()
+      .then((o) => {
+        const list = (o?.greenest || []).map((g) => ({ category: g.category, id: g.product?.product_id || g.item?.product?.id || g.id }));
+        const pick = list.find((g) => g.category === "laptop" && g.id) || list.find((g) => g.id);
+        if (!alive) return;
+        if (pick) setTarget(String(pick.id)); else setFailed(true);
+      })
+      .catch(() => alive && setFailed(true));
+    return () => { alive = false; };
+  }, [target]);
+  if (failed) return <WorldExplore />;
+  if (target) return <Navigate to={`/world/${target}${window.location.search}`} replace />;
+  return (
+    <div role="status" aria-live="polite" className="grid place-items-center min-h-[70vh] bg-[#eef6fb] text-[#4b5563]">
+      <span className="inline-flex items-center gap-3 text-[16px]">
+        <span className="w-5 h-5 rounded-full border-2 border-[#2E7D4F] border-t-transparent animate-spin" aria-hidden="true" />
+        {L3("Đang mở thế giới CO₂…", "Opening the CO₂ world…", "Ouverture du monde CO₂…")}
+      </span>
+    </div>
+  );
+}
+
 export default function World() {
   const { productId } = useParams();
+  const [params] = useSearchParams();
   if (productId) return <WorldView key={productId} productId={productId} />;
-  return <WorldExplore />;
+  if (EXPLORE_KEYS.some((k) => params.has(k))) return <WorldExplore />;
+  return <WorldHome />;
 }

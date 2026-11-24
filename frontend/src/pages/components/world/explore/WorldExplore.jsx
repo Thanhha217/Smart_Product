@@ -262,7 +262,7 @@ export default function WorldExplore() {
   useEffect(() => { setText(params.q || ""); }, [params.q]);
 
   const run = useCallback((p) => {
-    const next = new URLSearchParams();
+    const next = new URLSearchParams({ explore: "1" });   // stay on this page: plain /world opens the map
     for (const [k, v] of Object.entries(p)) if (v !== null && v !== undefined && v !== "") next.set(k, v);
     setSp(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
