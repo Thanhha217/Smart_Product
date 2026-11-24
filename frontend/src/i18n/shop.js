@@ -155,6 +155,7 @@ const S = {
   "quality.low": { en: "Low", fr: "Faible", vi: "Thấp" },
 
   // ---- compare
+  "cmp.crumb": { en: "Comparison table", fr: "Tableau comparatif", vi: "Bảng so sánh" },
   "cmp.title": { en: "Compare products", fr: "Comparer des produits", vi: "So sánh sản phẩm" },
   "cmp.lead": {
     en: "Put up to 4 products side by side: price, CO₂ footprint, where the figure comes from and how reliable it is.",

@@ -91,7 +91,8 @@ function TopBar({ t, onMenu, count }) {
     : health.state === "ok" ? st("shell.statusOk") : st("shell.statusIssues", { n: health.issues });
   const onFind = location.pathname === "/search";
   const onMethod = location.pathname === "/method";   // its own design: a plain page title, like Find products
-  const plainBar = onFind || onMethod;
+  const onCompare = location.pathname === "/compare";
+  const plainBar = onFind || onMethod || onCompare;
   const findCategory = onFind ? params.get("category") : null;
   const findHere = !onFind ? null : params.get("q") ? `“${params.get("q")}”`
     : findCategory ? (st(`cat.${findCategory}`) === `cat.${findCategory}` ? findCategory : st(`cat.${findCategory}`))
@@ -102,7 +103,13 @@ function TopBar({ t, onMenu, count }) {
       <button type="button" onClick={onMenu} className="min-[900px]:hidden grid place-items-center w-10 h-10 rounded-xl bg-white border border-[#E7E2D4] shrink-0" aria-label={st("shell.menu")}>
         <Icon name="menu" />
       </button>
-      {onMethod ? (
+      {onCompare ? (
+        <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center gap-1.5 text-[15px]">
+          <span className="shrink-0 text-[#55604F]">{t("nav.compare")}</span>
+          <span aria-hidden="true" className="text-[#8A9186]">›</span>
+          <span className="truncate font-semibold text-[#1E2B22]" aria-current="page">{st("cmp.crumb")}</span>
+        </nav>
+      ) : onMethod ? (
         <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center text-[15px]">
           <span className="truncate text-[#55604F]" aria-current="page">{t("nav.method")}</span>
         </nav>
