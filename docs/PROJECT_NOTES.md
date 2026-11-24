@@ -79,6 +79,18 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Find products = tìm kiếm + Hỏi AI + sách CO₂ (2026-11-24, bản thiết kế "Khám phá hợp nhất.pdf")
+
+- Menu: Overview · CO₂ world · **Find products** · CO₂ method · Compare (số món) · Cart & test orders · System. Mục "CO₂ book" và
+  "Ask AI" bỏ khỏi menu; `/story`, `/story/:id`, `/assistant`, `/assistant/:id` vẫn chạy và làm sáng mục Find products
+  (`NAV[].also` trong `AppShell.jsx`). Tab điện thoại: Overview · World · Find · Compare · Cart.
+- Trang `/search` (`SearchResults.jsx`): ô tìm hiểu câu ("Laptop dưới 20 triệu, CO₂ thấp" → loại + giá + CO₂ thấp; nút ✦),
+  chip danh mục (Laptop, Màn hình, Máy tính bảng trước), menu giá (dải 10/20/30/50 triệu) và sắp xếp ("CO₂ thấp" = `complete`),
+  thẻ `components/find/FindCard.jsx` (tên ngắn `lib/shortName.js` + dòng cấu hình, ≈kg lớn, giá hoặc "—", nút **CO₂ book** →
+  `/story/:id`, nút so sánh), khay `CompareBar.jsx` (n/4, bỏ từng món, → `/compare`), nút robot `AskAiDock.jsx` (hỏi AI → `/assistant/:id`;
+  "Hỏi AI về câu này" điền sẵn câu đang tìm). Thanh trên của trang này là breadcrumb "Find products › …", không có ô tìm/biểu tượng.
+- Ảnh sản phẩm: CDN cửa hàng trả 403 khi có Referer localhost (trình duyệt báo `ERR_BLOCKED_BY_ORB`) → `<img referrerPolicy="no-referrer">`.
+
 ### Bản thiết kế "CO₂ formula redesign (4).pdf" trang 2–9 (2026-11-24) — bố cục hiện hành
 
 Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản vẽ được điền bằng dữ liệu thật.
@@ -110,6 +122,13 @@ Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản v�
   (khớp `CategoryParams` ở `etl-worker/green/co2_formula.py`), món xanh hơn đều đúng. Ô "Materials" ghi "in production →"
   (đã gộp trong Production); thẻ AI insight ghi "Median of N in its category" (trung vị catalogue, khác trung vị báo cáo hãng
   trong công thức).
+
+- **AI bằng GPT** (24/11): `OPENAI_API_KEY` trong `.env` gốc → assistant chạy `openai:gpt-5.4-mini` (`/api/health`).
+  Bộ kiểm tra số (`page_spec.fill_text`) coi "CO2"/"CO2e" là ký hiệu, chấp nhận `{{…green_score}}/5`, nhận tên trường
+  savings (`lifecycle_kg_saved`, `trees_year`), gộp "%%"; câu bị bỏ được ghi log `assistant: dropped a sentence`.
+  Prompt gửi `placeholders` dạng tên → giá trị in ra. Smoke e2e với GPT thật: ALL OK, failures=0.
+- **Khởi động lại dịch vụ**: luôn dùng `--no-deps` (thiếu nó Docker tạo lại cả database). db-search, ranking, etl-worker
+  có `pool_pre_ping=True` nên tự nối lại khi database khởi động lại.
 
 ### Giao diện đã được duyệt — không thiết kế lại (2026-11-24, phần world đã thay bằng p3 ở trên)
 
@@ -175,7 +194,7 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 | `etl-worker`: `pytest tests/test_exact_match.py tests/test_fallback.py tests/test_green.py tests/test_explain.py` | 52 |
 | Toàn hệ thống (Docker đang chạy): `python scripts/demo/smoke_e2e.py` | 18 bước |
 | `ranking_system`: `pytest test_rrf.py` | 6 |
-| `assistant`: `pytest` (fake db-search + fake LLM) | 50 |
+| `assistant`: `pytest` (fake db-search + fake LLM; `test_api`/`test_explain_api` cần gói `anthropic`, chạy trong container) | 57 |
 | `gateway`: `pytest tests` | 3 |
 | `db-search`: `pytest tests/test_search_query.py tests/test_product_specs.py tests/test_accessory.py` | 14 |
 | `mcp-server`: `pytest` | 17 |

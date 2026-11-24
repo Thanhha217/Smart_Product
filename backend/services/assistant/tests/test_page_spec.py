@@ -86,3 +86,37 @@ def test_reference_urls_from_source_text():
     assert refs[0]["url"] == "https://i.dell.com/x.pdf"
     assert refs[1]["url"] == "https://apple.com/environment"
     assert "url" not in refs[2]
+
+
+def test_percent_placeholder_followed_by_percent_sign_prints_once():
+    text, failures = ps.fill_text("It beats {{stats.greener_than_pct}}% of laptops.", {"stats.greener_than_pct": "49%"})
+    assert text == "It beats 49% of laptops."
+    assert failures == 0
+
+
+def test_co2_written_with_a_plain_2_is_not_a_hand_written_number():
+    text, failures = ps.fill_text("It has the lowest CO2 at {{p1.co2e_kg}} kg CO2e.", {"p1.co2e_kg": "113"})
+    assert failures == 0
+    assert text == "It has the lowest CO₂ at 113 kg CO₂e."
+
+
+def test_real_numbers_next_to_co2_are_still_dropped():
+    text, failures = ps.fill_text("It saves 40 kg CO2 a year.", {})
+    assert failures == 1 and text == ""
+
+
+def test_green_score_scale_after_a_placeholder_is_allowed():
+    text, failures = ps.fill_text("Its green score is {{p1.green_score}}/5.", {"p1.green_score": "3.9"})
+    assert failures == 0 and text == "Its green score is 3.9/5."
+
+
+def test_a_made_up_score_is_still_dropped():
+    text, failures = ps.fill_text("Its green score is 4/5.", {})
+    assert failures == 1 and text == ""
+
+
+def test_savings_field_names_work_as_placeholders():
+    values = ps.placeholder_values({}, {}, {"lifecycle_kg_saved": 120.5, "trees_year": 5.5, "baseline_kg": 400, "horizons": []}, None, "en")
+    text, failures = ps.fill_text("It saves {{savings.lifecycle_kg_saved}} kg, like {{savings.trees_year}} trees.", values)
+    assert failures == 0
+    assert values["savings.lifecycle_kg_saved"] == values["savings.lifecycle_kg"]

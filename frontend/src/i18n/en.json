@@ -331,5 +331,7 @@
   "spec.resolution": "{value}",
   "spec.refresh": "{value}",
   "spec.panel": "{value} panel",
-  "spec.size": "{value} case"
+  "spec.size": "{value} case",
+  "tab.compare": "Compare",
+  "find.all": "All products"
 }

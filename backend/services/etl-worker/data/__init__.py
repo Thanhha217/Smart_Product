@@ -17,7 +17,7 @@ POSTGRES_URL = os.environ.get("POSTGRES_URL")
 if not POSTGRES_URL:
     raise ValueError("POSTGRES_URL environment variable is not set")
 
-engine = create_engine(POSTGRES_URL)
+engine = create_engine(POSTGRES_URL, pool_pre_ping=True)  # survive a database restart: test a pooled connection before use
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
