@@ -90,6 +90,8 @@ function TopBar({ t, onMenu, count }) {
   const statusLabel = health.state === "unknown" ? st("shell.statusUnknown")
     : health.state === "ok" ? st("shell.statusOk") : st("shell.statusIssues", { n: health.issues });
   const onFind = location.pathname === "/search";
+  const onMethod = location.pathname === "/method";   // its own design: a plain page title, like Find products
+  const plainBar = onFind || onMethod;
   const findCategory = onFind ? params.get("category") : null;
   const findHere = !onFind ? null : params.get("q") ? `“${params.get("q")}”`
     : findCategory ? (st(`cat.${findCategory}`) === `cat.${findCategory}` ? findCategory : st(`cat.${findCategory}`))
@@ -100,7 +102,11 @@ function TopBar({ t, onMenu, count }) {
       <button type="button" onClick={onMenu} className="min-[900px]:hidden grid place-items-center w-10 h-10 rounded-xl bg-white border border-[#E7E2D4] shrink-0" aria-label={st("shell.menu")}>
         <Icon name="menu" />
       </button>
-      {onFind ? (
+      {onMethod ? (
+        <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center text-[15px]">
+          <span className="truncate text-[#55604F]" aria-current="page">{t("nav.method")}</span>
+        </nav>
+      ) : onFind ? (
         <nav aria-label="breadcrumb" className="flex min-w-0 flex-1 items-center gap-1.5 text-[15px]">
           <Link to="/search" className="shrink-0 text-[#55604F] hover:underline">{t("nav.search")}</Link>
           <span aria-hidden="true" className="text-[#8A9186]">›</span>
@@ -118,15 +124,15 @@ function TopBar({ t, onMenu, count }) {
       )}
       <div className="ml-auto flex items-center gap-2 min-[900px]:gap-3">
         <div className="hidden sm:block"><LanguageSwitcher /></div>
-        <Link to="/compare" className={`${iconBtn} ${onFind ? "hidden" : "hidden sm:grid"}`} aria-label={st("shell.compareBadge", { n: compare.length })} title={st("shell.compareBadge", { n: compare.length })}>
+        <Link to="/compare" className={`${iconBtn} ${plainBar ? "hidden" : "hidden sm:grid"}`} aria-label={st("shell.compareBadge", { n: compare.length })} title={st("shell.compareBadge", { n: compare.length })}>
           <Icon name="scale" size={19} />
           {compare.length > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#1F5D3A] text-white text-[12.5px] font-bold grid place-items-center">{compare.length}</span>}
         </Link>
-        <Link to="/cart" className={`${iconBtn} ${onFind ? "grid min-[900px]:hidden" : "grid"}`} aria-label={st("shell.cartLabel", { n: count })} title={st("shell.cartLabel", { n: count })}>
+        <Link to="/cart" className={`${iconBtn} ${plainBar ? "grid min-[900px]:hidden" : "grid"}`} aria-label={st("shell.cartLabel", { n: count })} title={st("shell.cartLabel", { n: count })}>
           <Icon name="cart" size={19} />
           {count > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#b42318] text-white text-[12.5px] font-bold grid place-items-center">{count}</span>}
         </Link>
-        <Link to="/system" className={`${iconBtn} ${onFind ? "hidden" : "hidden sm:grid"}`} aria-label={statusLabel} title={statusLabel}>
+        <Link to="/system" className={`${iconBtn} ${plainBar ? "hidden" : "hidden sm:grid"}`} aria-label={statusLabel} title={statusLabel}>
           <Icon name="bell" size={19} />
           {health.state === "issues" && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#b45309] text-white text-[12.5px] font-bold grid place-items-center">{health.issues}</span>}
         </Link>
