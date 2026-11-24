@@ -79,6 +79,18 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### So sánh `/compare` (2026-11-24, bản thiết kế "Khám phá hợp nhất (1).pdf")
+
+- Thanh trên "So sánh › Bảng so sánh". Đầu trang: "So sánh n/4", chip gợi ý "+ món" (vừa xem + sản phẩm liên quan của món đầu;
+  bỏ món đang so và bản trùng tên ở cửa hàng khác; trùng tên ngắn thì ghi thêm cấu hình), "Tìm thêm" (ô tìm), "Xóa tất cả".
+- Thẻ xanh "Nên chọn" + mục "1 Tính như thế nào" (`components/compare/CompareHero.jsx`), số từ `lib/compareMath.js` (`recommend`,
+  có test): món CO₂ thấp nhất (hoà thì rẻ hơn, rồi điểm xanh cao hơn), so với **món đứng thứ hai**; CO₂ giảm = (thứ hai − chọn) ÷ thứ hai;
+  giá = chọn − thứ hai (đắt hơn thì ghi "+… đắt hơn"); so với trung vị loại (`/api/categories/{cat}/stats`). Huy hiệu chỉ khi đúng
+  duy nhất. Chỉ hiệu số và phần trăm, không tính lại CO₂. Khác loại hoặc khác phạm vi CO₂, hay < 2 món có số → "Chưa chọn hộ".
+- Thẻ từng món: thanh CO₂ (cùng thang khi cùng loại) + vạch trung vị; 3 thẻ phép tính (trừ, chia). Mục "2 Bảng so sánh chi tiết"
+  giữ bảng cũ, kết luận của API. Có nút robot Hỏi AI (điền sẵn "So sánh A và B…").
+- `variantOf` ghi cả đời chip Apple (M4 · 24GB/512GB) để phân biệt MacBook cùng cỡ.
+
 ### Phương pháp CO₂ `/method` (2026-11-24, bản thiết kế "CO₂ method.pdf")
 
 - `pages/Method.jsx` + `components/co2/MethodLadder.jsx` (thay MethodExplorer/MethodFlow/MathBits đã xoá). Thanh trên: chỉ tiêu đề trang.
