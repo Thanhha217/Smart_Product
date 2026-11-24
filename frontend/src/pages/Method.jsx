@@ -136,10 +136,10 @@ export default function Method() {
 
   return (
     <main className="page-wrap flex max-w-[1180px] flex-col gap-7 py-7 pb-28">
-      <header className="flex flex-wrap items-end justify-between gap-5">
-        <div className="max-w-[660px]">
+      <header className="flex flex-wrap items-end justify-between gap-5 lg:flex-nowrap">
+        <div className="min-w-0 max-w-[660px] lg:flex-1">
           <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">{L3("CO₂ method", "CO₂ method", "Méthode CO₂")}</p>
-          <h1 className="mt-2 max-w-[500px] font-display text-[38px] font-semibold leading-[1.1] text-[#1E2B22] sm:text-[48px]">
+          <h1 className="mt-2 max-w-[580px] font-display text-[38px] font-semibold leading-[1.1] text-[#1E2B22] sm:text-[48px]">
             {L3("Một con số CO₂ được tính như thế nào", "How a CO₂ number is worked out", "Comment un chiffre CO₂ est calculé")}
           </h1>
           <p className="mt-3 text-[17.5px] leading-relaxed text-[#55604F]">
@@ -152,7 +152,7 @@ export default function Method() {
             <FBadge />{L3("Xem công thức chung", "See the general formula", "Voir la formule générale")}
           </button>
         </div>
-        <div className="relative min-w-0 max-w-full">
+        <div className="relative min-w-0 max-w-full lg:shrink-0">
           <div className="flex items-center gap-3 rounded-[18px] border border-[#E8E4D8] bg-white px-3 py-3 shadow-sm">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#EEF1EC] text-[#33403A]">
               {scenario === "formula" ? <FBadge /> : scenario === "none" ? <span className="font-display text-[20px]">∅</span>

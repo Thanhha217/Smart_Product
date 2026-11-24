@@ -23,7 +23,7 @@ export const MAX_QTY = 10; // same limit as the order service
 function Header({ tab, setTab }) {
   const { lang } = useI18n();
   const L3 = tri(lang);
-  const btn = (on) => `inline-flex h-11 items-center gap-2 rounded-full px-5 text-[15.5px] font-semibold transition ${on ? "bg-[#1B4332] text-white" : "text-[#1E2B22] hover:bg-[#F3F1EA]"}`;
+  const btn = (on) => `inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[15.5px] font-semibold transition ${on ? "bg-[#1B4332] text-white" : "text-[#1E2B22] hover:bg-[#F3F1EA]"}`;
   return (
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div>
@@ -34,8 +34,8 @@ function Header({ tab, setTab }) {
         <p className="mt-2 text-[16px] text-[#55604F]">{L3("Đơn thử, không thu tiền thật.", "Test orders, no real payment.", "Commandes test, aucun paiement réel.")}</p>
       </div>
       <div className="flex rounded-full border border-[#E6E2D6] bg-white p-1.5" role="tablist" aria-label={L3("Giỏ hàng", "Cart", "Panier")}>
-        <button type="button" role="tab" aria-selected={tab === "cart"} className={btn(tab === "cart")} onClick={() => setTab("cart")}>{L3("Giỏ của tôi", "My cart", "Mon panier")}</button>
-        <button type="button" role="tab" aria-selected={tab === "ai"} className={btn(tab === "ai")} onClick={() => setTab("ai")}>
+        <button type="button" role="tab" aria-selected={tab === "cart"} className={`${btn(tab === "cart")} w-[150px]`} onClick={() => setTab("cart")}>{L3("Giỏ của tôi", "My cart", "Mon panier")}</button>
+        <button type="button" role="tab" aria-selected={tab === "ai"} className={`${btn(tab === "ai")} w-[186px]`} onClick={() => setTab("ai")}>
           <Icon name="sparkles" size={16} />{L3("AI mua giúp", "AI buys for me", "L'IA achète")}
         </button>
       </div>

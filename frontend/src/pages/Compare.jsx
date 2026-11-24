@@ -185,7 +185,7 @@ export default function Compare() {
   return (
     <main className="page-wrap flex max-w-[1180px] flex-col gap-6 py-7 pb-28">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-[40px] font-semibold leading-none text-[#1E2B22] sm:text-[44px]">{L3("So sánh", "Compare", "Comparer")}</h1>
+        <h1 className="min-w-[190px] font-display text-[40px] font-semibold leading-none text-[#1E2B22] sm:min-w-[216px] sm:text-[44px]">{L3("So sánh", "Compare", "Comparer")}</h1>
         <span className="text-[16px] font-semibold text-[#55604F]" aria-label={st("cmp.slotsLeft", { n: COMPARE_MAX - list.length })}>{list.length}/{COMPARE_MAX}</span>
         {list.length < COMPARE_MAX && suggestions.slice(0, 3).map((p) => (
           <button key={p.product_id} type="button" onClick={() => add(p)} title={`${st("cmp.addThis")}: ${p.name}`}
@@ -195,13 +195,13 @@ export default function Compare() {
         ))}
         {list.length < COMPARE_MAX && (
           <button type="button" onClick={() => setAdding(!adding)} aria-expanded={adding}
-                  className="inline-flex h-[44px] items-center gap-1.5 rounded-full border border-dashed border-[#B9B29E] px-4 text-[15px] text-[#55604F] hover:border-[#2E7D4F]">
+                  className="inline-flex h-[44px] min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-[#B9B29E] px-4 text-[15px] text-[#55604F] hover:border-[#2E7D4F]">
             <Icon name="search" size={16} />{L3("Tìm thêm", "Find more", "Chercher")}
           </button>
         )}
         {list.length > 0 && (
           <button type="button" onClick={() => { clearCompare(); setNote(null); }}
-                  className="ml-auto h-[44px] rounded-[12px] border border-[#1B4332] bg-white px-5 text-[15.5px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
+                  className="ml-auto h-[44px] min-w-[136px] whitespace-nowrap rounded-[12px] border border-[#1B4332] bg-white px-5 text-[15.5px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
             {L3("Xóa tất cả", "Remove all", "Tout retirer")}
           </button>
         )}

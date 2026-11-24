@@ -17,7 +17,7 @@ function Tile({ label, badge, dark = false, accent = false, onClick, children, c
       dark ? "border-transparent bg-[#17422C] text-white"
            : accent ? "border-[#2E7D4F] bg-white" : "border-[#E8E4D8] bg-white"} ${className}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className={`text-[11.5px] font-bold uppercase tracking-[0.12em] ${dark ? "text-[#9FC9AC]" : "text-[#8A9186]"}`}>{label}</p>
+        <p title={label} className={`truncate text-[11.5px] font-bold uppercase tracking-[0.12em] ${dark ? "text-[#9FC9AC]" : "text-[#8A9186]"}`}>{label}</p>
         {badge}
       </div>
       {children}
@@ -54,7 +54,7 @@ export default function WorldStats({ d, lc, lang, t, stages, onFormula, onCatego
 
   return (
     <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
-      <Tile dark label={L3("CO₂ cả vòng đời", "Whole-life CO₂", "CO₂ sur tout le cycle")}>
+      <Tile dark label={L3("CO₂ cả vòng đời", "Whole-life CO₂", "CO₂ cycle de vie")}>
         {isNum(kg) ? (
           <p className="mt-1 font-display leading-none">
             <span className="text-[34px] font-bold">{formatKg(kg, lang)}</span>
@@ -69,7 +69,7 @@ export default function WorldStats({ d, lc, lang, t, stages, onFormula, onCatego
         </span>
       </Tile>
 
-      <Tile accent={lowest} onClick={onCategory} label={L3("So với cùng loại", "Vs. its category", "Face à sa catégorie")}
+      <Tile accent={lowest} onClick={onCategory} label={L3("So với cùng loại", "Vs. its category", "Vs. sa catégorie")}
             badge={lowest && isNum(stats?.n) ? (
               <span className="shrink-0 rounded-full bg-[#FBEFD3] px-2 py-0.5 text-[11.5px] font-bold text-[#8A5A00]">
                 {L3(`Thấp nhất trong ${formatNum(stats.n, lang, 0)}`, `Lowest of ${formatNum(stats.n, lang, 0)}`, `Le plus bas sur ${formatNum(stats.n, lang, 0)}`)}
@@ -112,7 +112,7 @@ export default function WorldStats({ d, lc, lang, t, stages, onFormula, onCatego
         ) : <p className="mt-1.5 text-[15px] text-[#6B7468]">—</p>}
       </Tile>
 
-      <Tile label={L3("Chặng nặng nhất", "Biggest source", "Étape la plus lourde")}>
+      <Tile label={L3("Chặng nặng nhất", "Biggest source", "Étape dominante")}>
         {top ? (
           <>
             <p className="mt-1 font-display text-[22px] font-semibold leading-tight text-[#1E2B22]">{stages[top.key] || top.key}</p>
