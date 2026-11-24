@@ -1,5 +1,6 @@
 // Right panel of the CO2 world: three everyday choices that close the loop, the AI's short
 // buying insight for this product (POST /api/explain, topic "insight") and the circular loop.
+import { formatCount } from "../../../lib/data";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
@@ -64,8 +65,8 @@ export function InsightCard({ productId, lang, stats, kg, category }) {
           {typeof kg === "number" && typeof stats?.median_kg === "number" && (() => {
             const max = Math.max(kg, stats.median_kg) * 1.05;
             const row = (label, v, cls) => (
-              <li className="grid grid-cols-[120px_1fr_72px] items-center gap-3 text-[14px]">
-                <span className="text-[#33403A] truncate">{label}</span>
+              <li className="grid grid-cols-[132px_1fr_72px] items-center gap-3 text-[14px]">
+                <span className="text-[#33403A] leading-tight">{label}</span>
                 <span className="h-2.5 rounded-full bg-white/80"><span className={`block h-2.5 rounded-full ${cls}`} style={{ width: `${(v / max) * 100}%` }} /></span>
                 <b className="text-right text-[#1E2B22]">{formatKg(v, lang)} kg</b>
               </li>
@@ -73,7 +74,8 @@ export function InsightCard({ productId, lang, stats, kg, category }) {
             return (
               <ul className="mt-4 space-y-2">
                 {row(L3("Sản phẩm này", `This ${category || "product"}`, "Ce produit"), kg, "bg-[#2E7D4F]")}
-                {row(L3("Trung vị của loại", "Category median", "Médiane de la catégorie"), stats.median_kg, "bg-[#B9C4BC]")}
+                {row(stats?.n ? L3(`Trung vị ${formatCount(stats.n, lang)} sản phẩm cùng loại`, `Median of ${formatCount(stats.n, lang)} in its category`, `Médiane de ${formatCount(stats.n, lang)} produits`)
+                         : L3("Trung vị của loại", "Category median", "Médiane de la catégorie"), stats.median_kg, "bg-[#B9C4BC]")}
               </ul>
             );
           })()}
@@ -96,7 +98,7 @@ export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, classN
   const perYear = (yrs) => (total !== null && yrs > 0 ? formatKg(total / yrs, lang) : null);
   const searchTo = `/search?${new URLSearchParams({ ...(p.category ? { category: p.category } : {}), sort: "co2_asc" })}`;
   return (
-    <aside className={`rounded-[24px] bg-white border border-[#E8E4D8] p-5 space-y-3 ${className}`}
+    <aside className={`min-w-0 rounded-[24px] bg-white border border-[#E8E4D8] p-5 space-y-3 ${className}`}
            aria-label={L3("Sống xanh", "Green lifestyle", "Mode de vie sobre")}>
       <div>
         <h2 className="font-display text-[26px] font-semibold text-[#1F5D3A]">🍃 {L3("Sống xanh", "Green Lifestyle", "Vivre plus sobre")}</h2>

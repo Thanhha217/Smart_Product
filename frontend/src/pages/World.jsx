@@ -424,6 +424,7 @@ function WorldView({ productId }) {
                         onClick={(e) => { e.stopPropagation(); choose(st, e.currentTarget.getBoundingClientRect()); }}
                         className={`whitespace-nowrap px-4 py-2 text-[15px] font-semibold transition ${i > 0 ? "border-l border-[#E3DFD3]" : ""} ${focus === st ? "bg-[#1B2F45] text-white" : "text-[#33403A] hover:bg-[#F3F8F1]"}`}>
                   {T.stages[st]}{kg !== null && kg !== undefined ? <span className={`ml-1.5 font-bold ${focus === st ? "text-emerald-200" : "text-[#1F6B43]"}`}>{formatKg(kg, lang)}</span> : null}
+                  {st === "materials" && <span className={`ml-1.5 text-[12.5px] font-normal ${focus === st ? "text-white/75" : "text-[#8A9186]"}`}>{L3("gộp trong SX →", "in production →", "inclus →")}</span>}
                 </button>
               );
             })}
@@ -436,7 +437,7 @@ function WorldView({ productId }) {
       </section>
 
       {/* Green lifestyle and the AI insight, side by side */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <GreenPanel d={d} base={base} sc={sc} setSc={setSc} lang={lang} lifestyleOnly
                     onRecycle={(e) => { window.scrollTo({ top: 0, behavior: "smooth" }); choose("end_of_life", e?.currentTarget?.getBoundingClientRect?.() || null); }} />
         <InsightCard productId={p.product_id} lang={lang} stats={d.stats} kg={p.co2e_kg}
