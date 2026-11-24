@@ -6,8 +6,8 @@ import { api } from "../api/client";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { useShopText } from "../i18n/shop";
 import { addToCart } from "../lib/cart";
-import { addToCompare, clearCompare, COMPARE_MAX, removeFromCompare, setCompareIds, useCompare } from "../lib/compare";
-import { co2Kind, co2Scope, formatPrice, normalizeList, normalizeProduct, num, text } from "../lib/data";
+import { addToCompare, clearCompare, COMPARE_MAX, setCompareIds, useCompare } from "../lib/compare";
+import { co2Kind, co2Scope, formatPrice, normalizeList, normalizeProduct, num } from "../lib/data";
 import { formatKg, formatNum } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import SuggestedProducts from "./components/common/SuggestedProducts";
@@ -16,7 +16,6 @@ import { ProductImage } from "./components/common/ProductCard";
 import { EmptyState, ErrorState, InlineSpinner } from "./components/common/States";
 import Icon from "./components/ui/Icon";
 import { Hero, HowWorked } from "./components/compare/CompareHero";
-import AskAiDock from "./components/find/AskAiDock";
 import { recommend } from "../lib/compareMath";
 import { shortName, variantOf } from "../lib/shortName";
 
@@ -49,7 +48,6 @@ export default function Compare() {
   const [retry, setRetry] = useState(0);
   const [note, setNote] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [askOpen, setAskOpen] = useState(false);
   const [statsByCat, setStatsByCat] = useState({});
   const [related, setRelated] = useState([]);
   const recent = useRecent();
@@ -158,7 +156,6 @@ export default function Compare() {
       { key: "bill", label: st("cmp.row.bill"), cell: (p) => formatPrice(p.electricity_vnd_year, lang) },
     ] : []),
   ];
-  const conclusion = !mixed && sameScope ? text(table.data?.conclusion) : null;
   // the row the table marks as the lowest CO2; only meaningful when the products compare at all
   const medianOf = (p) => (p ? statsByCat[p.co2_category]?.median_kg ?? null : null);
   const statsOf = (p) => (p ? statsByCat[p.co2_category] || null : null);
@@ -184,14 +181,11 @@ export default function Compare() {
   // a suggestion with the same short name as a compared product shows its configuration too
   const listShort = new Set(list.map((p) => shortName(p.name)));
   const chipName = (p) => { const n = shortName(p.name); const v = variantOf(p.name); return listShort.has(n) && v ? `${n} · ${v}` : n; };
-  const askText = list.length >= 2 ? L3(`So sánh ${list.map((p) => shortName(p.name)).join(" và ")}: nên chọn món nào?`,
-                                      `Compare ${list.map((p) => shortName(p.name)).join(" and ")}: which one should I choose?`,
-                                      `Comparer ${list.map((p) => shortName(p.name)).join(" et ")} : lequel choisir ?`) : "";
 
   return (
     <main className="page-wrap flex max-w-[1180px] flex-col gap-6 py-7 pb-28">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-[40px] font-semibold leading-none text-[#1E2B22] sm:text-[44px]">{L3("So sánh", "Compare", "Comparer")}</h1>
+        <h1 className="min-w-[190px] font-display text-[40px] font-semibold leading-none text-[#1E2B22] sm:min-w-[216px] sm:text-[44px]">{L3("So sánh", "Compare", "Comparer")}</h1>
         <span className="text-[16px] font-semibold text-[#55604F]" aria-label={st("cmp.slotsLeft", { n: COMPARE_MAX - list.length })}>{list.length}/{COMPARE_MAX}</span>
         {list.length < COMPARE_MAX && suggestions.slice(0, 3).map((p) => (
           <button key={p.product_id} type="button" onClick={() => add(p)} title={`${st("cmp.addThis")}: ${p.name}`}
@@ -201,13 +195,13 @@ export default function Compare() {
         ))}
         {list.length < COMPARE_MAX && (
           <button type="button" onClick={() => setAdding(!adding)} aria-expanded={adding}
-                  className="inline-flex h-[44px] items-center gap-1.5 rounded-full border border-dashed border-[#B9B29E] px-4 text-[15px] text-[#55604F] hover:border-[#2E7D4F]">
+                  className="inline-flex h-[44px] min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-[#B9B29E] px-4 text-[15px] text-[#55604F] hover:border-[#2E7D4F]">
             <Icon name="search" size={16} />{L3("Tìm thêm", "Find more", "Chercher")}
           </button>
         )}
         {list.length > 0 && (
           <button type="button" onClick={() => { clearCompare(); setNote(null); }}
-                  className="ml-auto h-[44px] rounded-[12px] border border-[#1B4332] bg-white px-5 text-[15.5px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
+                  className="ml-auto h-[44px] min-w-[136px] whitespace-nowrap rounded-[12px] border border-[#1B4332] bg-white px-5 text-[15.5px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
             {L3("Xóa tất cả", "Remove all", "Tout retirer")}
           </button>
         )}
@@ -273,36 +267,28 @@ export default function Compare() {
                     </tbody>
                   </table>
                 </div>
-                <p className="text-[13.5px] text-[#6b7280]">{st("cmp.qualityNote")}</p>
-                {conclusion && <p className="rounded-xl bg-[#f6f3ea] px-4 py-3 text-[15.5px] text-[#1E2B22]">{conclusion}</p>}
               </section>
             </>
           )}
         </>
       )}
 
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} initial={askText} />
     </main>
   );
 }
 
 function HeaderCard({ product, compact = false }) {
   const { t, lang } = useI18n();
-  const st = useShopText();
   const [added, setAdded] = useState(false);
   const priceText = formatPrice(product.price_vnd, lang);
   return (
     <div className={`flex flex-col gap-2 ${compact ? "" : "rounded-2xl bg-white border border-[#ebe6d8] p-4"}`}>
       <ProductImage product={product} className="h-28" />
       <Link to={`/product/${product.product_id}`} className="font-semibold text-[15px] leading-snug text-[#1E2B22] hover:underline line-clamp-2">{product.name}</Link>
-      <span className="text-[15px] font-semibold">{priceText || <span className="font-normal text-[#6b7280]">{t("common.noPrice")}</span>}</span>
+      {!compact && <span className="text-[15px] font-semibold">{priceText || <span className="font-normal text-[#6b7280]">{t("common.noPrice")}</span>}</span>}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[14px]">
         <button type="button" className="font-medium text-[#1F5D3A] underline" onClick={() => { addToCart(product); setAdded(true); }}>
           {added ? t("common.addedToCart") : t("common.addToCart")}
-        </button>
-        <button type="button" className="font-medium text-[#b42318] underline" onClick={() => removeFromCompare(product.product_id)}
-                aria-label={`${st("cart.remove")}: ${product.name}`}>
-          {st("cart.remove")}
         </button>
       </div>
     </div>

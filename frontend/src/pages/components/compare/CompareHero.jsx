@@ -122,6 +122,23 @@ function ProductBar({ p, picked, median, scale }) {
   );
 }
 
+/**
+ * One line of working, "45,690,000 ₫ − 39,990,000 ₫ = 5,700,000 ₫": when it does not fit, it breaks
+ * before an operator or before "=", never inside a number.
+ */
+function CalcLine({ line }) {
+  const cut = line.lastIndexOf(" = ");
+  const lhs = cut >= 0 ? line.slice(0, cut) : line;
+  const rhs = cut >= 0 ? line.slice(cut + 1) : null;
+  const terms = lhs.split(/ (?=[−÷×+] )/);
+  return (
+    <p className="flex flex-wrap gap-x-[0.6ch]">
+      {terms.map((t, i) => <span key={i} className="whitespace-nowrap">{t}</span>)}
+      {rhs && <span className="whitespace-nowrap">{rhs}</span>}
+    </p>
+  );
+}
+
 function CalcCard({ title, icon, lines, note }) {
   return (
     <article className="rounded-[22px] border border-[#E8E4D8] bg-white p-5">
@@ -130,7 +147,7 @@ function CalcCard({ title, icon, lines, note }) {
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#DCD7C9] font-display text-[17px] text-[#1B4332]" aria-hidden="true">{icon}</span>
       </div>
       <div className="mt-3 space-y-1 rounded-[12px] bg-[#F6F3EA] px-3.5 py-3 font-mono text-[14.5px] text-[#1E2B22]">
-        {lines.map((l) => <p key={l}>{l}</p>)}
+        {lines.map((l) => <CalcLine key={l} line={l} />)}
       </div>
       {note && <p className="mt-2.5 text-[13.5px] leading-snug text-[#6B7468]">{note}</p>}
     </article>

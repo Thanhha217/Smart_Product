@@ -16,6 +16,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Order from './pages/Order';
 import { setNavigator } from './webmcp';
+import { GlobalAskAi } from './pages/components/find/AskAiDock';
 
 // Lets WebMCP tools navigate inside the SPA.
 function NavigatorBridge() {
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/orders/:id" element={<Order />} />
           </Route>
         </Routes>
+        <GlobalAskAi />
       </div>
     </BrowserRouter>
   );

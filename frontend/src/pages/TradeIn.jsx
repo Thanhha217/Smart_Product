@@ -12,8 +12,8 @@ import { normalizeList } from "../lib/data";
 import { formatKg, formatNum } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import { shortName } from "../lib/shortName";
+import DevicePicker from "./components/common/DevicePicker";
 import { CAT_OF_SLUG, defaultSecondLife, LIFETIME, PRODUCTION_SHARE, REUSE_EMBODIED, tradeIn } from "../lib/tradeIn";
-import AskAiDock from "./components/find/AskAiDock";
 
 const LANG_IDX = { vi: 0, en: 1, fr: 2 };
 /** "277,2" / "277.2" / "1.234,5" / "1,234.5" -> number: the last separator is the decimal mark. */
@@ -62,7 +62,6 @@ export default function TradeIn() {
   const st = useShopText();
   const recent = useRecent();
   const compare = useCompare();
-  const [askOpen, setAskOpen] = useState(false);
 
   // ---- data: category medians, and devices to upgrade to
   const [cats, setCats] = useState([]);
@@ -78,30 +77,29 @@ export default function TradeIn() {
     return [...compare, ...recent, ...greenest].filter((p) => p && p.co2e_kg !== null && !seen.has(p.product_id) && seen.add(p.product_id)).slice(0, 5);
   }, [compare, recent, greenest]);
 
-  // ---- the old device
-  const [oldKey, setOldKey] = useState("cat:laptops");
-  const [oldName, setOldName] = useState("");
+  // ---- the old device: picked in the smart search (a type's median, a product, or a typed name)
+  const [oldDevice, setOldDevice] = useState(null);
   const [oldKg, setOldKg] = useState("");
   const [oldCat, setOldCat] = useState("laptop");
   const [action, setAction] = useState("resell");
   const [years, setYears] = useState("");
-  const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
-  const applyOld = (key) => {
-    setOldKey(key);
-    if (key.startsWith("cat:")) {
-      const c = cats.find((x) => `cat:${x.category}` === key);
-      if (!c) return;
-      const cat = CAT_OF_SLUG[c.category];
-      setOldCat(cat); setOldName(catLabel(c.category)); setOldKg(formatKg(c.median_kg, lang)); setYears(String(defaultSecondLife(cat)));
-    } else if (key.startsWith("p:")) {
-      const p = recent.find((x) => `p:${x.product_id}` === key);
-      if (!p) return;
-      const cat = PRODUCTION_SHARE[p.co2_category] ? p.co2_category : "laptop";
-      setOldCat(cat); setOldName(shortName(p.name)); setOldKg(p.co2e_kg !== null ? formatKg(p.co2e_kg, lang) : ""); setYears(String(defaultSecondLife(cat)));
-    }
+  const pickOld = (d) => {
+    setOldDevice(d);
+    if (!d) return;
+    const cat = PRODUCTION_SHARE[d.category] ? d.category : "laptop";
+    setOldCat(cat);
+    setOldKg(d.kg !== null && d.kg !== undefined ? formatKg(d.kg, lang) : "");
+    setYears(String(defaultSecondLife(cat)));
   };
-  // fill the form once the medians arrive (and again when the language changes the decimal mark)
-  useEffect(() => { if (cats.length) applyOld(oldKey); }, [cats.length, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  // start with the laptop median, as in the design
+  useEffect(() => {
+    if (oldDevice || !cats.length) return;
+    const c = cats.find((x) => x.category === "laptops") || cats[0];
+    const slugLabel = st(`cat.${c.category}`);
+    pickOld({ name: slugLabel === `cat.${c.category}` ? c.category : slugLabel, kg: c.median_kg, category: CAT_OF_SLUG[c.category], kind: "type" });
+  }, [cats.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the decimal mark follows the language
+  useEffect(() => { if (oldDevice?.kg != null && oldDevice.kind !== "typed") setOldKg(formatKg(oldDevice.kg, lang)); }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- the new device
   const [pick, setPick] = useState(null);                      // product id or "custom"
@@ -162,17 +160,19 @@ export default function TradeIn() {
 
   return (
     <main className="page-wrap flex max-w-[1180px] flex-col gap-7 py-7 pb-28">
-      <section className="grid items-center gap-6 rounded-[26px] bg-[#1B4332] p-7 text-white lg:grid-cols-[1.1fr_1fr_1.15fr]">
-        <div>
+      <section className="rounded-[26px] bg-[#1B4332] p-7 text-white">
+        <div className="flex items-center justify-between gap-6">
+        <div className="min-w-0">
           <h1 className="font-display text-[38px] font-semibold leading-tight sm:text-[42px]">{L3("Thu cũ đổi mới", "Trade-in", "Reprise")}</h1>
-          <p className="mt-2 max-w-[360px] text-[17px] leading-relaxed text-white/85">
+          <p className="mt-2 max-w-[640px] text-[17px] leading-relaxed text-white/85">
             {L3("Đổi máy cũ lấy máy mới, hoặc chọn máy refurbished. Cách nào cũng bớt CO₂ hơn mua mới hoàn toàn.",
                 "Trade your old device in, or choose a refurbished one. Either way emits less CO₂ than buying brand new.",
                 "Faites reprendre l'ancien appareil ou choisissez un reconditionné : moins de CO₂ qu'un achat neuf.")}
           </p>
         </div>
-        <div className="hidden justify-center lg:flex"><Illustration /></div>
-        <div className="rounded-[18px] bg-white/[0.09] p-5">
+        <div className="hidden w-[300px] shrink-0 justify-center md:flex"><Illustration /></div>
+        </div>
+        <div className="mt-6 rounded-[18px] bg-white/[0.09] px-6 py-5">
           <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">{L3("Có thể giảm tới", "You could save up to", "Économie possible")}</p>
           {r && bestSaved > 0 ? (
             <>
@@ -193,33 +193,26 @@ export default function TradeIn() {
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <div className={card}>
             <p className={kicker}>{L3("Máy cũ của bạn", "Your old device", "Votre ancien appareil")}</p>
-            <label className={fieldLabel}>{L3("Chọn loại máy hoặc sản phẩm", "Choose a type or a product", "Choisir un type ou un produit")}
-              <select value={oldKey} onChange={(e) => applyOld(e.target.value)} className={`${input} pr-3`}>
-                <optgroup label={L3("Theo loại (trung vị danh mục)", "By type (category median)", "Par type (médiane)")}>
-                  {cats.map((c) => <option key={c.category} value={`cat:${c.category}`}>{catLabel(c.category)} ({L3("trung vị danh mục", "category median", "médiane")})</option>)}
-                </optgroup>
-                {recent.filter((p) => p.co2e_kg !== null).length > 0 && (
-                  <optgroup label={L3("Sản phẩm bạn vừa xem", "Products you looked at", "Produits consultés")}>
-                    {recent.filter((p) => p.co2e_kg !== null).slice(0, 6).map((p) => <option key={p.product_id} value={`p:${p.product_id}`}>{shortName(p.name)} — {k(p.co2e_kg)} kg</option>)}
-                  </optgroup>
-                )}
-                <option value="own">{L3("Máy khác (tự nhập số)", "Another device (type the figure)", "Autre appareil (saisir)")}</option>
-              </select>
-            </label>
-            {oldKey === "own" && (
+            <p className={fieldLabel}>{L3("Tìm máy hoặc loại máy của bạn", "Find your device or its type", "Cherchez votre appareil ou son type")}</p>
+            <div className="mt-1.5">
+              <DevicePicker value={oldDevice} onChange={pickOld}
+                            placeholder={L3("Gõ vài chữ: laptop, iphone, dell…", "Type a few letters: laptop, iphone, dell…", "Tapez : portable, iphone, dell…")} />
+            </div>
+            {oldDevice?.kind === "typed" && (
               <label className={fieldLabel}>{L3("Loại máy", "Device type", "Type d'appareil")}
                 <select value={oldCat} onChange={(e) => { setOldCat(e.target.value); setYears(String(defaultSecondLife(e.target.value))); }} className={`${input} pr-3`}>
                   {CUSTOM_CATS.map((c) => <option key={c} value={c}>{CAT_NAME[c][li]}</option>)}
                 </select>
               </label>
             )}
-            <label className={fieldLabel}>{L3("Tên máy của bạn", "Your device's name", "Nom de votre appareil")}
-              <input value={oldName} onChange={(e) => setOldName(e.target.value)} className={input} />
-            </label>
             <label className={fieldLabel}>{L3("CO₂ cả vòng đời (kg CO₂e)", "Lifecycle CO₂ (kg CO₂e)", "CO₂ du cycle de vie (kg CO₂e)")}
               <input value={oldKg} onChange={(e) => setOldKg(e.target.value)} inputMode="decimal" className={input} />
             </label>
-            <p className="mt-1.5 text-[14px] text-[#6B7468]">{L3("Mặc định là trung vị của danh mục. Bạn có thể nhập số khác.", "The default is the category median. You can type another figure.", "Par défaut la médiane de la catégorie ; vous pouvez la changer.")}</p>
+            <p className="mt-1.5 text-[14px] text-[#6B7468]">
+              {oldDevice?.kind === "product" ? L3("Số CO₂ của sản phẩm này. Bạn có thể nhập số khác.", "This product's CO₂ figure. You can type another.", "Le chiffre CO₂ de ce produit ; modifiable.")
+                : oldDevice?.kind === "typed" ? L3("Nhập số CO₂ của máy (nếu biết), hoặc chọn một loại máy ở ô trên để dùng trung vị.", "Enter the device's CO₂ figure if you know it, or pick a type above to use its median.", "Saisissez le chiffre CO₂, ou choisissez un type.")
+                : L3("Mặc định là trung vị của danh mục. Bạn có thể nhập số khác.", "The default is the category median. You can type another figure.", "Par défaut la médiane de la catégorie ; vous pouvez la changer.")}
+            </p>
             <p className={`${kicker} mt-5`}>{L3("Bạn định làm gì với nó?", "What will you do with it?", "Qu'allez-vous en faire ?")}</p>
             <div className="mt-2 flex flex-wrap gap-2" role="group">
               {[["resell", L3("Bán lại", "Resell", "Revendre")], ["recycle", L3("Tái chế", "Recycle", "Recycler")]].map(([v, label]) => (
@@ -342,7 +335,6 @@ export default function TradeIn() {
         </section>
       )}
 
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} />
     </main>
   );
 }

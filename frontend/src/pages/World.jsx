@@ -346,7 +346,11 @@ function WorldView({ productId }) {
       {/* map card: toolbar, map, stage bar */}
       <section className="rounded-[24px] bg-white border border-[#E8E4D8] overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-[#EFEBDF]">
-          <p className="text-[14.5px] font-semibold text-[#B45309]">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
+          {/* one line in every language, so the map below does not jump when the language changes */}
+          <p className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-[#B45309]"
+             title={L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}>
+            👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => { setGreenOpen(!greenOpen); setSimOpen(false); }} aria-expanded={greenOpen}
                     className="inline-flex items-center gap-2 rounded-full bg-[#1F6B43] px-4 py-2 text-[14.5px] font-bold text-white hover:bg-[#17522f]">

@@ -5,6 +5,10 @@ import requests
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://ollama:11434")
 OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
 LLM_MODEL = os.environ.get("LLM_MODEL", os.environ.get("CO2E_LLM_MODEL", "qwen3.5:0.8b"))
+# The local model can be slow on CPU: every search waited for it. These let a deployment switch the
+# LLM wording off (the rule-based reasons are used) or wait less.
+LLM_EXPLANATIONS = os.environ.get("RANKING_LLM_EXPLANATIONS", "1").strip().lower() not in ("0", "false", "no", "off")
+LLM_TIMEOUT_S = float(os.environ.get("RANKING_LLM_TIMEOUT_S", "10"))
 
 
 def generate_ranking_explanations(query, top_products):
@@ -19,7 +23,7 @@ def generate_ranking_explanations(query, top_products):
 
     top_4 = top_products[:4]
 
-    explanations = _call_ollama_explanations(query, top_4)
+    explanations = _call_ollama_explanations(query, top_4) if LLM_EXPLANATIONS else None
     if explanations and len(explanations) > 0:
         return explanations
 
@@ -78,7 +82,7 @@ def _call_ollama_explanations(query, top_4):
     }
 
     try:
-        response = requests.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=10)
+        response = requests.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=LLM_TIMEOUT_S)
         response.raise_for_status()
         raw_resp = response.json().get("response", "")
         if not raw_resp:

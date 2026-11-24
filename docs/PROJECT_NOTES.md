@@ -79,6 +79,32 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Ô tìm thông minh và đổi ngôn ngữ không giật (2026-11-24)
+
+- `components/common/DevicePicker.jsx` (dùng ở `/trade-in` "Máy cũ của bạn" và giỏ → AI mua giúp): gõ vài chữ, lọc ngay; nhóm
+  "Loại máy" (trung vị loại, ≈kg) và "Sản phẩm" (`/api/search`, có số CO₂); không dấu, hiểu tên dòng máy (`lib/deviceMatch.js`:
+  mac → laptop, iphone/galaxy → điện thoại, airpods → tai nghe…, có test); ↑ ↓ Enter Esc; bỏ bản trùng tên, trùng tên ngắn thì ghi
+  cấu hình (`variantOf`) hoặc nơi bán; "Dùng '…', tự nhập số CO₂". Danh sách không còn chữ "(trung vị danh mục)".
+- AI mua giúp: ô "Gõ điều bạn cần" đọc câu bằng bộ hiểu câu của `/api/search` (`understood`) khi đang gõ → tự chọn loại, ngân
+  sách, ưu tiên (CO₂ thấp / "rẻ" → giá); bỏ lựa chọn tự động khi câu không còn nói tới; hiện "Đã hiểu", số sản phẩm khớp, 3 gợi ý.
+- Đổi ngôn ngữ không giật (đo bằng script vị trí khối, 1280/1440/1920): khối "Khách" ở thanh trên rộng cố định (cụm EN/FR/VI
+  trước lệch 49 px → 0); tab giỏ, nút đầu trang So sánh rộng cố định; thẻ AI insight (CO₂ world) và "Vì sao đáng cân nhắc" giữ
+  chiều cao khi tải lại; gợi ý trên bản đồ một dòng; nhãn ô số liệu CO₂ world một dòng (tiếng Pháp ngắn lại); đầu trang Phương
+  pháp không xuống dòng; `html { scrollbar-gutter: stable }`. Chênh lệch còn lại chỉ do đoạn văn dài ngắn khác nhau ở phần dưới.
+
+### Giỏ hàng + AI mua giúp `/cart` (2026-11-24, bản thiết kế "Giỏ hàng và ví AI")
+
+- Hai tab (`?tab=ai`): "Giỏ của tôi" (thẻ món: ảnh, giá, ≈kg · điểm xanh, − n + Xóa; gợi ý món xanh hơn; "Tóm tắt" tổng tiền / CO₂
+  vòng đời, "Thanh toán thử", "Nhờ AI mua giúp") và "AI mua giúp" (`components/cart/AiBuyer.jsx`). Thanh trên trống như thiết kế.
+- AI mua giúp = `lib/aiBuyer.js` `planPurchase` (có test): `/api/search` (có giá + CO₂, sắp `co2_asc` hoặc `price_asc`, ngân sách)
+  → 3 món đầu, chọn món đầu (`recommend` để ghi chênh lệch) → nếu có máy cũ: `tradeIn` (bán lại, cùng công thức `/trade-in`)
+  → `POST /api/orders/test` `created_by: "assistant"` → dừng ở "awaiting_confirmation", link `/orders/{id}` để người bấm xác nhận.
+  Không có ô ví / thẻ / ngân hàng; không bao giờ gọi confirm (theo CLAUDE.md). WebMCP `buy_for_me` gọi cùng hàm.
+- ChatGPT Wallet / thanh toán thật: không làm (CLAUDE.md + `docs/demo/mcp-chatgpt.md` §7).
+- `RANKING_LLM_EXPLANATIONS="0"` trong `.env.dev`: `/query` 10–17 s → 0,3 s (Ollama luôn quá giờ), MCP hết lỗi quá thời gian.
+- Trang AI: thêm chỗ trống `{{pN.source}}` (tên nguồn số CO₂ bằng chữ).
+- Thu cũ đổi mới: đầu trang theo bản thiết kế mới (tiêu đề + hình cùng hàng, ô "Có thể giảm tới" trải ngang bên dưới).
+
 ### Thu cũ đổi mới `/trade-in` (2026-11-24, bản thiết kế "Thu cũ đổi mới.pdf")
 
 - Menu: mục "Thu cũ đổi mới" giữa So sánh và Giỏ; thanh trên "Tìm sản phẩm › Thu cũ đổi mới". `pages/TradeIn.jsx`, phép tính `lib/tradeIn.js` (có test).
@@ -101,6 +127,11 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 - Thẻ từng món: thanh CO₂ (cùng thang khi cùng loại) + vạch trung vị; 3 thẻ phép tính (trừ, chia). Mục "2 Bảng so sánh chi tiết"
   giữ bảng cũ, kết luận của API. Có nút robot Hỏi AI (điền sẵn "So sánh A và B…").
 - `variantOf` ghi cả đời chip Apple (M4 · 24GB/512GB) để phân biệt MacBook cùng cỡ.
+- Bảng chi tiết: đầu cột chỉ có ảnh, tên, "Thêm vào giỏ thử" (giá đã có ở hàng Giá; bỏ nút Remove, xoá bằng "Xóa tất cả" hoặc khay
+  ở Find products); bỏ ghi chú độ tin cậy và câu kết luận dưới bảng (trùng thẻ "Nên chọn"). Dòng phép tính chỉ xuống dòng
+  trước dấu phép tính hoặc "=" (`CalcLine`), không cắt giữa con số.
+- **Chatbot Hỏi AI ở mọi trang**: `GlobalAskAi` (trong `components/find/AskAiDock.jsx`) gắn một lần ở `App.jsx`, kể cả `/` và Overview.
+  Tự điền câu: câu đang tìm ở `/search`, "So sánh A và B…" ở `/compare`; trang khác gọi `openAskAi(text)`.
 
 ### Phương pháp CO₂ `/method` (2026-11-24, bản thiết kế "CO₂ method.pdf")
 

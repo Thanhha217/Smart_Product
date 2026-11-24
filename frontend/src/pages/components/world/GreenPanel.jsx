@@ -1,7 +1,7 @@
 // Right panel of the CO2 world: three everyday choices that close the loop, the AI's short
 // buying insight for this product (POST /api/explain, topic "insight") and the circular loop.
 import { formatCount } from "../../../lib/data";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
 import { tri } from "../../../i18n/LanguageContext";
@@ -32,17 +32,23 @@ export function InsightCard({ productId, lang, stats, kg, category }) {
   const L3 = tri(lang);
   const [state, setState] = useState({ status: "loading" });
   const [nonce, setNonce] = useState(0);
+  // while a new language loads, the card keeps the height it had, so nothing below it jumps
+  const box = useRef(null);
+  const [holdH, setHoldH] = useState(null);
   useEffect(() => {
     let alive = true;
+    setHoldH(box.current ? box.current.offsetHeight : null);
     setState({ status: "loading" });
     api.explain({ product_id: productId, topic: "insight", lang })
       .then((r) => alive && setState({ status: r?.answer ? "ok" : "empty", r }))
-      .catch(() => alive && setState({ status: "error" }));
+      .catch(() => alive && setState({ status: "error" }))
+      .finally(() => alive && setHoldH(null));
     return () => { alive = false; };
   }, [productId, lang, nonce]);
   const r = state.r;
   return (
-    <section className="h-full rounded-[24px] bg-gradient-to-br from-[#F1F7EF] to-[#E6F2E8] border border-[#CFE6D5] p-5" aria-live="polite">
+    <section ref={box} style={holdH ? { minHeight: holdH } : undefined}
+             className="h-full rounded-[24px] bg-gradient-to-br from-[#F1F7EF] to-[#E6F2E8] border border-[#CFE6D5] p-5" aria-live="polite">
       <p className="text-[12.5px] font-bold uppercase tracking-wider text-[#2E7D4F]">
         ✨ {L3("Nhận định của AI", "AI insight", "L'avis de l'IA")}
         {r?.model && <span className="ml-1 normal-case tracking-normal font-medium text-[#6b7280]">· {r.model === "rule-based" ? L3("soạn từ dữ liệu", "from the data", "d'après les données") : r.model}</span>}

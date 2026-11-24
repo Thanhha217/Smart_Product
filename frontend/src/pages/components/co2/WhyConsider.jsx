@@ -5,7 +5,7 @@
 // category, and when there is no category data it says so instead of praising the product.
 // Without an AI key the text is written from the same data by the backend's rules and is
 // labelled as such — it is never passed off as an AI answer.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../../api/client";
 import { tri, useI18n } from "../../../i18n/LanguageContext";
 
@@ -14,14 +14,19 @@ export default function WhyConsider({ productId, need = null, compact = false, c
   const L3 = tri(lang);
   const [state, setState] = useState({ status: "loading" });
   const [nonce, setNonce] = useState(0);
+  // while the answer in a new language loads, keep the card's height: nothing below jumps
+  const box = useRef(null);
+  const [holdH, setHoldH] = useState(null);
 
   useEffect(() => {
     let alive = true;
     if (!productId) return undefined;
+    setHoldH(box.current ? box.current.offsetHeight : null);
     setState({ status: "loading" });
     api.explain({ product_id: productId, topic: "insight", lang, question: need || null })
       .then((r) => alive && setState({ status: r?.answer ? "ok" : "empty", r }))
-      .catch(() => alive && setState({ status: "error" }));
+      .catch(() => alive && setState({ status: "error" }))
+      .finally(() => alive && setHoldH(null));
     return () => { alive = false; };
   }, [productId, lang, need, nonce]);
 
@@ -30,7 +35,7 @@ export default function WhyConsider({ productId, need = null, compact = false, c
   const byRules = r?.model === "rule-based" || r?.model === "rule-based (mock)";
 
   return (
-    <section aria-live="polite"
+    <section aria-live="polite" ref={box} style={holdH ? { minHeight: holdH } : undefined}
              className={`rounded-2xl border border-[#CFE6D5] bg-gradient-to-br from-[#F3F8F1] to-[#E9F3EC] ${compact ? "p-3" : "p-4"} ${className}`}>
       <p className="text-[12.5px] font-bold uppercase tracking-wider text-[#2E7D4F]">
         ✨ {title || L3("Vì sao đáng cân nhắc?", "Why it is worth considering", "Pourquoi le considérer")}

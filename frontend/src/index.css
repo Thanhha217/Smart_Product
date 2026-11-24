@@ -180,3 +180,7 @@ input[type="range"].hide-thumb {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* A language switch changes text lengths and so page heights: keep the scrollbar's place so the
+   layout does not shift sideways when it appears or disappears. */
+html { scrollbar-gutter: stable; }
