@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
 import SearchResults from './pages/SearchResults';
 import AppShell from './pages/components/layout/AppShell';
-import Dashboard from './pages/Dashboard';
 import System from './pages/System';
 import Product from './pages/Product';
 import Assistant from './pages/Assistant';
@@ -35,7 +34,8 @@ export default function App() {
 
           {/* Every other page lives in the app shell: sidebar, top bar, mobile tab bar */}
           <Route element={<AppShell />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* The CO2 world IS the overview now; /dashboard is kept so old links still land. */}
+            <Route path="/dashboard" element={<Navigate to="/world" replace />} />
             <Route path="/system" element={<System />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/product/:productId" element={<Product />} />

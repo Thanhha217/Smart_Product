@@ -7,7 +7,7 @@ import LanguageSwitcher from "./components/header/LanguageSwitcher.jsx";
 import Icon from "./components/ui/Icon";
 import { Logo } from "./components/layout/AppShell";
 import { IconTile, MiniWorld, StatCard } from "./components/dashboard/DashBits";
-import { useCatalogue, useOverview } from "./Dashboard";
+import { useCatalogue, useOverview } from "./overviewData";
 import { explore } from "../i18n/explore";
 
 /** A stored number, or a dash while it is loading / missing (never a made-up default). */
@@ -121,7 +121,7 @@ export default function Home() {
             <Logo size="lg" />
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
-              <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-2 rounded-full bg-[#1F5D3A] text-white px-4 py-2 text-sm font-semibold hover:bg-[#173F28]">{D.dashCta} <Icon name="arrowRight" size={15} /></Link>
+              <Link to="/world" className="hidden sm:inline-flex items-center gap-2 rounded-full bg-[#1F5D3A] text-white px-4 py-2 text-sm font-semibold hover:bg-[#173F28]">{D.dashCta} <Icon name="arrowRight" size={15} /></Link>
             </div>
           </div>
 

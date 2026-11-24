@@ -19,11 +19,11 @@ export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T
   const delta = base.total !== null && sim?.total !== undefined ? sim.total - base.total : 0;
   const changed = Math.abs(delta) > 0.05;
   return (
-    <div className={`absolute z-20 left-3 w-[min(340px,calc(100%-24px))] flex flex-col-reverse items-start ${hideToggle ? "top-3" : "bottom-[72px] md:bottom-4"}`}>
+    <div className={`absolute z-20 left-3 w-[min(340px,calc(100%-24px))] flex flex-col-reverse items-start ${hideToggle ? "top-3 bottom-3" : "bottom-[72px] md:bottom-4"}`}>
       {!hideToggle && <button type="button" onClick={onToggle} aria-expanded={open}
               className="rounded-full bg-[#16324a] text-white px-4 py-2.5 text-sm font-bold shadow-lg hover:bg-[#1d4466]">{T.sim} {open ? "▾" : "▴"}</button>}
       {open && (
-        <div className="mb-2 w-full rounded-3xl bg-white shadow-2xl border border-emerald-100 p-4 space-y-3 max-h-[62vh] overflow-y-auto"
+        <div className="mb-2 w-full rounded-3xl bg-white shadow-2xl border border-emerald-100 p-4 space-y-3 max-h-full overflow-y-auto"
              data-explain="what_if" style={{ animation: "wx-sim-in .3s ease-out" }}>
           <style>{`@keyframes wx-sim-in{from{transform:translateY(16px)}to{transform:none}}`}</style>
           <p className="font-extrabold text-[#16324a]">{T.simTitle}</p>
@@ -56,9 +56,11 @@ export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T
               <p className="text-[13.5px] text-gray-500 mt-1">{T.scenarioNote(formatKg(base.total, lang))}</p>
               {!measured && <p className="text-[12.5px] text-amber-700 mt-1">⚠ {T.simOnShares}</p>}
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={onReset} disabled={!changed} className="flex-1 rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-40">{T.reset}</button>
-              <button type="button" onClick={onAsk} className="flex-1 rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-semibold">{T.askScenario}</button>
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={onAsk}
+                      className="w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-[13.5px] font-semibold leading-snug text-white hover:bg-emerald-700">{T.askScenario}</button>
+              <button type="button" onClick={onReset} disabled={!changed}
+                      className="w-full rounded-xl border border-[#D8D2C2] px-3 py-2.5 text-[13.5px] font-semibold leading-snug text-[#1E2B22] disabled:opacity-40">{T.reset}</button>
             </div>
           </>}
         </div>

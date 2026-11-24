@@ -59,7 +59,9 @@ export function hasFullInfo(product) {
   return Boolean(product?.price_vnd && product.co2e_kg !== null && product.image_url);
 }
 
-export default function ProductCard({ product: raw, reason, onAdded, showActions = true, highlight = false }) {
+/** @param to  where the card opens; defaults to the product page, but the CO2 world's product
+ *            picker sends it straight to that product's Overview instead. */
+export default function ProductCard({ product: raw, reason, onAdded, showActions = true, highlight = false, to = null }) {
   const { t, lang } = useI18n();
   const compare = useCompare();
   const [note, setNote] = useState(null);
@@ -79,7 +81,7 @@ export default function ProductCard({ product: raw, reason, onAdded, showActions
 
   return (
     <article className={`group flex flex-col overflow-hidden rounded-[22px] bg-white border ${highlight ? "border-[#2E7D4F] ring-2 ring-[#2E7D4F]/15" : "border-[#E6E2D6]"} shadow-[0_1px_2px_rgba(30,43,34,0.04)] hover:shadow-md transition-shadow`}>
-      <Link to={`/product/${product.product_id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2E7D4F]">
+      <Link to={to || `/product/${product.product_id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2E7D4F]">
         <div className="relative bg-[#F1F3EE]">
           <ProductThumb product={product} className="h-44" rounded="rounded-none" tone="soft" />
           {full && (
@@ -96,7 +98,7 @@ export default function ProductCard({ product: raw, reason, onAdded, showActions
       </Link>
       <div className="flex flex-1 flex-col px-4 pt-3 pb-4">
         <p className="text-[12.5px] uppercase tracking-[0.04em] text-[#6B7468] truncate">{product.platform || "—"}</p>
-        <Link to={`/product/${product.product_id}`} className="mt-1 focus-visible:outline-none focus-visible:underline">
+        <Link to={to || `/product/${product.product_id}`} className="mt-1 focus-visible:outline-none focus-visible:underline">
           <h3 className="text-[15.5px] font-semibold leading-snug text-[#1E2B22] line-clamp-2 group-hover:text-[#1F5D3A]">{product.name}</h3>
         </Link>
         {product.accessory && <p className="mt-1 text-[13px] text-[#92400e]">{t("common.accessoryCo2")}</p>}

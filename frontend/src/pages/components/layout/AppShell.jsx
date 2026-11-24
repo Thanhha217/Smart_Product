@@ -8,9 +8,10 @@ import { useShopText } from "../../../i18n/shop";
 import LanguageSwitcher from "../header/LanguageSwitcher";
 import Icon from "../ui/Icon";
 
+// "Overview" IS the CO2 world now: the map of one product is the first thing the app shows,
+// so there is no separate "CO2 world" entry any more.
 const NAV = [
-  { to: "/dashboard", icon: "dashboard", key: "nav.dashboard" },
-  { to: "/world", icon: "globe", key: "nav.world" },
+  { to: "/world", icon: "dashboard", key: "nav.dashboard" },
   { to: "/story", icon: "book", key: "nav.story" },
   { to: "/method", icon: "calculator", key: "nav.method" },
   { to: "/search", icon: "search", key: "nav.search" },
@@ -20,10 +21,10 @@ const NAV = [
   { to: "/system", icon: "server", key: "nav.system" },
 ];
 const TABS = [
-  { to: "/dashboard", icon: "dashboard", key: "tab.home" },
-  { to: "/world", icon: "globe", key: "tab.world" },
+  { to: "/world", icon: "dashboard", key: "tab.home" },
   { to: "/search", icon: "search", key: "tab.search" },
   { to: "/assistant", icon: "sparkles", key: "tab.ask" },
+  { to: "/compare", icon: "scale", key: "nav.compare" },
   { to: "/cart", icon: "cart", key: "tab.cart" },
 ];
 
@@ -55,7 +56,7 @@ function Sidebar({ t, onNavigate, drawer = false }) {
     <div className="flex h-full flex-col gap-6 px-4 py-6 text-white" style={{ background: "linear-gradient(180deg,#1F5D3A 0%,#173F28 100%)" }}>
       <div className="px-1"><Logo light /></div>
       {drawer && <div className="px-1"><LanguageSwitcher dark /></div>}
-      <nav className="flex flex-col gap-1" aria-label="main">
+      <nav className="flex flex-col gap-1 pb-2" aria-label="main">
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} onClick={onNavigate}
                    className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[16px] font-medium transition ${isActive ? "bg-[#3B8C55] text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}>
@@ -67,12 +68,6 @@ function Sidebar({ t, onNavigate, drawer = false }) {
           </NavLink>
         ))}
       </nav>
-      <Link to="/world" onClick={onNavigate}
-            className="mt-auto flex items-center gap-3 rounded-2xl bg-white/10 ring-1 ring-white/10 px-3.5 py-3 hover:bg-white/15 transition [@media(max-height:720px)]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-        <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/15 text-[#bde8a5] shrink-0"><Icon name="globe" size={19} /></span>
-        <span className="flex-1 text-[15px] font-semibold leading-snug">{st("shell.promoShort")}</span>
-        <Icon name="arrowRight" size={16} className="text-white/70" />
-      </Link>
     </div>
   );
 }
