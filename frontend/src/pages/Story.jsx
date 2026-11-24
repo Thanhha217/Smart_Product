@@ -7,7 +7,7 @@ import { api } from "../api/client";
 import { addToCart } from "../lib/cart";
 import { formatKg, formatNum, greenColor } from "../lib/format";
 import Flipbook from "./components/story/Flipbook";
-import ProductPicker from "./components/story/ProductPicker";
+import BookShelf from "./components/story/BookShelf";
 import {
   CityScene, CoverArt, FactoryScene, GridScene, JourneyMap, RecycleScene, ShipScene, StoryStyles, TreesScene,
 } from "./components/story/Illustrations";
@@ -363,15 +363,13 @@ function StoryBook({ productId }) {
 }
 
 function StoryLanding() {
-  const { lang } = useI18n();
-  const T = useMemo(() => txt(lang), [lang]);
-  return <ProductPicker basePath="/story" icon="📖🌏" title={T.landingTitle} lead={T.landingLead} />;
+  return <BookShelf />;
 }
 
 export default function Story() {
   const { productId } = useParams();
   return (
-    <main className="min-h-screen px-3 md:px-6 py-6 overflow-x-hidden" style={{ background: "radial-gradient(circle at 20% 0%, #e6f6ee, #f3efe4 60%)" }}>
+    <main className="min-h-screen px-3 md:px-6 py-6 overflow-x-hidden" style={productId ? { background: "radial-gradient(circle at 20% 0%, #e6f6ee, #f3efe4 60%)" } : undefined}>
       <StoryStyles />
       <div className="max-w-6xl mx-auto min-w-0">{productId ? <StoryBook productId={productId} /> : <StoryLanding />}</div>
     </main>

@@ -462,10 +462,6 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Bubble x={2150} y={880} value={stageValue("use")} note={stageNote} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} />
       <Bubble x={1450} y={1120} value={stageValue("end_of_life")} note={stageNote} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} />
 
-      <g transform="translate(70 1300)" pointerEvents="none">
-        <text x="0" y="0" fontSize="40" fontWeight="800" fill="#16324a">🍃 {labels.loop?.circular || "Circular lifecycle"}</text>
-        <text x="62" y="40" fontSize="26" fontWeight="600" fill="#2d5a3a">{labels.loop?.circularSub || "Lower CO₂, less e-waste"}</text>
-      </g>
       <StageBadge x={330} y={445} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" />
       <StageBadge x={tBubble[0]} y={tBubble[1] - r(st.transport) - 46} n={2} label={labels.loop?.move || "Transport"} topic="transport" />
       <StageBadge x={1910} y={775} n={3} label={labels.loop?.use || "Use"} topic="use" />

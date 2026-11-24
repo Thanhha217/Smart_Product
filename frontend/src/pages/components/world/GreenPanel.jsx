@@ -27,7 +27,7 @@ function Option({ icon, title, sub, onClick, open, children, to }) {
   );
 }
 
-function Insight({ productId, lang }) {
+export function InsightCard({ productId, lang, stats, kg, category }) {
   const L3 = tri(lang);
   const [state, setState] = useState({ status: "loading" });
   const [nonce, setNonce] = useState(0);
@@ -41,7 +41,7 @@ function Insight({ productId, lang }) {
   }, [productId, lang, nonce]);
   const r = state.r;
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-[#F3F8F1] to-[#E6F3EA] border border-[#CFE6D5] p-3" aria-live="polite">
+    <section className="h-full rounded-[24px] bg-gradient-to-br from-[#F1F7EF] to-[#E6F2E8] border border-[#CFE6D5] p-5" aria-live="polite">
       <p className="text-[12.5px] font-bold uppercase tracking-wider text-[#2E7D4F]">
         ✨ {L3("Nhận định của AI", "AI insight", "L'avis de l'IA")}
         {r?.model && <span className="ml-1 normal-case tracking-normal font-medium text-[#6b7280]">· {r.model === "rule-based" ? L3("soạn từ dữ liệu", "from the data", "d'après les données") : r.model}</span>}
@@ -59,20 +59,31 @@ function Insight({ productId, lang }) {
       )}
       {state.status === "ok" && (
         <>
-          <p className="mt-1 text-[15.5px] font-bold text-[#16324a]">{r.title}</p>
-          <p className="mt-0.5 text-[14.5px] leading-relaxed text-[#1f2937]">{r.answer}</p>
-          {r.bullets?.length > 0 && (
-            <ul className="mt-1.5 space-y-1">
-              {r.bullets.slice(0, 1).map((b, i) => <li key={i} className="text-[13.5px] text-[#374151] flex gap-1.5"><span className="text-[#2E7D4F]">✓</span><span>{b}</span></li>)}
-            </ul>
-          )}
+          <p className="mt-2 font-display text-[24px] font-semibold leading-tight text-[#1E2B22]">{r.title}</p>
+          <p className="mt-1.5 text-[15.5px] leading-relaxed text-[#33403A]">{r.answer}</p>
+          {typeof kg === "number" && typeof stats?.median_kg === "number" && (() => {
+            const max = Math.max(kg, stats.median_kg) * 1.05;
+            const row = (label, v, cls) => (
+              <li className="grid grid-cols-[120px_1fr_72px] items-center gap-3 text-[14px]">
+                <span className="text-[#33403A] truncate">{label}</span>
+                <span className="h-2.5 rounded-full bg-white/80"><span className={`block h-2.5 rounded-full ${cls}`} style={{ width: `${(v / max) * 100}%` }} /></span>
+                <b className="text-right text-[#1E2B22]">{formatKg(v, lang)} kg</b>
+              </li>
+            );
+            return (
+              <ul className="mt-4 space-y-2">
+                {row(L3("Sản phẩm này", `This ${category || "product"}`, "Ce produit"), kg, "bg-[#2E7D4F]")}
+                {row(L3("Trung vị của loại", "Category median", "Médiane de la catégorie"), stats.median_kg, "bg-[#B9C4BC]")}
+              </ul>
+            );
+          })()}
         </>
       )}
     </section>
   );
 }
 
-export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, className = "" }) {
+export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, className = "", lifestyleOnly = false }) {
   const L3 = tri(lang);
   const [openLonger, setOpenLonger] = useState(false);
   const p = d.product;
@@ -85,10 +96,10 @@ export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, classN
   const perYear = (yrs) => (total !== null && yrs > 0 ? formatKg(total / yrs, lang) : null);
   const searchTo = `/search?${new URLSearchParams({ ...(p.category ? { category: p.category } : {}), sort: "co2_asc" })}`;
   return (
-    <aside className={`rounded-3xl bg-white/95 backdrop-blur shadow-xl border border-white p-3.5 space-y-2.5 overflow-y-auto ${className}`}
+    <aside className={`rounded-[24px] bg-white border border-[#E8E4D8] p-5 space-y-3 ${className}`}
            aria-label={L3("Sống xanh", "Green lifestyle", "Mode de vie sobre")}>
       <div>
-        <h2 className="text-[20px] font-extrabold text-[#1F5D3A]">🍃 {L3("Sống xanh", "Green Lifestyle", "Vivre plus sobre")}</h2>
+        <h2 className="font-display text-[26px] font-semibold text-[#1F5D3A]">🍃 {L3("Sống xanh", "Green Lifestyle", "Vivre plus sobre")}</h2>
         <p className="text-[14px] text-[#4b5563]">{L3("Lựa chọn nhỏ, tương lai ít carbon.", "Small choices, a lower-carbon future.", "Petits choix, avenir bas carbone.")}</p>
       </div>
       <div className="space-y-2">
@@ -113,14 +124,14 @@ export default function GreenPanel({ d, base, sc, setSc, lang, onRecycle, classN
         <Option icon="♻️" title={L3("Mang đi tái chế", "Return for recycling", "Rapporter au recyclage")}
                 sub={L3("Vật liệu quay lại nhà máy", "Materials go back to the factory", "Les matériaux retournent à l'usine")} onClick={onRecycle} />
       </div>
-      <Insight productId={p.product_id} lang={lang} />
-      <div className="flex items-center gap-3 rounded-2xl border border-[#DCEBD9] p-3">
+      {!lifestyleOnly && <InsightCard productId={p.product_id} lang={lang} />}
+      {!lifestyleOnly && <div className="flex items-center gap-3 rounded-2xl border border-[#DCEBD9] p-3">
         <span className="text-[30px] leading-none" aria-hidden="true">♻️</span>
         <p className="text-[13.5px] text-[#374151]">
           <b className="block text-[15px] text-[#1F5D3A]">{L3("Vòng tuần hoàn", "The circular loop", "La boucle circulaire")}</b>
           {L3("Sản xuất → dùng → thu hồi → tái chế → quay lại sản xuất.", "Production → use → return → recycle → back to production.", "Production → usage → retour → recyclage → retour à la production.")}
         </p>
-      </div>
+      </div>}
     </aside>
   );
 }

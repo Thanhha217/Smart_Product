@@ -14,14 +14,14 @@ function Seg({ value, options, onChange, disabled }) {
   );
 }
 
-export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T, onAsk, onReset, origins, measured = false }) {
+export default function SimPanel({ open, onToggle, sc, setSc, base, sim, lang, T, onAsk, onReset, origins, measured = false, hideToggle = false }) {
   const total = useTween(sim?.total ?? null);
   const delta = base.total !== null && sim?.total !== undefined ? sim.total - base.total : 0;
   const changed = Math.abs(delta) > 0.05;
   return (
-    <div className="absolute z-20 left-3 bottom-[72px] md:bottom-4 w-[min(340px,calc(100%-24px))] flex flex-col-reverse items-start">
-      <button type="button" onClick={onToggle} aria-expanded={open}
-              className="rounded-full bg-[#16324a] text-white px-4 py-2.5 text-sm font-bold shadow-lg hover:bg-[#1d4466]">{T.sim} {open ? "▾" : "▴"}</button>
+    <div className={`absolute z-20 left-3 w-[min(340px,calc(100%-24px))] flex flex-col-reverse items-start ${hideToggle ? "top-3" : "bottom-[72px] md:bottom-4"}`}>
+      {!hideToggle && <button type="button" onClick={onToggle} aria-expanded={open}
+              className="rounded-full bg-[#16324a] text-white px-4 py-2.5 text-sm font-bold shadow-lg hover:bg-[#1d4466]">{T.sim} {open ? "▾" : "▴"}</button>}
       {open && (
         <div className="mb-2 w-full rounded-3xl bg-white shadow-2xl border border-emerald-100 p-4 space-y-3 max-h-[62vh] overflow-y-auto"
              data-explain="what_if" style={{ animation: "wx-sim-in .3s ease-out" }}>
