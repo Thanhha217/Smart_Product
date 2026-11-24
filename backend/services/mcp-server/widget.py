@@ -75,7 +75,7 @@ PRODUCTS_HTML = r"""<!doctype html>
     if (data.ai_page_url) links.push("<a href='" + encodeURI(data.ai_page_url) + "' target='_blank' rel='noopener'>Trang phân tích AI</a>");
     if (data.compare_url) links.push("<a href='" + encodeURI(data.compare_url) + "' target='_blank' rel='noopener'>Bảng so sánh</a>");
     if (data.method_url) links.push("<a href='" + encodeURI(data.method_url) + "' target='_blank' rel='noopener'>Cách tính CO₂</a>");
-    html += "<div class='foot'>Số CO₂ lấy từ cơ sở dữ liệu Smart Product Finder. " + links.join(" · ") + "</div>";
+    html += "<div class='foot'>Số CO₂ lấy từ cơ sở dữ liệu CarbonSense AI. " + links.join(" · ") + "</div>";
     root.innerHTML = html;
   }
 

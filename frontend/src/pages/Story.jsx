@@ -296,7 +296,7 @@ function buildPages({ d, T, lang, go, navigate }) {
       <ul className="space-y-2 text-sm text-gray-700 list-disc pl-5">{T.backBody.map((b) => <li key={b}>{b}</li>)}</ul>
       <div className="mt-auto pt-6 text-center">
         <p className="text-2xl">🌏</p>
-        <p className="font-black text-[#1f3b4d]">Smart Product Finder</p>
+        <p className="font-black text-[#1f3b4d]">CarbonSense AI</p>
         <Link to="/method" className="text-sm text-sky-700 underline">{tri(lang)("Phương pháp tính CO₂ đầy đủ", "Full CO₂ method", "Méthode CO₂ complète")}</Link>
       </div>
     </div>,

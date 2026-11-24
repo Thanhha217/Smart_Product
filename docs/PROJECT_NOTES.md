@@ -1,4 +1,4 @@
-# PROJECT NOTES — Smart Product Finder (đọc file này trước, đỡ phải đọc lại cả repo)
+# PROJECT NOTES — CarbonSense AI (đọc file này trước, đỡ phải đọc lại cả repo)
 
 > Cập nhật 23/11/2026, nhánh `feature/co2-submission-demo`. Ghi ngắn, đủ để định vị file. Chi tiết nằm ở link.
 >

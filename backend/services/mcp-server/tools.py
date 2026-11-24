@@ -1,4 +1,4 @@
-"""Tool logic of the Smart Product Finder MCP server.
+"""Tool logic of the CarbonSense AI MCP server.
 
 Every tool only calls the gateway (docs/demo/api-contract.md); nothing here
 computes CO2, so the numbers ChatGPT shows are the numbers stored in the
@@ -92,11 +92,11 @@ class Api:
         try:
             response = await self.client.request(method, url, **kwargs)
         except httpx.HTTPError as error:
-            raise GatewayError(f"Không gọi được hệ thống Smart Product Finder ({error.__class__.__name__}).") from error
+            raise GatewayError(f"Không gọi được hệ thống CarbonSense AI ({error.__class__.__name__}).") from error
         if response.status_code == 404:
             raise GatewayError("Không tìm thấy dữ liệu (404).")
         if response.status_code >= 400:
-            raise GatewayError(f"Hệ thống Smart Product Finder trả lỗi HTTP {response.status_code}.")
+            raise GatewayError(f"Hệ thống CarbonSense AI trả lỗi HTTP {response.status_code}.")
         try:
             return response.json()
         except ValueError as error:
@@ -327,7 +327,7 @@ async def explain_co2_method(api: Api) -> ToolOutput:
                 f"Điểm xanh: {METHOD_SUMMARY['green_score']}\nXếp hạng: {METHOD_SUMMARY['ranking']}\n"
                 f"Kết quả: {METHOD_SUMMARY['results']}\nChi tiết: {structured['method_url']}")
     else:
-        text = f"Phương pháp tính CO₂ của Smart Product Finder (chi tiết và ví dụ tính tay): {structured['method_url']}"
+        text = f"Phương pháp tính CO₂ của CarbonSense AI (chi tiết và ví dụ tính tay): {structured['method_url']}"
     return ToolOutput(structured, text)
 
 

@@ -1,4 +1,4 @@
-# Smart Product Finder — Trả lời 4 yêu cầu của giáo viên hướng dẫn
+# CarbonSense AI — Trả lời 4 yêu cầu của giáo viên hướng dẫn
 
 > Nhánh: `new-research` (tách từ `origin/paper`, ngày 2026-09-29)
 > Phạm vi: rà soát toàn bộ các nhánh, phân tích hiện trạng, đề xuất giải pháp và code đi kèm cho từng yêu cầu.

@@ -1,5 +1,5 @@
 {
-  "app.title": "Smart Product Finder",
+  "app.title": "CarbonSense AI",
   "home.tagline": "Comparez prix et CO₂e dans les boutiques vietnamiennes",
   "lang.switchLabel": "Changer de langue",
   "search.placeholder": "Rechercher...",
@@ -177,7 +177,7 @@
   "chart.co2_bar": "CO₂ des candidats",
   "chart.price_vs_co2": "Prix et CO₂",
   "chart.lifecycle_stack": "CO₂ par étape du cycle de vie",
-  "chart.sourceNote": "Unité kg CO₂e · Source : base de données Smart Product Finder (colonne co2e_kg).",
+  "chart.sourceNote": "Unité kg CO₂e · Source : base de données CarbonSense AI (colonne co2e_kg).",
   "stats.title": "Statistiques : {category}",
   "stats.greenerThan": "{name} est plus vert que {pct} % des produits de sa catégorie.",
   "stats.n": "Produits",
