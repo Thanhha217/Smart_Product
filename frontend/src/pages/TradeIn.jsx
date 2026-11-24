@@ -13,7 +13,6 @@ import { formatKg, formatNum } from "../lib/format";
 import { useRecent } from "../lib/recent";
 import { shortName } from "../lib/shortName";
 import { CAT_OF_SLUG, defaultSecondLife, LIFETIME, PRODUCTION_SHARE, REUSE_EMBODIED, tradeIn } from "../lib/tradeIn";
-import AskAiDock from "./components/find/AskAiDock";
 
 const LANG_IDX = { vi: 0, en: 1, fr: 2 };
 /** "277,2" / "277.2" / "1.234,5" / "1,234.5" -> number: the last separator is the decimal mark. */
@@ -62,7 +61,6 @@ export default function TradeIn() {
   const st = useShopText();
   const recent = useRecent();
   const compare = useCompare();
-  const [askOpen, setAskOpen] = useState(false);
 
   // ---- data: category medians, and devices to upgrade to
   const [cats, setCats] = useState([]);
@@ -342,7 +340,6 @@ export default function TradeIn() {
         </section>
       )}
 
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} />
     </main>
   );
 }

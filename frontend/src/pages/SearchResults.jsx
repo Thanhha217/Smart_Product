@@ -11,7 +11,7 @@ import { removeFromQuery } from "../lib/queryEdit";
 import { clearFilters, PAGE_SIZE, parseSearchParams, removeFilter, toApiParams, toSearchParams, updateState } from "../lib/searchState";
 import FindCard from "./components/find/FindCard";
 import CompareBar from "./components/find/CompareBar";
-import AskAiDock from "./components/find/AskAiDock";
+import { openAskAi } from "./components/find/AskAiDock";
 import { EmptyState, ErrorState, InlineSpinner, SampleDataNote } from "./components/common/States";
 import Icon from "./components/ui/Icon";
 
@@ -95,7 +95,6 @@ export default function SearchResults() {
   const { status, data, retry } = useSearch(state);
   const categories = useCategories();
   const [draft, setDraft] = useState(state.q);
-  const [askOpen, setAskOpen] = useState(false);
   const [compareNote, setCompareNote] = useState(null);
   const topRef = useRef(null);
   useEffect(() => setDraft(state.q), [state.q]);
@@ -244,7 +243,7 @@ export default function SearchResults() {
                       className="inline-flex items-center gap-1 rounded-full bg-[#E4F1E6] px-3 py-1 text-[13.5px] text-[#1F5D3A] hover:bg-[#D5EAD9]"
                       aria-label={st("search.removeFilter", { what: c.label })}>{c.label}<Icon name="close" size={12} /></button>)}
           {state.q && (
-            <button type="button" onClick={() => setAskOpen(true)}
+            <button type="button" onClick={() => openAskAi(state.q)}
                     className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#1B4332] bg-white px-3.5 py-1.5 text-[14px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
               <Icon name="sparkles" size={15} />{L3("Hỏi AI về câu này", "Ask the AI about this", "Demander à l'IA")}
             </button>
@@ -266,7 +265,7 @@ export default function SearchResults() {
         )}
         {(status === "success" || status === "updating") && data?.unsupported && (
           <EmptyState icon="info" title={st("search.unsupportedTitle", { what: st(`unsup.${data.unsupported}`) })} body={st("search.unsupportedBody")}>
-            <button type="button" className="btn-secondary" onClick={() => setAskOpen(true)}>{L3("Hỏi AI", "Ask AI", "Demander à l'IA")}</button>
+            <button type="button" className="btn-secondary" onClick={() => openAskAi(state.q)}>{L3("Hỏi AI", "Ask AI", "Demander à l'IA")}</button>
           </EmptyState>
         )}
         {(status === "success" || status === "updating") && !data?.unsupported && items.length === 0 && (
@@ -291,7 +290,6 @@ export default function SearchResults() {
       </section>
 
       <CompareBar note={compareNote} />
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} initial={state.q} />
     </main>
   );
 }

@@ -17,7 +17,6 @@ import { shortName } from "../lib/shortName";
 import Co2Explainer from "./components/co2/Co2Explainer";
 import MethodLadder, { FBadge } from "./components/co2/MethodLadder";
 import LifecycleJourney from "./components/co2/LifecycleJourney";
-import AskAiDock from "./components/find/AskAiDock";
 import DeviceIcon from "./components/ui/DeviceIcon";
 import ProductThumb from "./components/common/ProductThumb";
 import { ErrorState, InlineSpinner } from "./components/common/States";
@@ -73,7 +72,6 @@ export default function Method() {
   const [ownOpen, setOwnOpen] = useState(false);
   const [own, setOwn] = useState({ pub: "", refs: "", med: "" });
   const [custom, setCustom] = useState(null);
-  const [askOpen, setAskOpen] = useState(false);
 
   // the example choices: what the visitor just looked at, plus the greenest product of each category
   useEffect(() => {
@@ -329,7 +327,6 @@ export default function Method() {
         <Link to="/search" className="btn-secondary">{X.linkSearch}</Link>
       </p>
 
-      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} />
     </main>
   );
 }
