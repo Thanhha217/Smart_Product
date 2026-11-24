@@ -79,6 +79,17 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Thu cũ đổi mới `/trade-in` (2026-11-24, bản thiết kế "Thu cũ đổi mới.pdf")
+
+- Menu: mục "Thu cũ đổi mới" giữa So sánh và Giỏ; thanh trên "Tìm sản phẩm › Thu cũ đổi mới". `pages/TradeIn.jsx`, phép tính `lib/tradeIn.js` (có test).
+- Máy cũ: trung vị loại (`/api/categories`), sản phẩm vừa xem, hoặc tự nhập; Bán lại / Tái chế; "người mua sau còn dùng thêm R năm"
+  (mặc định ⌈L/2⌉, tối đa L). Máy mới: danh sách so sánh + vừa xem + xanh nhất mỗi loại, hoặc tự nhập (tên, kg, loại).
+- Công thức (cùng nguyên tắc `docs/research/co2-formula.md` §3.3–3.4, không lấy số trong bản vẽ vì không khớp tham số dự án):
+  refurbished = N − (1 − 0,2) × P_mới (P_mới = chặng sản xuất của máy mới từ API); bán lại = N − (1 − 0,2) × P_cũ × R ÷ L
+  (P_cũ = kg × tỷ lệ sản xuất của loại); tái chế không trừ; cả hai = trừ cả hai (có thể âm: "tránh được nhiều hơn phát sinh").
+  0,2 = `REFURBISHED_EMBODIED`, tỷ lệ = `stage_shares.json`, L = `CategoryParams`; test đối chiếu thẳng với các file đó.
+- Ví dụ: MacBook Air 13 (145 kg, sản xuất 108,75) + laptop cũ 277,2 kg bán lại 2/4 năm → refurbished 58; đổi máy 61,84; cả hai −25,16.
+
 ### So sánh `/compare` (2026-11-24, bản thiết kế "Khám phá hợp nhất (1).pdf")
 
 - Thanh trên "So sánh › Bảng so sánh". Đầu trang: "So sánh n/4", chip gợi ý "+ món" (vừa xem + sản phẩm liên quan của món đầu;
