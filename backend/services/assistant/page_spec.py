@@ -51,6 +51,8 @@ SOURCE_LIMITS = {
 
 _PLACEHOLDER = re.compile(r"\{\{\s*([a-z0-9_]+)\.([a-z0-9_]+)\s*\}\}")
 _SENTENCE = re.compile(r"(?<=[.!?…])\s+")
+_SCORE_SCALE = re.compile(r"\}\}\s*/\s*5(?![0-9])")
+_CO2 = re.compile(r"\bCO2(e)?\b", re.IGNORECASE)
 
 
 # ------------------------------------------------------------------ formatting
@@ -102,6 +104,9 @@ def placeholder_values(cards: dict[str, dict], alias_map: dict[str, str], saving
     if savings:
         values["savings.lifecycle_kg"] = fmt_kg(savings.get("lifecycle_kg_saved"), lang)
         values["savings.trees"] = fmt_number(savings.get("trees_year"), lang, 1)
+        # the model also sees the savings object, whose keys differ: accept them as names for the same values
+        values["savings.lifecycle_kg_saved"] = values["savings.lifecycle_kg"]
+        values["savings.trees_year"] = values["savings.trees"]
         values["savings.baseline_kg"] = fmt_kg(savings.get("baseline_kg"), lang)
         for h in savings.get("horizons", []):
             values[f"savings.kg_{h['months']}m"] = fmt_kg(h.get("kg"), lang)
@@ -136,14 +141,18 @@ def fill_text(text: str, values: dict[str, str], allowed_literals: Iterable[str]
                 return ""
             return values[key]
 
-        bare = _PLACEHOLDER.sub(" ", sentence)
-        low = bare.lower()
+        # "{{p1.green_score}}/5" is the score scale the prompt asks for, not a figure the model made up
+        bare = _PLACEHOLDER.sub(" ", _SCORE_SCALE.sub("}}", sentence))
+        low = _CO2.sub(" ", bare).lower()   # the "2" of "CO2" / "CO2e" is chemistry, not a figure
         for lit in literals:
             low = low.replace(lit.lower(), " ")
         # the percentage value already ends in "%": "{{stats.greener_than_pct}}%" must not print "49%%"
         filled = re.sub(r"%\s*%", "%", _PLACEHOLDER.sub(sub, sentence))
+        filled = _CO2.sub(lambda m: "CO₂" + (m.group(1) or ""), filled)
         if unknown or re.search(r"[0-9]", low):
             failures += 1
+            print(f"assistant: dropped a sentence ({'unknown placeholder' if unknown else 'hand-written number'}): "
+                  f"{sentence[:160]!r}", flush=True)
             continue
         kept.append(filled)
     return " ".join(kept), failures
