@@ -365,14 +365,31 @@ function Pill({ x, y, text, topic }) {
 }
 
 /** Numbered stage of the loop: (1) Manufacture, (2) Transport, (3) Use, (4) Return & Recycle. */
-function StageBadge({ x, y, n, label, topic }) {
+function StageBadge({ x, y, n, label, topic, tip }) {
   const w = label.length * 15 + 96;
+  // One capsule, not two pills: the mint shell holds the dark stage badge on the left and the
+  // green tip on the right. `x` stays the centre of the dark badge, so the shell grows rightwards.
+  const tw = tip ? tip.length * 13 + 72 : 0;
   return (
-    <g data-explain={topic} transform={`translate(${x} ${y})`}>
-      <rect x={-w / 2} y="-30" width={w} height="60" rx="30" fill="#1F5D3A" filter="url(#wx-shadow)" />
-      <circle cx={-w / 2 + 32} cy="0" r="21" fill="#ffffff" />
-      <text x={-w / 2 + 32} y="9" textAnchor="middle" fontSize="25" fontWeight="800" fill="#1F5D3A">{n}</text>
-      <text x={-w / 2 + 64} y="9" fontSize="27" fontWeight="700" fill="#ffffff">{label}</text>
+    <g transform={`translate(${x} ${y})`}>
+      {tip && (
+        <rect x={-w / 2 - 5} y="-35" width={w + 12 + tw + 10} height="70" rx="35"
+              fill="#E9F4EA" stroke="#CDE5D3" strokeWidth="2.5" filter="url(#wx-shadow)" />
+      )}
+      <g data-explain={topic}>
+        <rect x={-w / 2} y="-30" width={w} height="60" rx="30" fill="#1F5D3A"
+              filter={tip ? undefined : "url(#wx-shadow)"} />
+        <circle cx={-w / 2 + 32} cy="0" r="21" fill="#ffffff" />
+        <text x={-w / 2 + 32} y="9" textAnchor="middle" fontSize="25" fontWeight="800" fill="#1F5D3A">{n}</text>
+        <text x={-w / 2 + 64} y="9" fontSize="27" fontWeight="700" fill="#ffffff">{label}</text>
+      </g>
+      {tip && (
+        <g transform={`translate(${w / 2 + 12} 0)`} pointerEvents="none">
+          <path d="M6 9c0-12 9-20 21-20 0 12-9 20-21 20z" fill="#3FA06A" />
+          <path d="M7 9c4-7 10-11 17-13" fill="none" stroke="#E9F4EA" strokeWidth="2.2" strokeLinecap="round" />
+          <text x="38" y="9" fontSize="25" fontWeight="700" fill="#1C5438">{tip}</text>
+        </g>
+      )}
     </g>
   );
 }
@@ -426,7 +443,7 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Conveyor />
       <Art art={art} name="factory" topic="factory"><Factory originLabel={labels.factory} /></Art>
       {art?.factory && (
-        <g data-explain="factory" transform="translate(540 470)"><rect x="-130" y="-30" width="260" height="44" rx="22" fill="#16324a" opacity=".92" />
+        <g data-explain="factory" transform="translate(540 560)"><rect x="-130" y="-30" width="260" height="44" rx="22" fill="#16324a" opacity=".92" />
           <text textAnchor="middle" y="0" fontSize="21" fontWeight="700" fill="#fff">🏭 {labels.factory}</text></g>
       )}
       <g className="wx-fade" style={{ opacity: local ? 0.35 : 1 }}><Art art={art} name="port_origin" topic="transport"><Port x={700} y={790} label={labels.originPort} /></Art></g>
@@ -462,10 +479,10 @@ export default function WorldScene({ svgRef, category, sc, sim, maxStage, focus,
       <Bubble x={2150} y={880} value={stageValue("use")} note={stageNote} r={r(st.use)} label={labels.stages.use} topic="use" focused={focus === "use"} />
       <Bubble x={1450} y={1120} value={stageValue("end_of_life")} note={stageNote} r={r(st.end_of_life)} label={labels.stages.end_of_life} topic="end_of_life" focused={focus === "end_of_life"} />
 
-      <StageBadge x={330} y={445} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" />
+      <StageBadge x={330} y={428} n={1} label={labels.loop?.make || "Manufacture"} topic="factory" tip={labels.tips?.make} />
       <StageBadge x={tBubble[0]} y={tBubble[1] - r(st.transport) - 46} n={2} label={labels.loop?.move || "Transport"} topic="transport" />
-      <StageBadge x={1910} y={775} n={3} label={labels.loop?.use || "Use"} topic="use" />
-      <StageBadge x={1200} y={1110} n={4} label={labels.loop?.back || "Return & Recycle"} topic="end_of_life" />
+      <StageBadge x={1770} y={650} n={3} label={labels.loop?.use || "Use"} topic="use" tip={labels.tips?.use} />
+      <StageBadge x={1048} y={1010} n={4} label={labels.loop?.back || "Return & Recycle"} topic="end_of_life" tip={labels.tips?.back} />
     </svg>
   );
 }

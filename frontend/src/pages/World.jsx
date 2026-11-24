@@ -2,14 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { api } from "../api/client";
-import { formatKg, formatNum, greenColor } from "../lib/format";
+import { formatKg, formatNum } from "../lib/format";
 import { useRecent } from "../lib/recent";
+import { useCatalogue } from "./overviewData";
 import { lifecycle as readLifecycle } from "../lib/co2Formula";
 import { ErrorState } from "./components/common/States";
 import { explore } from "../i18n/explore";
-import { methodText } from "./components/story/storyText";
 import WorldExplore from "./components/world/explore/WorldExplore";
 import WorldScene, { WORLD_H, WORLD_W, legPath, stageTarget } from "./components/world/WorldScene";
+import WorldStats, { GoFurther } from "./components/world/WorldStats";
+import ProductPicker from "./components/world/ProductPicker";
 import ExplainPanel from "./components/world/ExplainPanel";
 import SimPanel from "./components/world/SimPanel";
 import GreenPanel, { InsightCard } from "./components/world/GreenPanel";
@@ -52,13 +54,6 @@ function useMapHeight(scene) {
 }
 
 
-function Chip({ topic, children, className = "", onClick, style }) {
-  return (
-    <button type="button" data-explain={topic} onClick={onClick} style={style}
-            className={`rounded-full px-3.5 py-1.5 text-[15px] font-semibold border transition hover:shadow ${className}`}>{children}</button>
-  );
-}
-
 function WorldView({ productId }) {
   const { t, lang } = useI18n();
   const T = useMemo(() => worldText(lang), [lang]);
@@ -84,6 +79,7 @@ function WorldView({ productId }) {
   const [topic, setTopic] = useState(null);
   const [askMode, setAskMode] = useState(params.get("help") === "1");
   const [simOpen, setSimOpen] = useState(params.get("sim") === "1");
+  const [greenOpen, setGreenOpen] = useState(false);
   const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -103,6 +99,7 @@ function WorldView({ productId }) {
   const wrap = useRef(null);
   const height = useMapHeight(scene);
   const camera = useCamera({ width: WORLD_W, height: WORLD_H, minW: 420, margin: 1600 });
+  const catalogue = useCatalogue();
 
   useEffect(() => { loadArt().then(setArt); }, []);
   const [nonce, setNonce] = useState(0);
@@ -275,11 +272,12 @@ function WorldView({ productId }) {
   );
 
   const p = d.product;
-  const originName = ORIGINS[sc.origin]?.[lang] ?? ORIGINS[sc.origin]?.en;
   const L3 = tri(lang);
   const labels = {
     aria: T.aria, stages: T.stages, originLand: T.originLand, originPort: T.originPort, vnPort: T.vnPort,
-    factory: `${T.factoryAt(originName)} ${sc.origin === base.origin ? T.assumed : ""}`.trim(),
+    // just the place, not the country: the origin is an assumption the visitor sets in the
+    // What-if panel, and spelling it out here crowded the Manufacture badge next to it
+    factory: L3("Nhà máy", "Factory", "Usine"),
     coal: L3("Nhiệt điện than", "Coal power", "Centrale à charbon"),
     vietnam: L3("Việt Nam", "Vietnam", "Vietnam"),
     doors: {
@@ -289,6 +287,12 @@ function WorldView({ productId }) {
       use: L3("Ngôi nhà", "Home", "Maison"),
       grid: L3("Nhà máy điện", "Power plant", "Centrale"),
       end_of_life: L3("Trạm tái chế", "Recycling", "Recyclage"),
+    },
+    // the green tip that rides beside each stage badge on the map (design page 1)
+    tips: {
+      make: L3("Làm ra thiết bị ít CO₂", "Produce low-CO₂ devices", "Produire des appareils sobres"),
+      use: L3("Tiết kiệm điện, dùng lâu hơn", "Save power, use it longer", "Économiser, garder plus longtemps"),
+      back: L3("Tái chế vật liệu để dùng lại", "Recycle materials for reuse", "Recycler les matériaux"),
     },
     loop: {
       make: L3("Sản xuất", "Manufacture", "Fabrication"),
@@ -320,34 +324,22 @@ function WorldView({ productId }) {
   const toolBtn = "grid place-items-center w-10 h-10 rounded-full border border-[#E3DFD3] bg-white text-[#1E2B22] hover:border-[#2E7D4F]";
   return (
     <main className="mx-auto max-w-[1320px] px-3 sm:px-5 py-4 space-y-4">
-      {/* header card (design page 3) */}
+      {/* header: eyebrow, product name, "Change product", and the five tiles (design page 1) */}
       <section ref={hudRef} className="rounded-[24px] bg-white border border-[#E8E4D8] px-5 sm:px-6 py-5">
-        <p className="flex items-center gap-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#3FA0B8]" aria-hidden="true" />
-          {L3("Thế giới CO₂ của sản phẩm", "The product's CO₂ world", "Le monde CO₂ du produit")}
-        </p>
-        <h1 className="mt-1 font-display text-[28px] sm:text-[34px] font-semibold leading-tight text-[#1E2B22]">{p.name}</h1>
-        <p className="mt-1 text-[14.5px] text-[#55604F]">
-          {methodText(d.formula?.method, lang)} · <Link to={`/story/${p.product_id}`} className="text-[#1F5D3A] font-semibold underline">{T.book}</Link>
-          {" · "}<Link to={`/method?product=${p.product_id}`} className="text-[#1F5D3A] font-semibold underline">{T.method}</Link>
-          {" · "}<Link to="/world?explore=1" className="text-[#1F5D3A] font-semibold underline">{L3("Sản phẩm khác", "Other products", "Autres produits")}</Link>
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Chip topic="co2e_total" onClick={() => open("co2e_total")} className="bg-[#1F6B43] border-[#1F6B43] text-white !text-[17px] !px-4 !py-2">
-            {p.co2e_kg !== null ? `${formatKg(p.co2e_kg, lang)} kg CO₂e` : L3("Chưa có số CO₂", "No CO₂ figure", "Pas de chiffre CO₂")}
-          </Chip>
-          {p.green_score !== null && p.green_score !== undefined && (
-            <Chip topic="green_score" onClick={() => open("green_score")} className="text-white border-transparent !text-[17px] !px-4 !py-2" style={{ background: greenColor(p.green_score) }}>
-              {T.greenScore} {formatNum(p.green_score, lang, 1)}/5
-            </Chip>
-          )}
-          {typeof d.formula?.confidence === "number" && (
-            <Chip topic="confidence" onClick={() => open("confidence")} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">
-              {T.confidence} {formatNum(d.formula.confidence * 100, lang, 0)}%
-            </Chip>
-          )}
-          <Chip topic="formula" onClick={(e) => enter("formula", e)} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">🧮 {T.formula}</Chip>
-          <Chip topic="category" onClick={(e) => enter("category", e)} className="bg-white border-[#E3DFD3] text-[#1E2B22] !px-4 !py-2">📊 {T.category}</Chip>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#2E7D4F]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#3FA0B8]" aria-hidden="true" />
+              {L3("Tổng quan · Thế giới CO₂ của sản phẩm", "Overview · The product's CO₂ world", "Vue d'ensemble · Le monde CO₂ du produit")}
+            </p>
+            <h1 className="mt-1 font-display text-[28px] sm:text-[34px] font-semibold leading-tight text-[#1E2B22]">{p.name}</h1>
+          </div>
+          <ProductPicker lang={lang} currentId={p.product_id} />
+        </div>
+
+        <div className="mt-4">
+          <WorldStats d={d} lc={lc} lang={lang} t={t} stages={T.stages}
+                      onFormula={(e) => enter("formula", e)} onCategory={(e) => enter("category", e)} />
         </div>
       </section>
 
@@ -356,7 +348,12 @@ function WorldView({ productId }) {
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-[#EFEBDF]">
           <p className="text-[14.5px] font-semibold text-[#B45309]">👆 {L3("Bấm vào nhà máy, con tàu, ngôi nhà… để bước vào bên trong", "Tap the factory, the ship, the house… to step inside", "Touchez l'usine, le navire, la maison… pour entrer à l'intérieur")}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => setSimOpen(!simOpen)} aria-expanded={simOpen}
+            <button type="button" onClick={() => { setGreenOpen(!greenOpen); setSimOpen(false); }} aria-expanded={greenOpen}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1F6B43] px-4 py-2 text-[14.5px] font-bold text-white hover:bg-[#17522f]">
+              <span aria-hidden="true">🍃</span>
+              {L3("Mẹo sống xanh", "Green tips", "Astuces sobres")}
+            </button>
+            <button type="button" onClick={() => { setSimOpen(!simOpen); setGreenOpen(false); }} aria-expanded={simOpen}
                     className="inline-flex items-center gap-2 rounded-full bg-[#1B2F45] px-4 py-2 text-[14.5px] font-bold text-white hover:bg-[#243e5a]">
               <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d="M4 6h12M4 14h12" /><circle cx="8" cy="6" r="2" fill="#1B2F45" /><circle cx="13" cy="14" r="2" fill="#1B2F45" />
@@ -394,6 +391,15 @@ function WorldView({ productId }) {
           {sc && base && !scene && (
             <SimPanel open={simOpen && !tour} hideToggle onToggle={() => setSimOpen(!simOpen)} sc={sc} setSc={setSc} base={base} sim={sim} lang={lang} T={T} measured={lc.measured}
                       origins={ORIGINS} onAsk={() => open("what_if")} onReset={() => setSc({ ...sc, origin: base.origin, mode: base.mode, grid: base.grid, years: base.years, refurbished: false })} />
+          )}
+          {sc && base && !scene && greenOpen && !tour && (
+            <div className="absolute z-20 right-3 top-3 w-[min(360px,calc(100%-24px))] max-h-[calc(100%-24px)] overflow-y-auto rounded-[24px] shadow-2xl">
+              <button type="button" onClick={() => setGreenOpen(false)}
+                      className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[#1E2B22] hover:bg-white"
+                      aria-label={L3("Đóng", "Close", "Fermer")}>×</button>
+              <GreenPanel d={d} base={base} sc={sc} setSc={setSc} lang={lang} lifestyleOnly
+                          onRecycle={(e) => { setGreenOpen(false); choose("end_of_life", e?.currentTarget?.getBoundingClientRect?.() || null); }} />
+            </div>
           )}
           {askMode && <p className="absolute z-20 left-1/2 -translate-x-1/2 bottom-3 rounded-full bg-amber-400 text-[#16324a] text-sm font-semibold px-4 py-1.5 shadow">❓ {T.askModeOn}</p>}
 
@@ -436,13 +442,11 @@ function WorldView({ productId }) {
         </div>
       </section>
 
-      {/* Green lifestyle and the AI insight, side by side */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <GreenPanel d={d} base={base} sc={sc} setSc={setSc} lang={lang} lifestyleOnly
-                    onRecycle={(e) => { window.scrollTo({ top: 0, behavior: "smooth" }); choose("end_of_life", e?.currentTarget?.getBoundingClientRect?.() || null); }} />
-        <InsightCard productId={p.product_id} lang={lang} stats={d.stats} kg={p.co2e_kg}
-                     category={String(p.category || "").replace(/_/g, " ").replace(/^computer /, "")} />
-      </div>
+      {/* the AI insight across the page, then the four doors out (design page 1) */}
+      <InsightCard productId={p.product_id} lang={lang} stats={d.stats} kg={p.co2e_kg}
+                   category={String(p.category || "").replace(/_/g, " ").replace(/^computer /, "")} />
+
+      <GoFurther productId={p.product_id} lang={lang} listed={catalogue ? catalogue.listed : null} />
     </main>
   );
 }

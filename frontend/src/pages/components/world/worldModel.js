@@ -36,7 +36,11 @@ export function baseline(d) {
   const years = d?.lifecycle?.use_phase?.years || LIFETIME[d?.product?.category] || 4;
   return {
     ok: (d?.lifecycle?.stages || []).length > 0,
-    origin: ORIGINS[route.origin_code] ? route.origin_code : "CN",
+    // The map opens on the import journey -- a factory abroad, a ship, Vietnam -- because that is
+    // the story the Overview is drawn to tell, and the scene never names a country ("Country of
+    // manufacture"). The country the backend guessed from the brand is one tap away in What-if,
+    // where a dozen brands (Samsung, LG, Panasonic...) are assembled in Vietnam and travel by road.
+    origin: "CN",
     mode: "sea",
     grid: "vn",
     years,

@@ -5,7 +5,7 @@ import { formatNum } from "../lib/format";
 import Icon from "./components/ui/Icon";
 import { ErrorState } from "./components/common/States";
 import { Bar, Card, SourceStack, StatCard } from "./components/dashboard/DashBits";
-import { ServiceList, useCatalogue, useHealth, useOverview } from "./Dashboard";
+import { ServiceList, useCatalogue, useHealth, useOverview } from "./overviewData";
 
 function checkedAt(iso, lang) {
   const d = iso ? new Date(iso) : null;

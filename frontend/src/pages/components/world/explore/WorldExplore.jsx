@@ -2,7 +2,7 @@
 // Every number on this page comes from /api/categories, /api/overview or /api/search.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useI18n } from "../../../../i18n/LanguageContext";
+import { tri, useI18n } from "../../../../i18n/LanguageContext";
 import { explore } from "../../../../i18n/explore";
 import { api, MOCK_API } from "../../../../api/client";
 import { formatCount, formatPrice, normalizeList } from "../../../../lib/data";
@@ -54,7 +54,7 @@ function Landing({ X, lang, run }) {
           {green.state === "error" && <ErrorState onRetry={load} body={X.errorBody} />}
           {green.state === "ok" && (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {green.list.map((p) => <ResultCard key={p.product_id} product={p} X={X} />)}
+              {green.list.map((p) => <ResultCard key={p.product_id} product={p} X={X} lang={lang} />)}
             </div>
           )}
         </div>
@@ -83,15 +83,18 @@ function Landing({ X, lang, run }) {
   );
 }
 
-function ResultCard({ product, X }) {
+// This list IS the Overview's product picker, so a card opens that product's Overview.
+// A product with no CO2 figure has no world to show, so it keeps opening its product page.
+function ResultCard({ product, X, lang }) {
+  const L3 = tri(lang);
+  const hasWorld = product.co2e_kg !== null && product.co2e_kg !== undefined;
   return (
     <div className="flex flex-col">
-      <ProductCard product={product} />
-      {product.co2e_kg !== null && (
-        <Link to={`/world/${product.product_id}`} className="mt-2 inline-flex items-center gap-1.5 self-start text-[15px] font-semibold text-[#1F5D3A] hover:underline">
-          <Icon name="globe" size={17} />{X.exploreWorld}
-        </Link>
-      )}
+      <ProductCard product={product} to={hasWorld ? `/world/${product.product_id}` : null} />
+      <Link to={`/product/${product.product_id}`}
+            className="mt-2 inline-flex items-center gap-1.5 self-start text-[15px] font-semibold text-[#1F5D3A] hover:underline">
+        <Icon name="info" size={17} />{L3("Trang sản phẩm", "Product page", "Fiche produit")}
+      </Link>
     </div>
   );
 }
@@ -215,7 +218,7 @@ function Results({ params, X, lang, setParam, run }) {
             </div>
           ) : (
             <div className={`mt-5 grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 transition-opacity ${status === "updating" ? "opacity-60" : ""}`}>
-              {items.map((p) => <ResultCard key={p.product_id} product={p} X={X} />)}
+              {items.map((p) => <ResultCard key={p.product_id} product={p} X={X} lang={lang} />)}
             </div>
           )}
 
