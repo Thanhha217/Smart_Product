@@ -16,7 +16,7 @@ if not POSTGRES_URL:
 if not FAISS_INDEX_PATH:
     raise ValueError("FAISS_INDEX_PATH environment variable is not set")
 
-engine = create_engine(POSTGRES_URL)
+engine = create_engine(POSTGRES_URL, pool_pre_ping=True)  # survive a database restart: test a pooled connection before use
 
 # print(f"Loading FAISS Index from {FAISS_INDEX_PATH}...")
 # index = faiss.read_index(FAISS_INDEX_PATH)
