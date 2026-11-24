@@ -25,6 +25,9 @@ from green_score import green_score, parse_references
 from product_specs import brand_of, condition_of, specs_of
 from search_query import BRAND_ALIASES, CATEGORY_WORDS, fold, parse_query
 
+_COMPLETE = ("(CASE WHEN p.final_price > 0 THEN 1 ELSE 0 END + CASE WHEN p.co2e_kg IS NOT NULL THEN 1 ELSE 0 END "
+             "+ CASE WHEN EXISTS (SELECT 1 FROM image i WHERE i.product_id = p.id AND i.image_url IS NOT NULL "
+             "AND btrim(i.image_url) <> '') THEN 1 ELSE 0 END)")
 SORTS = {
     "relevance": None,
     "price_asc": "NULLIF(p.final_price, 0) ASC NULLS LAST, p.id",
@@ -33,6 +36,10 @@ SORTS = {
     "co2_desc": "p.co2e_kg DESC NULLS LAST, p.id",
     "discount": "CASE WHEN p.original_price > p.final_price AND p.final_price > 0 "
                 "THEN (p.original_price - p.final_price) / p.original_price END DESC NULLS LAST, p.id",
+    # products with a price, a CO2 figure and their own photo first, then each category's lowest CO2 in
+    # turn (the greenest of every category, then the second...); it only orders, it never filters
+    "complete": f"{_COMPLETE} DESC, row_number() OVER (PARTITION BY p.category_id ORDER BY {_COMPLETE} DESC, "
+                "p.co2e_kg ASC NULLS LAST, p.id), p.co2e_kg ASC NULLS LAST, p.id",
 }
 CO2_SOURCES = ("manufacturer", "neighbor_average", "category_model", "lifecycle_formula", "eeio_price", "llm_estimate")
 MAX_PAGE_SIZE = 48

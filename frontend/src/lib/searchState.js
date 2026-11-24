@@ -1,7 +1,7 @@
 // Search state lives in the URL (back button, reload and shared links restore it).
 // Pure functions: unit-tested in lib/__tests__/searchState.test.js.
 
-export const SORTS = ["relevance", "price_asc", "price_desc", "co2_asc", "co2_desc", "discount"];
+export const SORTS = ["relevance", "complete", "price_asc", "price_desc", "co2_asc", "co2_desc", "discount"];
 export const CO2_SOURCES = ["manufacturer", "neighbor_average", "category_model", "lifecycle_formula", "eeio_price", "llm_estimate"];
 export const PAGE_SIZE = 24;
 
