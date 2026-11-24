@@ -5,18 +5,31 @@ Pure Python: unit-tested in tests/test_product_specs.py.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 from search_query import BRAND_ALIASES, BRANDS, fold
 
 
+def _word(s: str) -> re.Pattern:
+    return re.compile(rf"(?<![a-z0-9]){re.escape(s)}(?![a-z0-9])")
+
+
+# Built once. These used to be rebuilt on every call -- BRANDS re-sorted, every pattern re-escaped,
+# fold() run per brand -- and the brand facet calls brand_of() on 6,000 names per search, which
+# cost about 1.3 s of every request. The answers are memoised too: the catalogue repeats names.
+_ALIAS_PATTERNS = tuple((brand, tuple(_word(a) for a in aliases)) for brand, aliases in BRAND_ALIASES.items())
+_BRAND_PATTERNS = tuple((brand.split()[0], _word(fold(brand))) for brand in sorted(BRANDS, key=len, reverse=True))
+
+
+@lru_cache(maxsize=50_000)
 def brand_of(name: str | None) -> str | None:
     low = f" {fold(name)} "
-    for brand, aliases in BRAND_ALIASES.items():
-        if any(re.search(rf"(?<![a-z0-9]){re.escape(a)}(?![a-z0-9])", low) for a in aliases):
+    for brand, patterns in _ALIAS_PATTERNS:
+        if any(p.search(low) for p in patterns):
             return brand
-    for brand in sorted(BRANDS, key=len, reverse=True):
-        if re.search(rf"(?<![a-z0-9]){re.escape(fold(brand))}(?![a-z0-9])", low):
-            return brand.split()[0]
+    for short, pattern in _BRAND_PATTERNS:
+        if pattern.search(low):
+            return short
     return None
 
 

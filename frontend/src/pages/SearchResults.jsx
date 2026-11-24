@@ -162,11 +162,14 @@ export default function SearchResults() {
     change({ min_price: b?.min ?? "", max_price: b?.max ?? "" });
   };
 
-  // sort menu: "Lowest CO₂" = full information first, then the lowest CO₂ (sort "complete")
+  // The default browse order is "complete": products with a price, a CO₂ figure and a photo first.
+  // It used to be labelled "Lowest CO₂", which it is not -- and the real lowest-CO₂ sort was not
+  // even offered. Name it for what it does, and put the honest CO₂ sort in the menu beside it.
   const sortValue = !state.q && state.sort === "relevance" ? "complete" : state.sort;
   const sortOptions = [
     ...(state.q ? [{ v: "relevance", label: L3("Phù hợp nhất", "Best match", "Pertinence") }] : []),
-    { v: "complete", label: L3("CO₂ thấp", "Lowest CO₂", "CO₂ le plus bas") },
+    { v: "complete", label: L3("Đề xuất", "Suggested", "Suggestions") },
+    { v: "co2_asc", label: L3("CO₂ thấp nhất", "Lowest CO₂", "CO₂ le plus bas") },
     { v: "price_asc", label: L3("Giá thấp → cao", "Price: low to high", "Prix croissant") },
     { v: "price_desc", label: L3("Giá cao → thấp", "Price: high to low", "Prix décroissant") },
   ];
@@ -225,7 +228,7 @@ export default function SearchResults() {
           <label>
             <span className="sr-only">{st("search.sort")}</span>
             <select value={sortValue} onChange={(e) => change({ sort: e.target.value })} className={`${select} w-[184px]`}
-                    title={sortValue === "complete" ? L3("Sản phẩm đủ giá, số CO₂ và ảnh lên trước, rồi CO₂ thấp nhất", "Products with price, CO₂ figure and photo first, then the lowest CO₂", "Produits complets d'abord, puis le CO₂ le plus bas") : undefined}>
+                    title={sortValue === "complete" ? L3("Sản phẩm đủ giá, số CO₂ và ảnh lên trước, rồi CO₂ thấp nhất trong từng loại", "Products with a price, a CO₂ figure and a photo first, then each category's lowest CO₂", "Produits complets d'abord, puis le CO₂ le plus bas de chaque catégorie") : undefined}>
               {sortOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
             </select>
           </label>

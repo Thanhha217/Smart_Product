@@ -16,6 +16,7 @@ GET /search?q=&category=&brand=&platform=&min_price=&max_price=&has_co2=&co2_sou
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any
 
@@ -30,6 +31,14 @@ _OWN_PHOTO = ("CASE WHEN EXISTS (SELECT 1 FROM image i WHERE i.product_id = p.id
               "AND btrim(i.image_url) <> '') THEN 1 ELSE 0 END")
 _COMPLETE = ("(CASE WHEN p.final_price > 0 THEN 1 ELSE 0 END + CASE WHEN p.co2e_kg IS NOT NULL THEN 1 ELSE 0 END "
              f"+ {_OWN_PHOTO})")
+
+# DEMO ONLY. Product ids pinned to the front of the default (relevance) order, in the order given,
+# so a walk-through opens on the machines that have a hand-checked teardown. Set it with
+# DEMO_PINNED_IDS=660,718,... ; leave it unset and nothing changes. It never touches an explicit
+# sort (lowest CO2, cheapest first): those must keep meaning what they say.
+DEMO_PINNED = [int(x) for x in os.environ.get("DEMO_PINNED_IDS", "").split(",") if x.strip().isdigit()]
+_PINNED = ("CASE p.id " + " ".join(f"WHEN {pid} THEN {i}" for i, pid in enumerate(DEMO_PINNED))
+           + f" ELSE {len(DEMO_PINNED)} END, ") if DEMO_PINNED else ""
 SORTS = {
     "relevance": None,
     "price_asc": f"NULLIF(p.final_price, 0) ASC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
@@ -40,7 +49,9 @@ SORTS = {
                 f"THEN (p.original_price - p.final_price) / p.original_price END DESC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
     # products with a price, a CO2 figure and their own photo first, then each category's lowest CO2 in
     # turn (the greenest of every category, then the second...); it only orders, it never filters
-    "complete": f"{_COMPLETE} DESC, row_number() OVER (PARTITION BY p.category_id ORDER BY {_COMPLETE} DESC, "
+    # `complete` is what the Find page asks for when nothing is typed, so the demo pin belongs here
+    # too -- it is a composite "best first" browse order, not a claim like "the lowest CO2 is X".
+    "complete": f"{_PINNED}{_COMPLETE} DESC, row_number() OVER (PARTITION BY p.category_id ORDER BY {_COMPLETE} DESC, "
                 "p.co2e_kg ASC NULLS LAST, p.id), p.co2e_kg ASC NULLS LAST, p.id",
 }
 CO2_SOURCES = ("manufacturer", "neighbor_average", "category_model", "lifecycle_formula", "eeio_price", "llm_estimate")
@@ -198,10 +209,14 @@ def search(engine, q: str | None = None, category: str | None = None, brand: str
         if order is None:   # relevance
             phrase = fold(" ".join(parsed.terms))
             params["phrase"] = f"%{phrase}%"
-            order = ("CASE WHEN :phrase <> '%%' AND unaccent(lower(p.name)) LIKE :phrase THEN 0 ELSE 1 END, "
+            # Own photo ranks straight after the phrase match: browsing a category (no phrase)
+            # then opens on the rows that have a real picture, while a typed query still puts
+            # what the visitor asked for first. Ordering only -- nothing is filtered out.
+            order = (_PINNED
+                     + "CASE WHEN :phrase <> '%%' AND unaccent(lower(p.name)) LIKE :phrase THEN 0 ELSE 1 END, "
+                     f"{_OWN_PHOTO} DESC, "
                      "CASE WHEN p.final_price > 0 THEN 0 ELSE 1 END, "
                      "CASE WHEN p.co2e_kg IS NOT NULL THEN 0 ELSE 1 END, "
-                     f"{_OWN_PHOTO} DESC, "
                      "p.review_count DESC NULLS LAST, length(p.name), p.id")
         rows = session.exec(text(f"""
             SELECT p.id, p.name, p.product_url, p.final_price, p.original_price, p.product_rating, p.review_count,
