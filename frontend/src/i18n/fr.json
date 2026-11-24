@@ -331,5 +331,7 @@
   "spec.resolution": "{value}",
   "spec.refresh": "{value}",
   "spec.panel": "dalle {value}",
-  "spec.size": "boîtier {value}"
+  "spec.size": "boîtier {value}",
+  "tab.compare": "Comparer",
+  "find.all": "Tous les produits"
 }

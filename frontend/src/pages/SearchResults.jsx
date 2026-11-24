@@ -1,34 +1,30 @@
-// Find products: URL-driven search with understood conditions, real facets, honest empty and
-// error states, and stale-response protection (an older answer never replaces a newer query).
+// Find products: one place to search the catalogue, open a product's CO₂ book, compare, and ask the AI.
+// URL-driven (?q=&category=&min_price=&max_price=&sort=&page=), honest empty and error states, and
+// stale-response protection (an older answer never replaces a newer query).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { tri, useI18n } from "../i18n/LanguageContext";
 import { useShopText } from "../i18n/shop";
 import { formatCount, formatPrice, normalizeList } from "../lib/data";
-import { formatKg } from "../lib/format";
-import DeviceIcon, { iconKeyFor } from "./components/ui/DeviceIcon";
 import { removeFromQuery } from "../lib/queryEdit";
-import {
-  activeFilters, clearFilters, isActiveSearch, PAGE_SIZE, parseSearchParams, removeFilter, SORTS, toApiParams,
-  toSearchParams, updateState,
-} from "../lib/searchState";
-import ProductCard from "./components/common/ProductCard";
-import WhyConsider from "./components/co2/WhyConsider";
-import { EmptyState, ErrorState, InlineSpinner, LoadingGrid, SampleDataNote } from "./components/common/States";
-import SearchFilters from "./components/products/SearchFilters";
+import { clearFilters, PAGE_SIZE, parseSearchParams, removeFilter, toApiParams, toSearchParams, updateState } from "../lib/searchState";
+import FindCard from "./components/find/FindCard";
+import CompareBar from "./components/find/CompareBar";
+import AskAiDock from "./components/find/AskAiDock";
+import { EmptyState, ErrorState, InlineSpinner, SampleDataNote } from "./components/common/States";
 import Icon from "./components/ui/Icon";
 
-function useSearch(state, explore) {
+function useSearch(state) {
   const [res, setRes] = useState({ status: "loading", data: null, error: null });
   const [retry, setRetry] = useState(0);
-  const key = JSON.stringify({ ...toApiParams(state), explore, retry });
+  const key = JSON.stringify({ ...toApiParams(state), retry });
   const seq = useRef(0);
   useEffect(() => {
     const id = ++seq.current;
     const controller = new AbortController();
     const params = toApiParams(state);
-    if (explore) Object.assign(params, { has_price: true, has_co2: true });
+    // without typed words "best match" means nothing: full information first, then the lowest CO₂
     if (!state.q && (!params.sort || params.sort === "relevance")) params.sort = "complete";
     setRes((r) => ({ status: r.data ? "updating" : "loading", data: r.data, error: null }));
     api.search(params, { signal: controller.signal })
@@ -71,25 +67,43 @@ function Pagination({ page, pages, onPage, st }) {
   );
 }
 
+// Price bands of the price menu, in VND
+const PRICE_BANDS = [
+  { key: "lt10", max: 10_000_000, label: ["Dưới 10 triệu", "Under 10 million ₫", "Moins de 10 millions ₫"] },
+  { key: "10-20", min: 10_000_000, max: 20_000_000, label: ["10–20 triệu", "10–20 million ₫", "10–20 millions ₫"] },
+  { key: "20-30", min: 20_000_000, max: 30_000_000, label: ["20–30 triệu", "20–30 million ₫", "20–30 millions ₫"] },
+  { key: "30-50", min: 30_000_000, max: 50_000_000, label: ["30–50 triệu", "30–50 million ₫", "30–50 millions ₫"] },
+  { key: "gt50", min: 50_000_000, label: ["Trên 50 triệu", "Over 50 million ₫", "Plus de 50 millions ₫"] },
+];
+const LANG_IDX = { vi: 0, en: 1, fr: 2 };
+// Chip order: the categories with the biggest CO₂ first (as in the design), then the rest
+const CHIP_ORDER = ["laptops", "monitors", "tablets", "smartphones", "smartwatches", "headphones"];
+// Short chip labels; the full category name stays in the breadcrumb and the title
+const CHIP_LABEL = {
+  smartwatches: ["Đồng hồ", "Watches", "Montres"],
+  headphones: ["Tai nghe", "Headphones", "Casques"],
+  laptops: ["Laptop", "Laptops", "Portables"],
+};
+
 export default function SearchResults() {
   const st = useShopText();
   const { lang } = useI18n();
+  const L3 = tri(lang);
+  const li = LANG_IDX[lang] ?? 1;
   const [params, setParams] = useSearchParams();
   const state = useMemo(() => parseSearchParams(params), [params]);
-  const active = isActiveSearch(state);
-  const explore = !active;
-  const { status, data, error, retry } = useSearch(state, explore);
+  const { status, data, retry } = useSearch(state);
   const categories = useCategories();
   const [draft, setDraft] = useState(state.q);
-  const [drawer, setDrawer] = useState(false);
-  useEffect(() => {
-    if (!drawer) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") setDrawer(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [drawer]);
+  const [askOpen, setAskOpen] = useState(false);
+  const [compareNote, setCompareNote] = useState(null);
   const topRef = useRef(null);
   useEffect(() => setDraft(state.q), [state.q]);
+  useEffect(() => {
+    if (!compareNote) return undefined;
+    const t = setTimeout(() => setCompareNote(null), 3500);
+    return () => clearTimeout(t);
+  }, [compareNote]);
 
   const go = useCallback((next, { replace = false } = {}) => {
     setParams(toSearchParams(next), { replace });
@@ -98,272 +112,186 @@ export default function SearchResults() {
   const onPage = (page) => { go({ ...state, page }); topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const submit = (e) => {
     e.preventDefault();
-    const q = draft.replace(/\s+/g, " ").trim();
-    go(updateState(state, { q }));
+    go(updateState(state, { q: draft.replace(/\s+/g, " ").trim() }));
   };
 
   const items = normalizeList(data?.items);
   const total = typeof data?.total === "number" ? data.total : null;
   const pages = total ? Math.ceil(total / (data?.page_size || PAGE_SIZE)) : 0;
-  const catalogueTotal = categories?.reduce((n, c) => n + (c.products || 0), 0) || null;
+  const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
+  const chipLabel = (slug) => (CHIP_LABEL[slug] ? CHIP_LABEL[slug][li] : catLabel(slug));
+  const chipCats = [...(categories || [])].sort((a, b) => {
+    const ia = CHIP_ORDER.indexOf(a.category), ib = CHIP_ORDER.indexOf(b.category);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  // what the search understood from the words, each removable
   const und = data?.understood || {};
-  const understoodChips = [];
+  const understood = [];
   if (state.q) {
-    if (und.category && !state.category) understoodChips.push({ kind: "category", value: und.category, label: st(`cat.${und.category}`) });
-    if (und.brand && !state.brand) understoodChips.push({ kind: "brand", value: und.brand, label: und.brand });
-    if (und.min_price && !state.min_price) understoodChips.push({ kind: "min_price", value: und.min_price, label: st("search.minPrice", { p: formatPrice(und.min_price, lang) }) });
-    if (und.max_price && !state.max_price) understoodChips.push({ kind: "max_price", value: und.max_price, label: st("search.maxPrice", { p: formatPrice(und.max_price, lang) }) });
-    for (const term of und.terms || []) understoodChips.push({ kind: "term", value: term, label: st("search.term", { t: term }) });
-    if (und.eco) understoodChips.push({ kind: "eco", value: true, label: st("search.lowCo2") });
+    if (und.category && !state.category) understood.push({ kind: "category", value: und.category, label: catLabel(und.category) });
+    if (und.brand && !state.brand) understood.push({ kind: "brand", value: und.brand, label: und.brand });
+    if (und.min_price && !state.min_price) understood.push({ kind: "min_price", value: und.min_price, label: st("search.minPrice", { p: formatPrice(und.min_price, lang) }) });
+    if (und.max_price && !state.max_price) understood.push({ kind: "max_price", value: und.max_price, label: st("search.maxPrice", { p: formatPrice(und.max_price, lang) }) });
+    for (const term of und.terms || []) understood.push({ kind: "term", value: term, label: st("search.term", { t: term }) });
+    if (und.eco) understood.push({ kind: "eco", value: true, label: st("search.lowCo2") });
   }
   const removeUnderstood = (chip) => {
-    if (chip.kind === "eco") return;
-    go(updateState(state, { q: removeFromQuery(state.q, chip.kind, chip.value) }));
-  };
-  const filterLabel = (f) => {
-    if (f.key === "category") { const l = st(`cat.${f.value}`); return l === `cat.${f.value}` ? f.value : l; }
-    if (f.key === "co2_source") { const l = st(`src.${f.value}`); return l === `src.${f.value}` ? f.value : l; }
-    if (f.key === "min_price") return st("search.minPrice", { p: formatPrice(f.value, lang) });
-    if (f.key === "max_price") return st("search.maxPrice", { p: formatPrice(f.value, lang) });
-    if (f.key === "has_co2") return st("search.hasCo2", { n: "" }).replace(/\s*\(\s*\)/, "");
-    if (f.key === "has_price") return st("search.hasPrice", { n: "" }).replace(/\s*\(\s*\)/, "");
-    if (f.key === "include_accessories") return st("search.accessories", { n: "" }).replace(/\s+/g, " ");
-    return String(f.value);
+    if (chip.kind !== "eco") go(updateState(state, { q: removeFromQuery(state.q, chip.kind, chip.value) }));
   };
   const applyRelaxation = (r) => {
-    const fromQuery = !state[r.drop] || r.drop === "term";
     if (r.drop === "term") return go(updateState(state, { q: removeFromQuery(state.q, "term", r.value) }));
-    if (!fromQuery || ["platform", "co2_source", "has_co2", "has_price"].includes(r.drop)) return go(removeFilter(state, r.drop));
+    if (state[r.drop] || ["platform", "co2_source", "has_co2", "has_price"].includes(r.drop)) return go(removeFilter(state, r.drop));
     return go(updateState(state, { q: removeFromQuery(state.q, r.drop, r.value) }));
   };
   const relaxLabel = (r) => {
-    let what;
+    let what = String(r.value);
     if (r.drop === "term") what = `“${r.value}”`;
-    else if (r.drop === "category") what = st(`cat.${r.value}`);
+    else if (r.drop === "category") what = catLabel(r.value);
     else if (r.drop === "max_price") what = st("search.maxPrice", { p: formatPrice(r.value, lang) });
     else if (r.drop === "min_price") what = st("search.minPrice", { p: formatPrice(r.value, lang) });
-    else if (r.drop === "co2_source") what = st(`src.${r.value}`);
-    else if (r.drop === "has_co2" || r.drop === "has_price") what = filterLabel({ key: r.drop });
-    else what = String(r.value);
     return st("search.relax", { what, n: formatCount(r.count, lang) });
   };
-  const filters = activeFilters(state);
-  const examples = st("search.examples");
-  const showMissingNote = state.sort !== "relevance" && state.sort !== "discount";
 
-  const L3 = tri(lang);
-  const sortShown = !state.q && state.sort === "relevance" ? "complete" : state.sort;
-  const sortOptions = state.q ? SORTS : SORTS.filter((x) => x !== "relevance");
-  const catFacet = (data?.facets?.category || []).filter((c) => c.value && c.count > 0);
-  const maxMedian = Math.max(1, ...(categories || []).map((c) => Number(c.median_kg) || 0));
-  const otherFilters = filters.filter((f) => f.key !== "category");
-  const catLabel = (slug) => { const l = st(`cat.${slug}`); return l === `cat.${slug}` ? slug : l; };
+  // price menu: one of the bands, or the range already in the URL
+  const minP = Number(state.min_price) || null;
+  const maxP = Number(state.max_price) || null;
+  const band = PRICE_BANDS.find((b) => (b.min ?? null) === minP && (b.max ?? null) === maxP);
+  const priceValue = !minP && !maxP ? "" : band ? band.key : "custom";
+  const setPrice = (key) => {
+    const b = PRICE_BANDS.find((x) => x.key === key);
+    change({ min_price: b?.min ?? "", max_price: b?.max ?? "" });
+  };
 
-  const exampleChips = (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-[14.5px] text-[#55604F]">{st("search.tryExamples")}</span>
-      {(Array.isArray(examples) ? examples : []).map((ex) => (
-        <button key={ex} type="button" onClick={() => go(updateState(parseSearchParams(""), { q: ex }))}
-                className="rounded-full bg-white border border-[#E1DCCD] px-3.5 py-1.5 text-[14px] text-[#1E2B22] hover:border-[#2E7D4F] transition">{ex}</button>
-      ))}
-    </div>
-  );
+  // sort menu: "Lowest CO₂" = full information first, then the lowest CO₂ (sort "complete")
+  const sortValue = !state.q && state.sort === "relevance" ? "complete" : state.sort;
+  const sortOptions = [
+    ...(state.q ? [{ v: "relevance", label: L3("Phù hợp nhất", "Best match", "Pertinence") }] : []),
+    { v: "complete", label: L3("CO₂ thấp", "Lowest CO₂", "CO₂ le plus bas") },
+    { v: "price_asc", label: L3("Giá thấp → cao", "Price: low to high", "Prix croissant") },
+    { v: "price_desc", label: L3("Giá cao → thấp", "Price: high to low", "Prix décroissant") },
+  ];
+  if (!sortOptions.some((o) => o.v === sortValue)) sortOptions.push({ v: sortValue, label: st(`search.sort.${sortValue}`) });
 
-  const pill = (on) => `inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] transition ${on ? "bg-[#1B4D31] border-[#1B4D31] text-white font-semibold" : "bg-white border-[#E1DCCD] text-[#1E2B22] hover:border-[#2E7D4F]"}`;
+  const chip = (on) => `inline-flex h-[42px] shrink-0 items-center whitespace-nowrap rounded-full border px-[14px] text-[15.5px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F] ${on ? "border-[#1B4332] bg-[#1B4332] text-white" : "border-[#E1DCCD] bg-white text-[#1E2B22] hover:border-[#2E7D4F]"}`;
+  const select = "h-[42px] rounded-[10px] border border-[#DCD7C9] bg-white pl-3.5 pr-2 text-[15.5px] text-[#1E2B22] focus:outline-none focus:ring-2 focus:ring-[#2E7D4F]/40";
+  const busy = status === "loading" || status === "updating";
 
   return (
-    <main className="page-wrap py-7 max-w-[1240px]" ref={topRef}>
-      <header className="flex flex-col gap-4">
-        <div className="max-w-3xl">
-          <h1 className="font-display text-[40px] sm:text-[50px] font-semibold leading-[1.05] text-[#1E2B22]">{st("search.title")}</h1>
-          <p className="mt-2 text-[16.5px] leading-relaxed text-[#55604F]">{catalogueTotal ? st("search.lead", { total: formatCount(catalogueTotal, lang) }) : st("search.leadNoCount")}</p>
-        </div>
-        <form role="search" onSubmit={submit} className="flex items-center gap-2 max-w-[720px] rounded-[20px] bg-white border border-[#E6E2D6] p-2 pl-4 shadow-[0_2px_10px_rgba(30,43,34,0.06)]">
-          <Icon name="search" size={20} className="shrink-0 text-[#6b7280]" />
-          <label className="relative flex-1 min-w-0">
-            <span className="sr-only">{st("shell.searchLabel")}</span>
-            <input type="search" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={st("search.placeholder")} enterKeyHint="search"
-                   className="w-full bg-transparent py-2.5 pr-9 text-[16px] text-[#1E2B22] placeholder:text-[#8A9186] focus:outline-none" />
-            {draft && (
-              <button type="button" onClick={() => { setDraft(""); go(updateState(state, { q: "" })); }} aria-label={st("search.clear")}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-8 h-8 rounded-full text-[#6b7280] hover:bg-[#f3f4f6]">
-                <Icon name="close" size={16} />
-              </button>
-            )}
-          </label>
-          <button type="submit" className="shrink-0 rounded-[14px] bg-[#1B4D31] px-5 sm:px-6 py-3 text-[15.5px] font-semibold text-white hover:bg-[#143D26] transition">{st("search.button")}</button>
-        </form>
-        {exampleChips}
-        {data?.sample && <SampleDataNote />}
-      </header>
-
-      {explore && (
-        <section className="mt-9" aria-labelledby="cats">
-          <h2 id="cats" className="font-display text-[26px] font-semibold text-[#1E2B22]">{st("search.categories")}</h2>
-          {categories === null ? (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[118px] rounded-[20px] bg-white border border-[#ebe6d8] animate-pulse" />)}</div>
-          ) : categories.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-              {categories.map((c) => {
-                const med = Number(c.median_kg);
-                const has = c.median_kg !== null && c.median_kg !== undefined && Number.isFinite(med);
-                return (
-                  <button key={c.category} type="button" onClick={() => change({ category: c.category })}
-                          className="flex flex-col text-left rounded-[20px] bg-white border border-[#E6E2D6] p-4 hover:border-[#2E7D4F] hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D4F]">
-                    <span className="grid place-items-center w-9 h-9 rounded-xl bg-[#EEF3EC] text-[#1B4D31]"><DeviceIcon name={iconKeyFor(c.category)} size={20} /></span>
-                    <span className="mt-3 block font-semibold text-[#1E2B22]">{catLabel(c.category)}</span>
-                    <span className="block text-[13px] text-[#6B7468]">{st("search.categoryCount", { n: formatCount(c.products, lang) })}</span>
-                    {has && (
-                      <>
-                        <span className="mt-2 block text-[13px] text-[#4b5563]">
-                          {L3("trung vị", "median", "médiane")} <span className="whitespace-nowrap"><b className="text-[15px] text-[#1E2B22]">{formatKg(med, lang)}</b> kg CO₂e</span>
-                        </span>
-                        <span className="mt-1.5 block h-1.5 rounded-full bg-[#ECEAE1] overflow-hidden" aria-hidden="true">
-                          <span className="block h-full rounded-full bg-[#2E7D4F]" style={{ width: `${Math.max(3, (med / maxMedian) * 100)}%` }} />
-                        </span>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+    <main className="page-wrap max-w-[1240px] py-7 pb-36" ref={topRef}>
+      <form role="search" onSubmit={submit}
+            className="flex h-[60px] items-center gap-3 rounded-[18px] border border-[#E6E2D6] bg-white pl-5 pr-2 shadow-[0_1px_3px_rgba(30,43,34,0.05)] focus-within:border-[#2E7D4F]">
+        <Icon name="search" size={20} className="shrink-0 text-[#6B7468]" />
+        <label className="relative min-w-0 flex-1">
+          <span className="sr-only">{st("shell.searchLabel")}</span>
+          <input type="search" value={draft} onChange={(e) => setDraft(e.target.value)} enterKeyHint="search"
+                 placeholder={L3("Laptop dưới 20 triệu, CO₂ thấp…", "Laptop under 20 million, low CO₂…", "Portable à moins de 20 millions, peu de CO₂…")}
+                 className="w-full bg-transparent pr-9 text-[16.5px] text-[#1E2B22] placeholder:text-[#8A9186] focus:outline-none [&::-webkit-search-cancel-button]:hidden" />
+          {draft && (
+            <button type="button" onClick={() => { setDraft(""); go(updateState(state, { q: "" })); }} aria-label={st("search.clear")}
+                    className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#6b7280] hover:bg-[#f3f4f6]">
+              <Icon name="close" size={16} />
+            </button>
           )}
-        </section>
-      )}
+        </label>
+        <button type="submit" aria-label={st("search.button")} title={L3("Tìm thông minh: hiểu giá, loại, CO₂ thấp", "Smart search: understands price, category, low CO₂", "Recherche intelligente : prix, catégorie, CO₂ bas")}
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] bg-[#1B4332] text-white hover:bg-[#143D26] transition">
+          <Icon name="sparkles" size={20} />
+        </button>
+      </form>
 
-      <section className="mt-9" aria-live="polite" aria-busy={status === "loading" || status === "updating"}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="font-display text-[26px] font-semibold text-[#1E2B22]">
-              {explore ? st("search.explore") : state.q ? st("search.resultsFor", { q: state.q }) : st("search.resultsFiltered")}
-            </h2>
-            {explore && <p className="text-[14px] text-[#55604F]">{st("search.exploreNote")}</p>}
-            {!explore && total !== null && status !== "error" && (
-              <p className="text-[14.5px] text-[#55604F]">{total === 1 ? st("search.countOne") : st("search.count", { n: formatCount(total, lang) })}</p>
-            )}
-          </div>
-          <label className="flex items-center gap-2 text-[14px] text-[#55604F]">
-            <span>{st("search.sort")}</span>
-            <select value={sortShown} onChange={(e) => change({ sort: e.target.value })}
-                    className="rounded-xl border border-[#DCD7C9] bg-white px-3 py-2 text-[14.5px] font-medium text-[#1E2B22] focus:outline-none focus:ring-2 focus:ring-[#2E7D4F]/40">
-              {sortOptions.map((x) => <option key={x} value={x}>{st(`search.sort.${x}`)}</option>)}
+      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="-mx-1 flex min-w-0 flex-1 gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]" role="group" aria-label={L3("Danh mục", "Category", "Catégorie")}>
+          <button type="button" className={chip(!state.category)} aria-pressed={!state.category} onClick={() => change({ category: "" })}>
+            {L3("Tất cả", "All", "Tout")}
+          </button>
+          {chipCats.map((c) => (
+            <button key={c.category} type="button" className={chip(state.category === c.category)} aria-pressed={state.category === c.category}
+                    title={catLabel(c.category)} onClick={() => change({ category: state.category === c.category ? "" : c.category })}>
+              {chipLabel(c.category)}
+            </button>
+          ))}
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <label>
+            <span className="sr-only">{L3("Mức giá", "Price", "Prix")}</span>
+            <select value={priceValue} onChange={(e) => setPrice(e.target.value)} className={`${select} w-[160px]`}>
+              <option value="">{L3("Mọi mức giá", "Any price", "Tous les prix")}</option>
+              {PRICE_BANDS.map((b) => <option key={b.key} value={b.key}>{b.label[li]}</option>)}
+              {priceValue === "custom" && (
+                <option value="custom" disabled>{[minP && formatPrice(minP, lang), maxP && formatPrice(maxP, lang)].filter(Boolean).join(" – ")}</option>
+              )}
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">{st("search.sort")}</span>
+            <select value={sortValue} onChange={(e) => change({ sort: e.target.value })} className={`${select} w-[184px]`}
+                    title={sortValue === "complete" ? L3("Sản phẩm đủ giá, số CO₂ và ảnh lên trước, rồi CO₂ thấp nhất", "Products with price, CO₂ figure and photo first, then the lowest CO₂", "Produits complets d'abord, puis le CO₂ le plus bas") : undefined}>
+              {sortOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
             </select>
           </label>
         </div>
+      </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={L3("Danh mục", "Category", "Catégorie")}>
-          <button type="button" className={pill(!state.category)} aria-pressed={!state.category} onClick={() => change({ category: "" })}>
-            {L3("Tất cả", "Any", "Tout")}
-          </button>
-          {catFacet.map((c) => (
-            <button key={c.value} type="button" className={pill(state.category === c.value)} aria-pressed={state.category === c.value}
-                    onClick={() => change({ category: state.category === c.value ? "" : c.value })}>
-              {catLabel(c.value)}
-              <span className={state.category === c.value ? "text-white/75" : "text-[#8A9186]"}>{formatCount(c.count, lang)}</span>
+      {(state.q || understood.length > 0) && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-[14.5px] text-[#55604F]">
+          {total !== null && status !== "error" && (
+            <span>{total === 1 ? st("search.countOne") : st("search.count", { n: formatCount(total, lang) })}</span>
+          )}
+          {understood.map((c) => c.kind === "eco"
+            ? <span key="eco" className="rounded-full bg-[#E4F1E6] px-3 py-1 text-[13.5px] text-[#1F5D3A]">{c.label}</span>
+            : <button key={`${c.kind}-${c.value}`} type="button" onClick={() => removeUnderstood(c)}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#E4F1E6] px-3 py-1 text-[13.5px] text-[#1F5D3A] hover:bg-[#D5EAD9]"
+                      aria-label={st("search.removeFilter", { what: c.label })}>{c.label}<Icon name="close" size={12} /></button>)}
+          {state.q && (
+            <button type="button" onClick={() => setAskOpen(true)}
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#1B4332] bg-white px-3.5 py-1.5 text-[14px] font-semibold text-[#1B4332] hover:bg-[#F3F8F1]">
+              <Icon name="sparkles" size={15} />{L3("Hỏi AI về câu này", "Ask the AI about this", "Demander à l'IA")}
             </button>
-          ))}
-          <button type="button" className="inline-flex items-center gap-1.5 rounded-full bg-[#ECE9DE] px-3.5 py-1.5 text-[14px] font-medium text-[#1E2B22] hover:bg-[#E2DED0] transition"
-                  onClick={() => setDrawer(true)}>
-            <Icon name="menu" size={15} />{otherFilters.length ? st("search.showFilters", { n: otherFilters.length }) : L3("Thêm bộ lọc", "More filters", "Plus de filtres")}
-          </button>
-        </div>
-
-        {otherFilters.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {otherFilters.map((f) => (
-              <button key={f.key} type="button" className="chip-active" onClick={() => go(removeFilter(state, f.key))}
-                      aria-label={st("search.removeFilter", { what: filterLabel(f) })}>
-                {filterLabel(f)}<Icon name="close" size={14} />
-              </button>
-            ))}
-            <button type="button" className="text-[14px] font-medium text-[#1F5D3A] underline px-1" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>
-          </div>
-        )}
-
-        {understoodChips.length > 0 && (
-          <div className="mt-3 rounded-2xl bg-[#eef4ec] px-4 py-3">
-            <p className="text-[14px] font-medium text-[#1F5D3A]">{st("search.understood")}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {understoodChips.map((c) => c.kind === "eco"
-                ? <span key="eco" className="chip">{c.label}</span>
-                : <button key={`${c.kind}-${c.value}`} type="button" className="chip" onClick={() => removeUnderstood(c)}
-                          aria-label={st("search.removeFilter", { what: c.label })}>{c.label}<Icon name="close" size={14} /></button>)}
-            </div>
-            <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.understoodNote")}</p>
-          </div>
-        )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl bg-white/70 border border-[#E6E2D6] px-4 py-2.5 text-[13px] text-[#55604F]">
-          <b className="text-[#1E2B22]">{L3("Về ảnh", "About the photos", "À propos des photos")}</b>
-          <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#2E7D4F]" aria-hidden="true" />
-            {L3("Ảnh của chính sản phẩm", "The product's own photo", "La photo du produit")}</span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="rounded-md bg-[#FBE7B5] px-1.5 py-0.5 text-[11.5px] font-medium text-[#6B4E00]">{L3("Ảnh: mẫu khác", "Photo: other model", "Photo : autre modèle")}</span>
-            {L3("mẫu cùng hãng, cùng loại, giá gần nhất", "a model of the same brand and category, nearest price", "un modèle de même marque et catégorie, prix le plus proche")}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="grid place-items-center w-5 h-5 rounded bg-[#F1F3EE] text-[#2B3A30]"><DeviceIcon name="laptop" size={13} /></span>
-            {L3("chưa có ảnh", "no photo yet", "pas encore de photo")}
-          </span>
-        </div>
-        {showMissingNote && <p className="mt-2 text-[13.5px] text-[#4b5563]">{st("search.missingLast")}</p>}
-        {status === "updating" && <div className="mt-3"><InlineSpinner label={st("search.updating")} /></div>}
-
-        <div className={`mt-5 ${status === "updating" ? "opacity-60 transition-opacity" : ""}`}>
-          {status === "loading" && <LoadingGrid count={8} />}
-          {status === "error" && (
-            <div className="flex flex-col gap-4">
-              <ErrorState title={st("search.loadError")} body={st("search.loadErrorBody")} onRetry={retry} />
-              {items.length > 0 && <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 opacity-60">{items.map((x) => <ProductCard key={x.product_id} product={x} />)}</div>}
-            </div>
           )}
-          {(status === "success" || status === "updating") && data?.unsupported && (
-            <EmptyState icon="info" title={st("search.unsupportedTitle", { what: st(`unsup.${data.unsupported}`) })} body={st("search.unsupportedBody")}>
-              <Link to="/method" className="btn-secondary">{st("search.unsupportedMethod")}</Link>
-              {(categories || []).slice(0, 4).map((c) => (
-                <button key={c.category} type="button" className="chip" onClick={() => go(updateState(parseSearchParams(""), { category: c.category }))}>{st(`cat.${c.category}`)}</button>
-              ))}
-            </EmptyState>
-          )}
-          {(status === "success" || status === "updating") && !data?.unsupported && items.length === 0 && (
-            <EmptyState title={st("search.noResultsTitle")} body={st("search.noResultsBody")}>
-              {(data?.relaxations || []).map((r) => (
-                <button key={`${r.drop}-${r.value}`} type="button" className="btn-secondary" onClick={() => applyRelaxation(r)}>{relaxLabel(r)}</button>
-              ))}
-              {filters.length > 0 && <button type="button" className="btn-secondary" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>}
-            </EmptyState>
-          )}
-          {(status === "success" || status === "updating") && items.length > 0 && (
-            <>
-              {state.q && items[0] && <WhyConsider productId={items[0].product_id} need={state.q}
-                                                   title={st("search.whyTop", { name: items[0].name })} className="mb-4" />}
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {items.map((x) => <ProductCard key={x.product_id} product={x} />)}
-              </div>
-              <Pagination page={state.page} pages={pages} onPage={onPage} st={st} />
-            </>
-          )}
-        </div>
-      </section>
-
-      {drawer && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={st("search.filters")}>
-          <button type="button" className="absolute inset-0 bg-black/40" aria-label={st("shell.closeMenu")} onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 right-0 w-[min(380px,92vw)] bg-[#F6F4EC] shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#ebe6d8]">
-              <h2 className="text-[17px] font-semibold">{st("search.filters")}</h2>
-              <button type="button" onClick={() => setDrawer(false)} aria-label={st("shell.closeMenu")} className="grid place-items-center w-9 h-9 rounded-full hover:bg-white"><Icon name="close" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-5"><SearchFilters state={state} facets={data?.facets} onChange={change} /></div>
-            <div className="p-4 border-t border-[#ebe6d8] flex gap-2">
-              {filters.length > 0 && <button type="button" className="btn-secondary" onClick={() => go(clearFilters(state))}>{st("search.clearAll")}</button>}
-              <button type="button" className="btn-primary flex-1" onClick={() => setDrawer(false)}>
-                {st("search.applyFilters", { n: total !== null ? formatCount(total, lang) : "…" })}
-              </button>
-            </div>
-          </div>
         </div>
       )}
+      {data?.sample && <div className="mt-3"><SampleDataNote /></div>}
+      {status === "updating" && <div className="mt-3"><InlineSpinner label={st("search.updating")} /></div>}
+
+      <section className={`mt-5 ${status === "updating" ? "opacity-60 transition-opacity" : ""}`} aria-live="polite" aria-busy={busy}
+               aria-label={L3("Sản phẩm", "Products", "Produits")}>
+        {status === "loading" && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-[372px] animate-pulse rounded-[22px] border border-[#E8E4D8] bg-white" />)}
+          </div>
+        )}
+        {status === "error" && (
+          <ErrorState title={st("search.loadError")} body={st("search.loadErrorBody")} onRetry={retry} />
+        )}
+        {(status === "success" || status === "updating") && data?.unsupported && (
+          <EmptyState icon="info" title={st("search.unsupportedTitle", { what: st(`unsup.${data.unsupported}`) })} body={st("search.unsupportedBody")}>
+            <button type="button" className="btn-secondary" onClick={() => setAskOpen(true)}>{L3("Hỏi AI", "Ask AI", "Demander à l'IA")}</button>
+          </EmptyState>
+        )}
+        {(status === "success" || status === "updating") && !data?.unsupported && items.length === 0 && (
+          <EmptyState title={st("search.noResultsTitle")} body={st("search.noResultsBody")}>
+            {(data?.relaxations || []).map((r) => (
+              <button key={`${r.drop}-${r.value}`} type="button" className="btn-secondary" onClick={() => applyRelaxation(r)}>{relaxLabel(r)}</button>
+            ))}
+            <button type="button" className="btn-secondary" onClick={() => go(clearFilters({ ...state, q: "" }))}>{st("search.clearAll")}</button>
+          </EmptyState>
+        )}
+        {(status === "success" || status === "updating") && items.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {items.map((p) => (
+                <FindCard key={p.product_id} product={p}
+                          onCompareFull={() => setCompareNote(L3("Đã đủ 4 món để so sánh", "The comparison already has 4 products", "La comparaison a déjà 4 produits"))} />
+              ))}
+            </div>
+            <Pagination page={state.page} pages={pages} onPage={onPage} st={st} />
+          </>
+        )}
+      </section>
+
+      <CompareBar note={compareNote} />
+      <AskAiDock open={askOpen} onOpen={() => setAskOpen(true)} onClose={() => setAskOpen(false)} initial={state.q} />
     </main>
   );
 }
