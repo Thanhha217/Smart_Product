@@ -128,6 +128,30 @@ Không có tài khoản phù hợp thì dùng ứng dụng khác hỗ trợ MCP 
 
 Tiêu chí đạt: ở bước 1, ChatGPT gọi `search_products` và trả lời đúng số trên web của nhóm.
 
+## 6b. "AI mua giúp" (2026-11-24)
+
+Cùng một quy trình chạy ở ba nơi, đều **dừng ở đơn thử chờ người duyệt**, không trừ tiền:
+
+| Nơi | Cách gọi | Ghi chú |
+|---|---|---|
+| Web `/cart?tab=ai` | Nút "Giao cho AI" | Hiện 5 bước: tìm → so sánh giá và CO₂ → CO₂ giảm khi bán máy cũ → tạo đơn thử → chờ duyệt |
+| WebMCP (agent trong trình duyệt có `navigator.modelContext`) | công cụ `buy_for_me` | Cùng hàm `frontend/src/lib/aiBuyer.js` (`planPurchase`), mở trang đơn để người duyệt |
+| ChatGPT (MCP) | ChatGPT tự nối `search_products` → `compare_products` → `create_test_order` | Câu mẫu: "Mua giúp tôi laptop ít CO₂ nhất dưới 20 triệu" → link `/orders/{id}` để bấm xác nhận |
+
+Đơn do AI tạo ghi "Tạo bởi: trợ lý AI" (`created_by: assistant` hoặc `mcp`); chỉ nút trên web xác nhận được
+(`X-Confirm-Source: web-ui`, kiểm ở `assistant/orders.py`).
+
+### Kết nối ChatGPT nhanh trên Windows
+
+1. Chạy hệ thống (`docker compose -f docker-compose.dev.yml up -d`), kiểm tra `curl http://localhost:8100/healthz`.
+2. Mở đường hầm HTTPS: `cloudflared tunnel --url http://localhost:8100` (hoặc `ngrok http 8100`), ghi lại địa chỉ `https://….trycloudflare.com`.
+3. ChatGPT → Settings → Apps & Connectors → Advanced → bật **Developer mode** → **Create**: URL `https://…/mcp`, No authentication.
+4. Cuộc trò chuyện mới → chọn connector → hỏi theo kịch bản ở mục 6.
+
+Tìm kiếm theo nghĩa (`/query`) từng mất 10–17 giây vì dịch vụ xếp hạng chờ Ollama viết câu lý do (luôn quá 10 giây trên CPU),
+nên công cụ MCP (giới hạn 15 giây) bị quá thời gian. `backend/.env.dev` đặt `RANKING_LLM_EXPLANATIONS="0"` (dùng câu lý do theo
+quy tắc): `/query` còn ~0,3 giây. Bật lại bằng `"1"`; chỉnh thời gian chờ bằng `RANKING_LLM_TIMEOUT_S`.
+
 ## 7. Về thanh toán trong ChatGPT
 
 Thanh toán thật bên trong ChatGPT (Instant Checkout theo Agentic Commerce Protocol) đòi hỏi người bán được OpenAI và

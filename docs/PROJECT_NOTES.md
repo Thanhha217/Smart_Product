@@ -79,6 +79,19 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Giỏ hàng + AI mua giúp `/cart` (2026-11-24, bản thiết kế "Giỏ hàng và ví AI")
+
+- Hai tab (`?tab=ai`): "Giỏ của tôi" (thẻ món: ảnh, giá, ≈kg · điểm xanh, − n + Xóa; gợi ý món xanh hơn; "Tóm tắt" tổng tiền / CO₂
+  vòng đời, "Thanh toán thử", "Nhờ AI mua giúp") và "AI mua giúp" (`components/cart/AiBuyer.jsx`). Thanh trên trống như thiết kế.
+- AI mua giúp = `lib/aiBuyer.js` `planPurchase` (có test): `/api/search` (có giá + CO₂, sắp `co2_asc` hoặc `price_asc`, ngân sách)
+  → 3 món đầu, chọn món đầu (`recommend` để ghi chênh lệch) → nếu có máy cũ: `tradeIn` (bán lại, cùng công thức `/trade-in`)
+  → `POST /api/orders/test` `created_by: "assistant"` → dừng ở "awaiting_confirmation", link `/orders/{id}` để người bấm xác nhận.
+  Không có ô ví / thẻ / ngân hàng; không bao giờ gọi confirm (theo CLAUDE.md). WebMCP `buy_for_me` gọi cùng hàm.
+- ChatGPT Wallet / thanh toán thật: không làm (CLAUDE.md + `docs/demo/mcp-chatgpt.md` §7).
+- `RANKING_LLM_EXPLANATIONS="0"` trong `.env.dev`: `/query` 10–17 s → 0,3 s (Ollama luôn quá giờ), MCP hết lỗi quá thời gian.
+- Trang AI: thêm chỗ trống `{{pN.source}}` (tên nguồn số CO₂ bằng chữ).
+- Thu cũ đổi mới: đầu trang theo bản thiết kế mới (tiêu đề + hình cùng hàng, ô "Có thể giảm tới" trải ngang bên dưới).
+
 ### Thu cũ đổi mới `/trade-in` (2026-11-24, bản thiết kế "Thu cũ đổi mới.pdf")
 
 - Menu: mục "Thu cũ đổi mới" giữa So sánh và Giỏ; thanh trên "Tìm sản phẩm › Thu cũ đổi mới". `pages/TradeIn.jsx`, phép tính `lib/tradeIn.js` (có test).
