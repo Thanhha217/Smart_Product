@@ -86,3 +86,9 @@ def test_reference_urls_from_source_text():
     assert refs[0]["url"] == "https://i.dell.com/x.pdf"
     assert refs[1]["url"] == "https://apple.com/environment"
     assert "url" not in refs[2]
+
+
+def test_percent_placeholder_followed_by_percent_sign_prints_once():
+    text, failures = ps.fill_text("It beats {{stats.greener_than_pct}}% of laptops.", {"stats.greener_than_pct": "49%"})
+    assert text == "It beats 49% of laptops."
+    assert failures == 0

@@ -140,7 +140,8 @@ def fill_text(text: str, values: dict[str, str], allowed_literals: Iterable[str]
         low = bare.lower()
         for lit in literals:
             low = low.replace(lit.lower(), " ")
-        filled = _PLACEHOLDER.sub(sub, sentence)
+        # the percentage value already ends in "%": "{{stats.greener_than_pct}}%" must not print "49%%"
+        filled = re.sub(r"%\s*%", "%", _PLACEHOLDER.sub(sub, sentence))
         if unknown or re.search(r"[0-9]", low):
             failures += 1
             continue
