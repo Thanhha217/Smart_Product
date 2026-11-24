@@ -27,7 +27,7 @@ function usePicks(selection) {
     if (!any) { setState({ status: "idle", items: [], total: 0, stats: null }); return undefined; }
     let alive = true;
     setState((s) => ({ ...s, status: "loading" }));
-    const params = { has_price: true, has_co2: true, ...base, sort: base.sort || "co2_asc", page_size: 3 };
+    const params = { has_price: true, has_co2: true, has_image: true, ...base, sort: base.sort || "co2_asc", page_size: 3 };
     api.search(params).then(async (res) => {
       const items = normalizeList(res?.items).slice(0, 3);
       let stats = null;
@@ -61,9 +61,9 @@ export default function WhatFits({ selection, lang }) {
                   `Lowest of ${formatCount(stats.n, lang)} in its category — the CO₂ you asked to keep low`,
                   `Le plus bas de ${formatCount(stats.n, lang)} dans sa catégorie pour le CO₂`));
     } else if (!byPrice && total > 1) {
-      why.push(L3(`CO₂ thấp nhất trong ${formatCount(total, lang)} sản phẩm khớp lựa chọn`,
-                  `Lowest CO₂ of the ${formatCount(total, lang)} products that match your taps`,
-                  `CO₂ le plus bas des ${formatCount(total, lang)} produits correspondants`));
+      why.push(L3(`CO₂ thấp nhất trong ${formatCount(total, lang)} sản phẩm đủ thông tin khớp lựa chọn`,
+                  `Lowest CO₂ of the ${formatCount(total, lang)} products with full information that match your taps`,
+                  `CO₂ le plus bas des ${formatCount(total, lang)} produits complets correspondants`));
     }
     if (byPrice && total > 1) {
       why.push(L3(`Giá thấp nhất trong ${formatCount(total, lang)} sản phẩm khớp`, `Lowest price of the ${formatCount(total, lang)} matches`,
@@ -99,7 +99,7 @@ export default function WhatFits({ selection, lang }) {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="fits" className="font-display text-[26px] font-semibold text-[#1E2B22]">{L3("Món phù hợp", "What fits", "Ce qui convient")}</h2>
         <p className="text-[13.5px] text-[#6B7468]">
-          {L3("Từ dữ liệu thật", "From the real catalogue", "Du vrai catalogue")} · {byPrice ? L3("giá thấp trước", "lowest price first", "prix le plus bas d'abord") : L3("CO₂ thấp trước", "lowest CO₂ first", "CO₂ le plus bas d'abord")}
+          {L3("Từ dữ liệu thật", "From the real catalogue", "Du vrai catalogue")} · {L3("có giá, CO₂ và ảnh thật", "with price, CO₂ and own photo", "avec prix, CO₂ et photo")} · {byPrice ? L3("giá thấp trước", "lowest price first", "prix le plus bas d'abord") : L3("CO₂ thấp trước", "lowest CO₂ first", "CO₂ le plus bas d'abord")}
         </p>
       </div>
 

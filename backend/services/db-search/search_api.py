@@ -25,17 +25,19 @@ from green_score import green_score, parse_references
 from product_specs import brand_of, condition_of, specs_of
 from search_query import BRAND_ALIASES, CATEGORY_WORDS, fold, parse_query
 
+# 1 when the product has its own photo. Used only to order equal products, never to filter or score CO2.
+_OWN_PHOTO = ("CASE WHEN EXISTS (SELECT 1 FROM image i WHERE i.product_id = p.id AND i.image_url IS NOT NULL "
+              "AND btrim(i.image_url) <> '') THEN 1 ELSE 0 END")
 _COMPLETE = ("(CASE WHEN p.final_price > 0 THEN 1 ELSE 0 END + CASE WHEN p.co2e_kg IS NOT NULL THEN 1 ELSE 0 END "
-             "+ CASE WHEN EXISTS (SELECT 1 FROM image i WHERE i.product_id = p.id AND i.image_url IS NOT NULL "
-             "AND btrim(i.image_url) <> '') THEN 1 ELSE 0 END)")
+             f"+ {_OWN_PHOTO})")
 SORTS = {
     "relevance": None,
-    "price_asc": "NULLIF(p.final_price, 0) ASC NULLS LAST, p.id",
-    "price_desc": "NULLIF(p.final_price, 0) DESC NULLS LAST, p.id",
-    "co2_asc": "p.co2e_kg ASC NULLS LAST, NULLIF(p.final_price, 0) ASC NULLS LAST, p.id",
-    "co2_desc": "p.co2e_kg DESC NULLS LAST, p.id",
+    "price_asc": f"NULLIF(p.final_price, 0) ASC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
+    "price_desc": f"NULLIF(p.final_price, 0) DESC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
+    "co2_asc": f"p.co2e_kg ASC NULLS LAST, {_OWN_PHOTO} DESC, NULLIF(p.final_price, 0) ASC NULLS LAST, p.id",
+    "co2_desc": f"p.co2e_kg DESC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
     "discount": "CASE WHEN p.original_price > p.final_price AND p.final_price > 0 "
-                "THEN (p.original_price - p.final_price) / p.original_price END DESC NULLS LAST, p.id",
+                f"THEN (p.original_price - p.final_price) / p.original_price END DESC NULLS LAST, {_OWN_PHOTO} DESC, p.id",
     # products with a price, a CO2 figure and their own photo first, then each category's lowest CO2 in
     # turn (the greenest of every category, then the second...); it only orders, it never filters
     "complete": f"{_COMPLETE} DESC, row_number() OVER (PARTITION BY p.category_id ORDER BY {_COMPLETE} DESC, "
@@ -199,6 +201,7 @@ def search(engine, q: str | None = None, category: str | None = None, brand: str
             order = ("CASE WHEN :phrase <> '%%' AND unaccent(lower(p.name)) LIKE :phrase THEN 0 ELSE 1 END, "
                      "CASE WHEN p.final_price > 0 THEN 0 ELSE 1 END, "
                      "CASE WHEN p.co2e_kg IS NOT NULL THEN 0 ELSE 1 END, "
+                     f"{_OWN_PHOTO} DESC, "
                      "p.review_count DESC NULLS LAST, length(p.name), p.id")
         rows = session.exec(text(f"""
             SELECT p.id, p.name, p.product_url, p.final_price, p.original_price, p.product_rating, p.review_count,
