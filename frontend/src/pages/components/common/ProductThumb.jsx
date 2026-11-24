@@ -16,11 +16,13 @@ export function shortModel(name = "") {
 }
 
 /**
+ * Store CDNs refuse an image when the request names our page as referrer (403, then ERR_BLOCKED_BY_ORB),
+ * so the <img> tags send no referrer.
  * @param standIn  look for a comparable product's photo when this one has none (default true)
  * @param size     square size in px; when null the picture fills `className`
  */
 export default function ProductThumb({ product, size = null, className = "h-40", standIn = true, rounded = "rounded-xl", tone = "default" }) {
-  const soft = tone === "soft";
+  const soft = tone === "soft" || tone === "find";   // "find": the beige photo box of the Find products cards
   const { lang } = useI18n();
   const L3 = tri(lang);
   const own = product?.image_url || null;
@@ -43,7 +45,7 @@ export default function ProductThumb({ product, size = null, className = "h-40",
   if (own && !broken) {
     return (
       <div className={frame} style={box}>
-        <img src={own} alt={product.name || ""} loading="lazy" onError={() => setBroken(true)}
+        <img src={own} alt={product.name || ""} loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)}
              className={`w-full h-full object-contain ${soft ? "p-3 mix-blend-multiply" : "bg-white"}`} />
       </div>
     );
@@ -55,7 +57,7 @@ export default function ProductThumb({ product, size = null, className = "h-40",
            title={L3(`Ảnh của ${alt.name}, một sản phẩm tương đương. Sản phẩm này chưa có ảnh.`,
                      `Photo of ${alt.name}, a comparable product. This one has no photo yet.`,
                      `Photo de ${alt.name}, un produit comparable. Celui-ci n'a pas encore de photo.`)}>
-        <img src={alt.url} alt={label} loading="lazy" onError={() => setAlt(null)}
+        <img src={alt.url} alt={label} loading="lazy" referrerPolicy="no-referrer" onError={() => setAlt(null)}
              className={`w-full h-full object-contain ${soft ? "p-3 mix-blend-multiply opacity-95" : "bg-white opacity-90"}`} />
         {soft && !(size && size < 96)
           ? <span className="absolute left-2.5 bottom-2.5 max-w-[85%] truncate rounded-md bg-[#FBE7B5] px-1.5 py-0.5 text-[11.5px] font-medium text-[#6B4E00]">
@@ -69,7 +71,7 @@ export default function ProductThumb({ product, size = null, className = "h-40",
     );
   }
   return (
-    <div className={`${frame} grid place-items-center ${soft ? "bg-[#F1F3EE] text-[#2B3A30]" : "bg-gradient-to-br from-[#eef4ec] to-[#f6f3ea] text-[#4E9A5C]"}`} style={box}
+    <div className={`${frame} grid place-items-center ${tone === "find" ? "bg-[#F3EFE4] text-[#7FA88C]" : soft ? "bg-[#F1F3EE] text-[#2B3A30]" : "bg-gradient-to-br from-[#eef4ec] to-[#f6f3ea] text-[#4E9A5C]"}`} style={box}
          role="img" aria-label={L3("Chưa có ảnh sản phẩm", "No product photo yet", "Pas encore de photo")}>
       <DeviceIcon name={iconKeyFor(product?.category)} size={size ? Math.round(size * 0.55) : soft ? 64 : 46} />
     </div>
