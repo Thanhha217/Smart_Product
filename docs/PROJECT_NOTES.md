@@ -101,6 +101,11 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 - Thẻ từng món: thanh CO₂ (cùng thang khi cùng loại) + vạch trung vị; 3 thẻ phép tính (trừ, chia). Mục "2 Bảng so sánh chi tiết"
   giữ bảng cũ, kết luận của API. Có nút robot Hỏi AI (điền sẵn "So sánh A và B…").
 - `variantOf` ghi cả đời chip Apple (M4 · 24GB/512GB) để phân biệt MacBook cùng cỡ.
+- Bảng chi tiết: đầu cột chỉ có ảnh, tên, "Thêm vào giỏ thử" (giá đã có ở hàng Giá; bỏ nút Remove, xoá bằng "Xóa tất cả" hoặc khay
+  ở Find products); bỏ ghi chú độ tin cậy và câu kết luận dưới bảng (trùng thẻ "Nên chọn"). Dòng phép tính chỉ xuống dòng
+  trước dấu phép tính hoặc "=" (`CalcLine`), không cắt giữa con số.
+- **Chatbot Hỏi AI ở mọi trang**: `GlobalAskAi` (trong `components/find/AskAiDock.jsx`) gắn một lần ở `App.jsx`, kể cả `/` và Overview.
+  Tự điền câu: câu đang tìm ở `/search`, "So sánh A và B…" ở `/compare`; trang khác gọi `openAskAi(text)`.
 
 ### Phương pháp CO₂ `/method` (2026-11-24, bản thiết kế "CO₂ method.pdf")
 
