@@ -79,6 +79,20 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Phương pháp CO₂ `/method` (2026-11-24, bản thiết kế "CO₂ method.pdf")
+
+- `pages/Method.jsx` + `components/co2/MethodLadder.jsx` (thay MethodExplorer/MethodFlow/MathBits đã xoá). Thanh trên: chỉ tiêu đề trang.
+- Đầu trang: "Một con số CO₂ được tính như thế nào", nút "Xem công thức chung", thẻ "Ví dụ đang xem · Đổi".
+- "Thử với sản phẩm của bạn" (`?case=`): Công thức (ký hiệu) · ví dụ thật (`?product=`) · Có số công bố / Có sản phẩm tương tự
+  (sản phẩm thật nguồn `manufacturer` / `neighbor_average`, ưu tiên cùng loại với ví dụ) · Không có dữ liệu (**minh họa**: trong danh
+  mục hiện tại mọi sản phẩm đã tính đều dừng ở bậc 1–3) · "Nhập số liệu của riêng bạn" (cùng quy tắc, ghi rõ là minh họa).
+  "Chạy minh họa" kiểm tra từng bậc (850 ms/bậc) rồi mới hiện kết quả.
+- Thang 4 bậc khớp `etl-worker` (`carbon_estimator.py`): 1 đúng model 0,9 · 2 trung bình mẫu cosine ≥ 0,66 (≤ 5) 0,5 ·
+  3 trung vị loại × (s ÷ s₀)^b 0,35 · ∅ để trống. Số trong ô lấy từ `formula.steps` của API, không tính lại.
+- Thẻ Kết quả: kg, Ước tính/Hãng công bố, "Bậc n của 4", tin cậy, "Xem phép tính đầy đủ ↓" (#calc), ▶ thế giới CO₂, sách CO₂.
+- Bên dưới: phép tính đầy đủ + vòng đời, "Những điều cần biết", "Chi tiết kỹ thuật" (mở sẵn, tên tiếng Việt theo thiết kế).
+  Có nút robot Hỏi AI như Find products.
+
 ### Find products = tìm kiếm + Hỏi AI + sách CO₂ (2026-11-24, bản thiết kế "Khám phá hợp nhất.pdf")
 
 - Menu: Overview · CO₂ world · **Find products** · CO₂ method · Compare (số món) · Cart & test orders · System. Mục "CO₂ book" và
