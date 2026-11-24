@@ -79,6 +79,18 @@ Chi tiết: [research/results-co2-eval.md](research/results-co2-eval.md), dữ l
 
 ## 6. Frontend (route trong `src/App.jsx`)
 `/` (ô Hỏi AI) · `/search` · `/product/:id` (FormulaCard, LifecycleDiagram, món xanh hơn, nút Hỏi AI/So sánh/Giỏ) · `/assistant` (chữ + giọng nói, lịch sử) · `/assistant/:id` (`PageRenderer` + `components/assistant/sections/`) · `/compare?ids=` · `/method` (`src/i18n/method.js`) · `/cart` (localStorage) · `/checkout` (banner CHẾ ĐỘ THỬ, không có ô thẻ) · `/orders/:id`.
+### Find products = tìm kiếm + Hỏi AI + sách CO₂ (2026-11-24, bản thiết kế "Khám phá hợp nhất.pdf")
+
+- Menu: Overview · CO₂ world · **Find products** · CO₂ method · Compare (số món) · Cart & test orders · System. Mục "CO₂ book" và
+  "Ask AI" bỏ khỏi menu; `/story`, `/story/:id`, `/assistant`, `/assistant/:id` vẫn chạy và làm sáng mục Find products
+  (`NAV[].also` trong `AppShell.jsx`). Tab điện thoại: Overview · World · Find · Compare · Cart.
+- Trang `/search` (`SearchResults.jsx`): ô tìm hiểu câu ("Laptop dưới 20 triệu, CO₂ thấp" → loại + giá + CO₂ thấp; nút ✦),
+  chip danh mục (Laptop, Màn hình, Máy tính bảng trước), menu giá (dải 10/20/30/50 triệu) và sắp xếp ("CO₂ thấp" = `complete`),
+  thẻ `components/find/FindCard.jsx` (tên ngắn `lib/shortName.js` + dòng cấu hình, ≈kg lớn, giá hoặc "—", nút **CO₂ book** →
+  `/story/:id`, nút so sánh), khay `CompareBar.jsx` (n/4, bỏ từng món, → `/compare`), nút robot `AskAiDock.jsx` (hỏi AI → `/assistant/:id`;
+  "Hỏi AI về câu này" điền sẵn câu đang tìm). Thanh trên của trang này là breadcrumb "Find products › …", không có ô tìm/biểu tượng.
+- Ảnh sản phẩm: CDN cửa hàng trả 403 khi có Referer localhost (trình duyệt báo `ERR_BLOCKED_BY_ORB`) → `<img referrerPolicy="no-referrer">`.
+
 ### Bản thiết kế "CO₂ formula redesign (4).pdf" trang 2–9 (2026-11-24) — bố cục hiện hành
 
 Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản vẽ được điền bằng dữ liệu thật.
