@@ -102,6 +102,15 @@ Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản v�
   (laptop · học/văn phòng · <20 triệu · CO₂ thấp) trừ khi có `?q=`. `components/assistant/WhatFits.jsx`: 3 món từ `/api/search`
   (CO₂ thấp trước, hoặc giá nếu chọn Low price); "Why it fits" chỉ ghi điều dữ liệu chứng minh (đúng loại, hạng CO₂, trong ngân sách).
 
+- **Flipbook**: mọi cách đổi trang (góc trang, phím, nút Prev/Next, chấm trang, Autoplay, link trong sách) đều lật trang 3D;
+  điện thoại lật từng trang (lá trang lật sang trái). `prefers-reduced-motion` thì đổi trang không hiệu ứng.
+- **Ảnh thật trước**: mọi cách sắp xếp của db-search, khi bằng nhau, đặt sản phẩm có ảnh riêng trước (`_OWN_PHOTO`, chỉ sắp xếp);
+  "Lowest CO₂" vẫn theo đúng CO₂ nên món không ảnh mà CO₂ thấp hơn vẫn đứng trước. Ask AI "What fits" lọc `has_image=true`.
+- **CO₂ world đã đối chiếu API** (55051, laptop xanh nhất): kg, điểm xanh, độ tin cậy, các chặng (cộng lại = tổng), tuổi thọ
+  (khớp `CategoryParams` ở `etl-worker/green/co2_formula.py`), món xanh hơn đều đúng. Ô "Materials" ghi "in production →"
+  (đã gộp trong Production); thẻ AI insight ghi "Median of N in its category" (trung vị catalogue, khác trung vị báo cáo hãng
+  trong công thức).
+
 ### Giao diện đã được duyệt — không thiết kế lại (2026-11-24, phần world đã thay bằng p3 ở trên)
 
 - **CO₂ world** giữ đúng bố cục người dùng duyệt (bản gốc: `git show 31fd3bc:frontend/src/pages/World.jsx`):
