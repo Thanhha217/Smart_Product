@@ -1,12 +1,15 @@
 // A Find products card: photo, short name, the CO₂ figure in large type, price, and two actions —
 // open the product's CO₂ book, or add it to the comparison. Values come from lib/data.js; a missing
 // price or CO₂ figure is shown as missing, never guessed.
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { tri, useI18n } from "../../../i18n/LanguageContext";
 import { addToCompare, removeFromCompare, useCompare } from "../../../lib/compare";
 import { co2Kind, formatPrice, normalizeProduct } from "../../../lib/data";
 import { formatKg } from "../../../lib/format";
 import { shortName, variantOf } from "../../../lib/shortName";
+import { teardownOf } from "../../../lib/teardown";
+import TeardownModal from "../product/TeardownModal";
 import ProductThumb from "../common/ProductThumb";
 import Icon from "../ui/Icon";
 
@@ -21,6 +24,9 @@ export default function FindCard({ product: raw, onCompareFull }) {
   const hasCo2 = p.co2e_kg !== null;
   const estimated = hasCo2 && co2Kind(p) !== "published";
   const name = shortName(p.name);
+  // only the demo machines have a teardown; the button stays hidden for the rest
+  const teardown = teardownOf(p.product_id);
+  const [bookOpen, setBookOpen] = useState(false);
   const variant = variantOf(p.name);
 
   const toggle = () => {
@@ -61,6 +67,14 @@ export default function FindCard({ product: raw, onCompareFull }) {
               <Icon name="book" size={17} />CO₂ book
             </span>
           )}
+          {teardown && (
+            <button type="button" onClick={() => setBookOpen(true)}
+                    aria-label={L3("Bên trong máy", "Inside the machine", "Dans la machine")}
+                    title={L3("Bên trong máy", "Inside the machine", "Dans la machine")}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-[#1B4332] bg-white text-[#1B4332] transition hover:bg-[#F3F8F1]">
+              <Icon name="cpu" size={17} />
+            </button>
+          )}
           <button type="button" onClick={toggle} aria-pressed={inCompare}
                   aria-label={inCompare ? L3("Bỏ khỏi so sánh", "Remove from compare", "Retirer de la comparaison") : L3("Thêm vào so sánh", "Add to compare", "Ajouter à la comparaison")}
                   title={inCompare ? L3("Bỏ khỏi so sánh", "Remove from compare", "Retirer de la comparaison") : L3("Thêm vào so sánh", "Add to compare", "Ajouter à la comparaison")}
@@ -69,6 +83,9 @@ export default function FindCard({ product: raw, onCompareFull }) {
           </button>
         </div>
       </div>
+      {bookOpen && teardown && (
+        <TeardownModal product={p} data={teardown} lang={lang} onClose={() => setBookOpen(false)} />
+      )}
     </article>
   );
 }

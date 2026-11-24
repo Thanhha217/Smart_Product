@@ -28,3 +28,13 @@ def create_db_and_tables():
                 conn.execute(text(f"ALTER TABLE product ADD COLUMN IF NOT EXISTS {column} VARCHAR"))
             for column in ("source_url", "verification"):
                 conn.execute(text(f"ALTER TABLE carbonreference ADD COLUMN IF NOT EXISTS {column} VARCHAR"))
+            # create_all makes no index beyond the primary keys, and a restored dump brings none.
+            # Search orders every row by "does this product have a photo", which without these
+            # reads the whole image table per product.
+            for ddl in (
+                "CREATE INDEX IF NOT EXISTS ix_image_product_id ON image (product_id)",
+                "CREATE INDEX IF NOT EXISTS ix_product_category_id ON product (category_id)",
+                "CREATE INDEX IF NOT EXISTS ix_product_co2e_category ON product (co2e_category)",
+                "CREATE INDEX IF NOT EXISTS ix_product_co2e_kg ON product (co2e_kg)",
+            ):
+                conn.execute(text(ddl))
