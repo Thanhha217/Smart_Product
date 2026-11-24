@@ -111,6 +111,13 @@ Mỗi trang bám theo một trang PDF; ô [PRICE]/[STORE]/[CO₂] trong bản v�
   (đã gộp trong Production); thẻ AI insight ghi "Median of N in its category" (trung vị catalogue, khác trung vị báo cáo hãng
   trong công thức).
 
+- **AI bằng GPT** (24/11): `OPENAI_API_KEY` trong `.env` gốc → assistant chạy `openai:gpt-5.4-mini` (`/api/health`).
+  Bộ kiểm tra số (`page_spec.fill_text`) coi "CO2"/"CO2e" là ký hiệu, chấp nhận `{{…green_score}}/5`, nhận tên trường
+  savings (`lifecycle_kg_saved`, `trees_year`), gộp "%%"; câu bị bỏ được ghi log `assistant: dropped a sentence`.
+  Prompt gửi `placeholders` dạng tên → giá trị in ra. Smoke e2e với GPT thật: ALL OK, failures=0.
+- **Khởi động lại dịch vụ**: luôn dùng `--no-deps` (thiếu nó Docker tạo lại cả database). db-search, ranking, etl-worker
+  có `pool_pre_ping=True` nên tự nối lại khi database khởi động lại.
+
 ### Giao diện đã được duyệt — không thiết kế lại (2026-11-24, phần world đã thay bằng p3 ở trên)
 
 - **CO₂ world** giữ đúng bố cục người dùng duyệt (bản gốc: `git show 31fd3bc:frontend/src/pages/World.jsx`):
@@ -175,7 +182,7 @@ Tool: `search_products`, `get_product_co2`, `compare_products`, `explain_co2_met
 | `etl-worker`: `pytest tests/test_exact_match.py tests/test_fallback.py tests/test_green.py tests/test_explain.py` | 52 |
 | Toàn hệ thống (Docker đang chạy): `python scripts/demo/smoke_e2e.py` | 18 bước |
 | `ranking_system`: `pytest test_rrf.py` | 6 |
-| `assistant`: `pytest` (fake db-search + fake LLM) | 50 |
+| `assistant`: `pytest` (fake db-search + fake LLM; `test_api`/`test_explain_api` cần gói `anthropic`, chạy trong container) | 57 |
 | `gateway`: `pytest tests` | 3 |
 | `db-search`: `pytest tests/test_search_query.py tests/test_product_specs.py tests/test_accessory.py` | 14 |
 | `mcp-server`: `pytest` | 17 |
