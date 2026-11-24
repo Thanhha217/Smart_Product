@@ -8,36 +8,21 @@ import { useShopText } from "../../../i18n/shop";
 import LanguageSwitcher from "../header/LanguageSwitcher";
 import Icon from "../ui/Icon";
 
-<<<<<<< HEAD
 // "Overview" IS the CO2 world now: the map of one product is the first thing the app shows,
 // so there is no separate "CO2 world" entry any more.
-const NAV = [
-  { to: "/world", icon: "dashboard", key: "nav.dashboard" },
-  { to: "/story", icon: "book", key: "nav.story" },
-=======
 // Find products holds the search, the CO₂ books (/story) and Ask AI (/assistant): one tab for all three.
 const NAV = [
-  { to: "/dashboard", icon: "dashboard", key: "nav.dashboard" },
-  { to: "/world", icon: "globe", key: "nav.world" },
+  { to: "/world", icon: "dashboard", key: "nav.dashboard" },
   { to: "/search", icon: "search", key: "nav.search", also: ["/story", "/assistant"] },
->>>>>>> origin/main
   { to: "/method", icon: "calculator", key: "nav.method" },
   { to: "/compare", icon: "scale", key: "nav.compare" },
   { to: "/cart", icon: "cart", key: "nav.cartShort" },
   { to: "/system", icon: "server", key: "nav.system" },
 ];
 const TABS = [
-<<<<<<< HEAD
   { to: "/world", icon: "dashboard", key: "tab.home" },
-  { to: "/search", icon: "search", key: "tab.search" },
-  { to: "/assistant", icon: "sparkles", key: "tab.ask" },
-  { to: "/compare", icon: "scale", key: "nav.compare" },
-=======
-  { to: "/dashboard", icon: "dashboard", key: "tab.home" },
-  { to: "/world", icon: "globe", key: "tab.world" },
   { to: "/search", icon: "search", key: "tab.search", also: ["/story", "/assistant"] },
   { to: "/compare", icon: "scale", key: "tab.compare" },
->>>>>>> origin/main
   { to: "/cart", icon: "cart", key: "tab.cart" },
 ];
 const inSection = (item, path) => (item.also || []).some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -166,7 +151,7 @@ function TopBar({ t, onMenu, count }) {
 function BottomTabs({ t }) {
   const { pathname } = useLocation();
   return (
-    <nav className="min-[900px]:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 border-t border-[#E7E2D4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="tabs">
+    <nav className="min-[900px]:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-4 border-t border-[#E7E2D4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="tabs">
       {TABS.map((tab) => (
         <NavLink key={tab.to} to={tab.to}
                  className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[13.5px] font-semibold ${isActive || inSection(tab, pathname) ? "text-[#2E7D4F]" : "text-[#8a9186]"}`}>
